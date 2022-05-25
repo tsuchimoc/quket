@@ -1,7 +1,0 @@
-#!/bin/bash
-#PBS -N  bsuccsd_h2o
-#PBS -l select=1:ncpus=56:mpiprocs=56
-
-cd ${PBS_O_WORKDIR}
-
-mpirun -np 56 /usr/local/bin/python3.8 -m mpi4py /home/tsuchimochi/quket/main.py bsuccsd_h2o

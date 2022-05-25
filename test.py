@@ -176,7 +176,7 @@ OO_test_list={
 # Final: E[uccd] = -76.074349154614  <S**2> = +0.000000000085299  CNOT = 204  rho = 1
 # Final: E[uccd] = -76.074349297709  <S**2> = +0.000000000080063  CNOT = 204  rho = 1
 #  Final: E[oo-uccd] = -76.07434929770854         
-        "OO/n2_oo-sauccgd":-109.11919505506967,
+        "OO/n2_oo-sauccgd":-109.11919874033461
 # Final: E[sauccgd] = -109.041499611760  <S**2> = +0.000001521630632  CNOT = 1458  rho = 1
 # Final: E[sauccgd] = -109.077746258204  <S**2> = +0.000002667379990  CNOT = 1458  rho = 1
 # Final: E[sauccgd] = -109.087069446795  <S**2> = +0.000002560945739  CNOT = 1458  rho = 1
@@ -205,6 +205,7 @@ np.set_printoptions(precision=10, suppress=True)
 np.set_printoptions(threshold=np.inf)
 np.set_printoptions(linewidth=2000)
 wildcard = "*"
+print('Running test calculations. This may take several minutes.')
 
 UCC     = False
 PHF     = False
@@ -257,7 +258,7 @@ else:
             OO = True
             
 
-def Submit(jobname, nprocs=1):
+def Submit(jobname, nprocs=1, nthreads=1):
     """Function
     Submit job. Track the submitted job until its finished.
     """
@@ -280,15 +281,16 @@ def Submit(jobname, nprocs=1):
     with open(job_script, "w") as f:
         print("#!/bin/bash", file=f)
         print("#PBS -N ", jobname, file=f)
-        print(f"#PBS -l select=1:ncpus={nprocs}:mpiprocs={nprocs}", file=f)
-        if system=='2':
-            print("source /etc/profile.d/modules.sh", file=f)
-            print("module load compiler", file=f)
-            print("module load mpi", file=f)
+        print(f"#PBS -l select=1:ncpus={nthreads*nprocs}:mpiprocs={nprocs}", file=f)
+        #if system=='2':
+        #    print("source /etc/profile.d/modules.sh", file=f)
+        #    print("module load compiler", file=f)
+        #    print("module load mpi", file=f)
         print("", file=f)
         print("cd ${PBS_O_WORKDIR}", file=f)
         print("", file=f)
-        print(f"mpirun -np {nprocs} {python} -m mpi4py {QDIR}/main.py {jobname}", file=f)
+        print(f"export $OMP_NUM_THREADS={nthreads}", file=f)
+        print(f"mpirun -np {nprocs} {python} -m mpi4py {QDIR}/main.py {jobname} -nt {nthreads}", file=f)
         #print(f"mpirun -np {nprocs} -genv I_MPI_FABRICS tcp {python} -m mpi4py {QDIR}/main.py {jobname}", file=f)
     
       
@@ -323,7 +325,7 @@ def run(sample):
     sample_path = f"{SAMPLEDIR+subdir}"
     sample_log = f"{sample_name+log}"
     sh.cd(sample_path)
-    Submit(sample_name, nprocs=nprocs)
+    Submit(sample_name, nprocs=nprocs, nthreads=nthreads)
     return sample_log
 
 

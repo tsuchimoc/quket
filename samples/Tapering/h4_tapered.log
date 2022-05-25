@@ -16,8 +16,8 @@
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 10:05:15.886454: 
-56 processes x 1 = Total 56 cores
+2022-05-25 12:40:07.358115: 
+16 processes x 2 = Total 32 cores
 
 ##################### INPUT ########################
 basis        = sto-3G
@@ -62,7 +62,7 @@ Basis set = sto-3G
 *******************************************
 
 Symmetry D4h : D2h(Abelian)
-E[FCI]    = -1.8218771457738274     (Spin = 1   Ms = 0)
+E[FCI]    = -1.82187714577383     (Spin = 1   Ms = 0)
 E[HF]     = -1.7014893632797827    (Spin = 1   Ms = 0)
 NBasis = 4
 
@@ -102,8 +102,8 @@ Basis set = 6-31G
 *******************************************
 
 Symmetry D4h : D2h(Abelian)
-E[FCI]    = -1.9766648666221167     (Spin = 1   Ms = 0)
-E[HF]     = -1.8947292119570411    (Spin = 1   Ms = 0)
+E[FCI]    = -1.9766648666221185     (Spin = 1   Ms = 0)
+E[HF]     = -1.894729211957042    (Spin = 1   Ms = 0)
 NBasis = 8
 
 [Molecular Orbitals]
@@ -133,4 +133,4 @@ Operators  transformed.
    Skipping job since maxiter = 0.
 
 Saved in ./h4_tapered.qkt.
-Normal termination of quket at 2022-05-25 10:05:19.574184
+Normal termination of quket at 2022-05-25 12:40:10.449681

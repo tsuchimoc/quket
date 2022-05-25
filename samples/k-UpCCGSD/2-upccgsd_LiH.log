@@ -16,8 +16,8 @@
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 10:06:08.554786: 
-56 processes x 1 = Total 56 cores
+2022-05-25 12:40:57.036090: 
+16 processes x 2 = Total 32 cores
 
 ##################### INPUT ########################
 basis        = sto-3G
@@ -45,7 +45,7 @@ Basis set = sto-3G
 *******************************************
 
 Symmetry Coov : C2v(Abelian)
-E[FCI]    = -7.882401932288848     (Spin = 1   Ms = 0)
+E[FCI]    = -7.8824019322888494     (Spin = 1   Ms = 0)
 E[HF]     = -7.862023860127121    (Spin = 1   Ms = 0)
 TODO: Pauli_list is not supported for ansatz = 2-upccgsd.
 NBasis = 6
@@ -70,8 +70,8 @@ Initial configuration: |000000001111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-    1: E[2-UpCCGSD] = -7.882395913480  <S**2> = -0.000000000000007  Grad = 3.63e-04  CPU Time =  0.72  (0.05 / step)
-Final: E[2-UpCCGSD] = -7.882395913480  <S**2> = -0.000000000000007
+    1: E[2-UpCCGSD] = -7.882395917011  <S**2> = -0.000000000000002  Grad = 1.31e-04  CPU Time =  0.66  (0.03 / step)
+Final: E[2-UpCCGSD] = -7.882395917011  <S**2> = -0.000000000000002
 
 (2-UpCCGSD state)
       Basis              Coef
@@ -79,7 +79,7 @@ Final: E[2-UpCCGSD] = -7.882395913480  <S**2> = -0.000000000000007
 | 110000000011 > : -0.1136 +0.0000i
 
 
-VQE Done: CPU Time =          0.7810
+VQE Done: CPU Time =          0.7004
 
 2-upccgsd (vqe) 
       Basis              Coef
@@ -90,11 +90,11 @@ VQE Done: CPU Time =          0.7810
  === Computing 2RDM === 
 
 Dipole moment from 1RDM (in Debye):
-x = 0.00027  y = -0.00011  z = -4.62088
-| mu | = 4.62088
+x = 0.00027  y = -0.00011  z = -4.62090
+| mu | = 4.62090
 
 Dipole moment from relaxed 1RDM (in Debye):
-x = -0.00004     y = -0.00020    z = -4.62085
-| mu | = 4.62085
+x = -0.00004     y = -0.00020    z = -4.62084
+| mu | = 4.62084
 Saved in ./2-upccgsd_LiH.qkt.
-Normal termination of quket at 2022-05-25 10:06:10.348509
+Normal termination of quket at 2022-05-25 12:40:58.689351

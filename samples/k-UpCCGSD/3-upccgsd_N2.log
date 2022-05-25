@@ -16,8 +16,8 @@
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 10:06:14.647129: 
-56 processes x 1 = Total 56 cores
+2022-05-25 12:41:03.123675: 
+16 processes x 2 = Total 32 cores
 
 ##################### INPUT ########################
 basis        = sto-3G
@@ -45,8 +45,8 @@ Basis set = sto-3G
 *******************************************
 
 Symmetry Dooh : D2h(Abelian)
-E[FCI]    = -107.59118174900473     (Spin = 1   Ms = 0)
-E[HF]     = -107.35781544529114    (Spin = 1   Ms = 0)
+E[FCI]    = -107.5911817490047     (Spin = 1   Ms = 0)
+E[HF]     = -107.35781544529111    (Spin = 1   Ms = 0)
 TODO: Pauli_list is not supported for ansatz = 3-upccgsd.
 NBasis = 10
 
@@ -74,25 +74,25 @@ Initial configuration: |000000111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-    1: E[3-UpCCGSD] = -107.588100443107  <S**2> = +0.000000000000002  Grad = 7.72e-04  CPU Time =  0.61  (0.04 / step)
-Final: E[3-UpCCGSD] = -107.588100443107  <S**2> = +0.000000000000002
+    1: E[3-UpCCGSD] = -107.588100467783  <S**2> = -0.000000000000001  Grad = 3.73e-04  CPU Time =  0.87  (0.03 / step)
+Final: E[3-UpCCGSD] = -107.588100467783  <S**2> = -0.000000000000001
 
 (3-UpCCGSD state)
       Basis              Coef
 | 000000111111 > : +0.8957 +0.0000i
-| 000011001111 > : -0.2398 +0.0000i
+| 000011001111 > : -0.2397 +0.0000i
 | 000110011011 > : +0.1100 +0.0000i
 | 001001100111 > : +0.1100 +0.0000i
 | 001100110011 > : -0.2351 +0.0000i
 | 001111000011 > : +0.1094 +0.0000i
 
 
-VQE Done: CPU Time =          0.6613
+VQE Done: CPU Time =          0.9085
 
 3-upccgsd (vqe) 
       Basis              Coef
 | 000000111111 > : +0.8957 +0.0000i
-| 000011001111 > : -0.2398 +0.0000i
+| 000011001111 > : -0.2397 +0.0000i
 | 000110011011 > : +0.1100 +0.0000i
 | 001001100111 > : +0.1100 +0.0000i
 | 001100110011 > : -0.2351 +0.0000i
@@ -102,11 +102,11 @@ VQE Done: CPU Time =          0.6613
  === Computing 2RDM === 
 
 Dipole moment from 1RDM (in Debye):
-x = -0.00025  y = 0.00039  z = -0.00544
-| mu | = 0.00546
+x = -0.00024  y = 0.00039  z = -0.00411
+| mu | = 0.00414
 
 Dipole moment from relaxed 1RDM (in Debye):
-x = 0.00055     y = -0.00154    z = -0.00547
-| mu | = 0.00571
+x = 0.00058     y = -0.00157    z = -0.00558
+| mu | = 0.00582
 Saved in ./3-upccgsd_N2.qkt.
-Normal termination of quket at 2022-05-25 10:06:16.342684
+Normal termination of quket at 2022-05-25 12:41:04.942134

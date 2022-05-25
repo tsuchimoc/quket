@@ -1,0 +1,41 @@
+///////////////////////////////////////////////////////////////////////////////////
+///                                                                             ///
+///                                                                             ///
+///              QQQ       UUU  UUU    KKK   KK    EEEEEEE    TTTTTTT           ///
+///             Q   Q       u    U      K   K       E    E    T  T  T           ///
+///            Q     Q      U    U      K  K        E  E         T              ///
+///            Q     Q      U    U      KKK         EEEE         T              ///
+///            Q QQQ Q      U    U      K  K        E  E         T              ///
+///             Q   Q       U    U      K   K       E    E       T              ///
+///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
+///                                                                             ///
+///                      Quantum Computing Simulator Ver 0.4 dev                ///
+///                                                                             ///
+///        Copyright 2019-2021                                                  ///
+///        QC Project Team, Ten-no Research Group                               ///
+///        All rights Reserved.                                                 ///
+///                                                                             ///
+///////////////////////////////////////////////////////////////////////////////////
+Start at 2021-05-02 10:20:17.144451
+get hamiltonian
+get s2
+get number
+get dipole
+done
+
+*** Geometry **************************
+  H     1.8186    1.2505    0.0000
+  O     0.0000   -0.1576    0.0000
+  H    -1.8186    1.2505    0.0000
+***************************************
+
+E[FCI] = -74.74248177310764
+E[HF]  = -74.2714276847288
+
++-------------+
+|  Job #   1  |
++-------------+
+56 processes x 1 = Total 56 cores
+Performing QITE for chemical Hamiltonian
+Initial configuration: | 0000001111 >
+Convergence criteria: ftol = 1E-09

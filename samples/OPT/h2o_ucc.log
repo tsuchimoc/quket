@@ -1,0 +1,309 @@
+///////////////////////////////////////////////////////////////////////////////////
+///                                                                             ///
+///                                                                             ///
+///              QQQ       UUU  UUU    KKK   KK    EEEEEEE    TTTTTTT           ///
+///             Q   Q       u    U      K   K       E    E    T  T  T           ///
+///            Q     Q      U    U      K  K        E  E         T              ///
+///            Q     Q      U    U      KKK         EEEE         T              ///
+///            Q QQQ Q      U    U      K  K        E  E         T              ///
+///             Q   Q       U    U      K   K       E    E       T              ///
+///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
+///                                                                             ///
+///                      Quantum Computing Simulator Ver 0.8.0                  ///
+///                                                                             ///
+///        Copyright 2019-2022                                                  ///
+///        QC Project Team, Ten-no Research Group                               ///
+///        All rights Reserved.                                                 ///
+///                                                                             ///
+///////////////////////////////////////////////////////////////////////////////////
+2022-05-12 21:36:09.658455: 
+32 processes x 1 = Total 32 cores
+
+##################### INPUT ########################
+ basis        = STO-6G
+ multiplicity = 1
+ charge       = 0
+ n_electrons  = 6
+ n_orbitals   = 5
+ method       = vqe
+ ansatz       = uccsd
+ geometry
+ O  0.1  0  0
+ H 0 -0.757 0.687
+ H 0  0.757 0.587
+ maxiter      = 100
+ opt = true
+####################################################
+
++-------------+
+|  Job #   1  |
++-------------+
+Basis set = STO-6G
+
+*** Geometry ******************************
+  O     0.1000000    0.0000000    0.0000000
+  H     0.0000000   -0.7570000    0.6870000
+  H     0.0000000    0.7570000    0.5870000
+*******************************************
+
+Symmetry Cs : Cs(Abelian)
+E[FCI]    = -75.71921531276742     (Spin = 1   Ms = 0)
+E[HF]     = -75.67867918653786    (Spin = 1   Ms = 0)
+NBasis = 7
+
+[Molecular Orbitals]
+---+-------+------------+------------------
+ # |  Sym  |   energy   |     category
+---+-------+------------+------------------
+ 0 |   A'  |   -20.5152 | Frozen Core
+ 1 |   A'  |    -1.2644 | Frozen Core
+ 2 |   A'  |    -0.5931 | Active (occupied)
+ 3 |   A'  |    -0.4664 | Active (occupied)
+ 4 |   A"  |    -0.3991 | Active (occupied)
+ 5 |   A'  |     0.5604 | Active (virtual)
+ 6 |   A'  |     0.6834 | Active (virtual)
+---+-------+------------+------------------
+
+Entered VQE driver
+Performing VQE for uccsd
+Number of VQE parameters: 54
+Initial configuration: | 0000111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccsd] = -75.678679186538  <S**2> = +0.000000000000000  rho = 1  
+     1: E[uccsd] = -75.717454625599  <S**2> = +0.000000017697907  Grad = 8.53e-02  CPU Time =  0.06  (0.00 / step)
+     2: E[uccsd] = -75.718905279890  <S**2> = +0.000000013015658  Grad = 2.57e-02  CPU Time =  0.02  (0.00 / step)
+     3: E[uccsd] = -75.719101745294  <S**2> = +0.000000000930900  Grad = 1.10e-02  CPU Time =  0.02  (0.00 / step)
+     4: E[uccsd] = -75.719146751348  <S**2> = +0.000000002246555  Grad = 3.04e-03  CPU Time =  0.02  (0.00 / step)
+     5: E[uccsd] = -75.719148074350  <S**2> = +0.000000000859957  Grad = 1.04e-03  CPU Time =  0.03  (0.00 / step)
+     6: E[uccsd] = -75.719148260650  <S**2> = +0.000000000502406  Grad = 1.40e-04  CPU Time =  0.02  (0.00 / step)
+     7: E[uccsd] = -75.719148265209  <S**2> = +0.000000000463301  Grad = 1.12e-04  CPU Time =  0.02  (0.00 / step)
+ Final: E[uccsd] = -75.719148265209  <S**2> = +0.000000000463301  rho = 1 
+
+(uccsd state)
+     Basis             Coef
+| 0000111111 > : +0.9869 +0.0000i
+
+
+VQE Done: CPU Time =          0.2049
+
+uccsd (vqe) 
+     Basis             Coef
+| 0000111111 > : +0.9869 +0.0000i
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+
+Dipole moment from 1RDM (in Debye):
+x = -0.24281  y = 0.12042  z = 1.53877
+| mu | = 1.56246
+
+Dipole moment from relaxed 1RDM (in Debye):
+x = -0.25120     y = 0.12265    z = 1.59205
+| mu | = 1.61640
+
+*** Nuclear Gradients *********************
+            x            y            z
+  O    -0.0081424    0.0569412    0.0481060
+  H     0.0003102   -0.0086161   -0.0014070
+  H     0.0078322   -0.0483251   -0.0466990
+*******************************************
+
+"""""""""""""""""""
+     Cycle 0
+"""""""""""""""""""
+Basis set = STO-6G
+
+*** Geometry ******************************
+  O     0.0073450   -0.0283548   -0.0449147
+  H    -0.0982434   -0.7451275    0.6750260
+  H    -0.1018554    0.7704467    0.5979305
+*******************************************
+
+Symmetry Cs : Cs(Abelian)
+E[FCI]    = -75.72346943540391     (Spin = 1   Ms = 0)
+E[HF]     = -75.67737921849584    (Spin = 1   Ms = 0)
+Entered VQE driver
+Performing VQE for uccsd
+Number of VQE parameters: 54
+Initial configuration: | 0000111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccsd] = -75.677379218496  <S**2> = +0.000000000000000  rho = 1  
+     1: E[uccsd] = -75.721561229988  <S**2> = +0.000000050565797  Grad = 8.70e-02  CPU Time =  0.06  (0.00 / step)
+     2: E[uccsd] = -75.723134732981  <S**2> = +0.000000044620149  Grad = 2.58e-02  CPU Time =  0.02  (0.00 / step)
+     3: E[uccsd] = -75.723337933191  <S**2> = +0.000000000815601  Grad = 1.05e-02  CPU Time =  0.02  (0.00 / step)
+     4: E[uccsd] = -75.723380757223  <S**2> = +0.000000003669950  Grad = 2.35e-03  CPU Time =  0.02  (0.00 / step)
+     5: E[uccsd] = -75.723381347299  <S**2> = +0.000000003380461  Grad = 1.63e-03  CPU Time =  0.02  (0.00 / step)
+     6: E[uccsd] = -75.723381803524  <S**2> = +0.000000000549153  Grad = 9.12e-05  CPU Time =  0.02  (0.00 / step)
+     7: E[uccsd] = -75.723381804388  <S**2> = +0.000000000653633  Grad = 7.95e-05  CPU Time =  0.02  (0.00 / step)
+ Final: E[uccsd] = -75.723381804388  <S**2> = +0.000000000653633  rho = 1 
+
+(uccsd state)
+     Basis             Coef
+| 0000111111 > : +0.9846 +0.0000i
+
+
+VQE Done: CPU Time =          0.1901
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+
+*** Nuclear Gradients *********************
+            x            y            z
+  O    -0.0002039   -0.0066762    0.0017401
+  H     0.0005759    0.0053016   -0.0040186
+  H    -0.0003719    0.0013746    0.0022785
+*******************************************
+
+"""""""""""""""""""
+     Cycle 1
+"""""""""""""""""""
+Basis set = STO-6G
+
+*** Geometry ******************************
+  O     0.0071810   -0.0252630   -0.0440744
+  H    -0.0983649   -0.7513426    0.6762107
+  H    -0.1015699    0.7735701    0.5959056
+*******************************************
+
+Symmetry Cs : Cs(Abelian)
+E[FCI]    = -75.72352187099679     (Spin = 1   Ms = 0)
+E[HF]     = -75.67719570797266    (Spin = 1   Ms = 0)
+Entered VQE driver
+Performing VQE for uccsd
+Number of VQE parameters: 54
+Initial configuration: | 0000111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccsd] = -75.677195707973  <S**2> = +0.000000000000000  rho = 1  
+     1: E[uccsd] = -75.721590399305  <S**2> = +0.000000052251874  Grad = 8.73e-02  CPU Time =  0.09  (0.00 / step)
+     2: E[uccsd] = -75.723181304613  <S**2> = +0.000000043968266  Grad = 2.60e-02  CPU Time =  0.04  (0.00 / step)
+     3: E[uccsd] = -75.723388971920  <S**2> = +0.000000001028378  Grad = 1.06e-02  CPU Time =  0.02  (0.00 / step)
+     4: E[uccsd] = -75.723432766242  <S**2> = +0.000000003826287  Grad = 2.44e-03  CPU Time =  0.02  (0.00 / step)
+     5: E[uccsd] = -75.723433428940  <S**2> = +0.000000003285930  Grad = 1.65e-03  CPU Time =  0.02  (0.00 / step)
+     6: E[uccsd] = -75.723433896048  <S**2> = +0.000000000896962  Grad = 8.59e-05  CPU Time =  0.02  (0.00 / step)
+     7: E[uccsd] = -75.723433896911  <S**2> = +0.000000001110413  Grad = 6.81e-05  CPU Time =  0.02  (0.00 / step)
+ Final: E[uccsd] = -75.723433896911  <S**2> = +0.000000001110413  rho = 1 
+
+(uccsd state)
+     Basis             Coef
+| 0000111111 > : +0.9844 +0.0000i
+
+
+VQE Done: CPU Time =          0.2451
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+
+*** Nuclear Gradients *********************
+            x            y            z
+  O    -0.0000394   -0.0007799    0.0003024
+  H     0.0000768   -0.0002732   -0.0004713
+  H    -0.0000374    0.0010531    0.0001689
+*******************************************
+
+"""""""""""""""""""
+     Cycle 2
+"""""""""""""""""""
+Basis set = STO-6G
+
+*** Geometry ******************************
+  O     0.0073541   -0.0247437   -0.0452110
+  H    -0.0984960   -0.7497169    0.6769384
+  H    -0.1016118    0.7714251    0.5963144
+*******************************************
+
+Symmetry Cs : Cs(Abelian)
+E[FCI]    = -75.72352435327761     (Spin = 1   Ms = 0)
+E[HF]     = -75.67715525525216    (Spin = 1   Ms = 0)
+Entered VQE driver
+Performing VQE for uccsd
+Number of VQE parameters: 54
+Initial configuration: | 0000111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccsd] = -75.677155255252  <S**2> = +0.000000000000000  rho = 1  
+     1: E[uccsd] = -75.721597123422  <S**2> = +0.000000052704478  Grad = 8.73e-02  CPU Time =  0.06  (0.00 / step)
+     2: E[uccsd] = -75.723185628992  <S**2> = +0.000000045598474  Grad = 2.59e-02  CPU Time =  0.02  (0.00 / step)
+     3: E[uccsd] = -75.723391534497  <S**2> = +0.000000001336206  Grad = 1.06e-02  CPU Time =  0.02  (0.00 / step)
+     4: E[uccsd] = -75.723435018722  <S**2> = +0.000000002153370  Grad = 2.34e-03  CPU Time =  0.02  (0.00 / step)
+     5: E[uccsd] = -75.723435632268  <S**2> = +0.000000004784468  Grad = 1.58e-03  CPU Time =  0.03  (0.00 / step)
+     6: E[uccsd] = -75.723436064756  <S**2> = +0.000000000135805  Grad = 7.54e-05  CPU Time =  0.02  (0.00 / step)
+     7: E[uccsd] = -75.723436065551  <S**2> = +0.000000000244241  Grad = 9.32e-05  CPU Time =  0.02  (0.00 / step)
+ Final: E[uccsd] = -75.723436065551  <S**2> = +0.000000000244241  rho = 1 
+
+(uccsd state)
+     Basis             Coef
+| 0000111111 > : +0.9844 +0.0000i
+
+
+VQE Done: CPU Time =          0.2004
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+
+*** Nuclear Gradients *********************
+            x            y            z
+  O     0.0000477    0.0003264   -0.0003256
+  H    -0.0000484   -0.0000031    0.0003082
+  H     0.0000006   -0.0003233    0.0000174
+*******************************************
+
+"""""""""""""""""""
+     Cycle 3
+"""""""""""""""""""
+Basis set = STO-6G
+
+*** Geometry ******************************
+  O     0.0072938   -0.0249008   -0.0448169
+  H    -0.0984524   -0.7501138    0.6766869
+  H    -0.1015952    0.7719791    0.5961718
+*******************************************
+
+Symmetry Cs : Cs(Abelian)
+E[FCI]    = -75.72352461482579     (Spin = 1   Ms = 0)
+E[HF]     = -75.67718719461064    (Spin = 1   Ms = 0)
+Entered VQE driver
+Performing VQE for uccsd
+Number of VQE parameters: 54
+Initial configuration: | 0000111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccsd] = -75.677187194611  <S**2> = +0.000000000000000  rho = 1  
+     1: E[uccsd] = -75.721597163402  <S**2> = +0.000000052448502  Grad = 8.73e-02  CPU Time =  0.06  (0.00 / step)
+     2: E[uccsd] = -75.723185539100  <S**2> = +0.000000046279132  Grad = 2.59e-02  CPU Time =  0.02  (0.00 / step)
+     3: E[uccsd] = -75.723391819541  <S**2> = +0.000000001438613  Grad = 1.06e-02  CPU Time =  0.04  (0.00 / step)
+     4: E[uccsd] = -75.723435395933  <S**2> = +0.000000002257112  Grad = 2.39e-03  CPU Time =  0.04  (0.00 / step)
+     5: E[uccsd] = -75.723436019171  <S**2> = +0.000000007280857  Grad = 1.63e-03  CPU Time =  0.04  (0.00 / step)
+     6: E[uccsd] = -75.723436474549  <S**2> = +0.000000000788536  Grad = 1.02e-04  CPU Time =  0.04  (0.00 / step)
+     7: E[uccsd] = -75.723436475949  <S**2> = +0.000000000184406  Grad = 5.45e-05  CPU Time =  0.04  (0.00 / step)
+ Final: E[uccsd] = -75.723436475949  <S**2> = +0.000000000184406  rho = 1 
+
+(uccsd state)
+     Basis             Coef
+| 0000111111 > : +0.9844 +0.0000i
+
+
+VQE Done: CPU Time =          0.2873
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+
+*** Nuclear Gradients *********************
+            x            y            z
+  O     0.0000045   -0.0000248   -0.0000273
+  H    -0.0000006    0.0000002    0.0000038
+  H    -0.0000039    0.0000247    0.0000235
+*******************************************
+
+Geometry Optimization Converged in 3 cycles
+
+*** Geometry ******************************
+  O     0.0072938   -0.0249008   -0.0448169
+  H    -0.0984524   -0.7501138    0.6766869
+  H    -0.1015952    0.7719791    0.5961718
+*******************************************
+
+Saved in ./h2o_ucc.qkt.
+Normal termination of quket at 2022-05-12 21:36:15.087759

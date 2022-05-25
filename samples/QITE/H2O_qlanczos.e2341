@@ -1,0 +1,1348 @@
+/home/tsuchimochi/.bashrc: line 13: ulimit: stack size: cannot modify limit: Operation not permitted
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+/usr/local/lib/python3.8/site-packages/pyscf/lib/misc.py:47: H5pyDeprecationWarning: Using default_file_mode other than 'r' is deprecated. Pass the mode to h5py.File() instead.
+  h5py.get_config().default_file_mode = 'a'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.8/runpy.py", line 193, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/__main__.py", line 7, in <module>
+    main()
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 196, in main
+    run_command_line(args)
+  File "/usr/local/lib/python3.8/site-packages/mpi4py/run.py", line 47, in run_command_line
+    run_path(sys.argv[0], run_name='__main__')
+  File "/usr/local/lib/python3.8/runpy.py", line 263, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/local/lib/python3.8/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/local/lib/python3.8/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/tsuchimochi/quket_work/main.py", line 107, in <module>
+    QITE_driver(Quket)
+  File "/home/tsuchimochi/quket_work/src/qite/qite.py", line 63, in QITE_driver
+    ansatz_operator,
+UnboundLocalError: local variable 'ansatz_operator' referenced before assignment
+application called MPI_Abort(MPI_COMM_WORLD, 1) - process 32
+application called MPI_Abort(MPI_COMM_WORLD, 1) - process 33
+application called MPI_Abort(MPI_COMM_WORLD, 1) - process 37

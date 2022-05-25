@@ -1,0 +1,775 @@
+///////////////////////////////////////////////////////////////////////////////////
+///                                                                             ///
+///                                                                             ///
+///              QQQ       UUU  UUU    KKK   KK    EEEEEEE    TTTTTTT           ///
+///             Q   Q       u    U      K   K       E    E    T  T  T           ///
+///            Q     Q      U    U      K  K        E  E         T              ///
+///            Q     Q      U    U      KKK         EEEE         T              ///
+///            Q QQQ Q      U    U      K  K        E  E         T              ///
+///             Q   Q       U    U      K   K       E    E       T              ///
+///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
+///                                                                             ///
+///                      Quantum Computing Simulator Ver 0.8.0                  ///
+///                                                                             ///
+///        Copyright 2019-2022                                                  ///
+///        QC Project Team, Ten-no Research Group                               ///
+///        All rights Reserved.                                                 ///
+///                                                                             ///
+///////////////////////////////////////////////////////////////////////////////////
+2022-05-12 22:07:19.086890: 
+32 processes x 1 = Total 32 cores
+
+##################### INPUT ########################
+basis       = cc-pvtz
+ansatz      = sauccgd
+oo          = True
+maxiter     = 100
+n_orbitals  = 6
+n_electrons = 6
+multiplicity = 1
+charge       = 0
+taper_off   = True
+geometry:
+   N
+   N 1 1.0975
+####################################################
+
++-------------+
+|  Job #   1  |
++-------------+
+Basis set = cc-pvtz
+
+*** Geometry ******************************
+  N     0.0000000    0.0000000    0.0000000
+  N     1.0975000    0.0000000    0.0000000
+*******************************************
+
+Symmetry Dooh : D2h(Abelian)
+E[FCI]    = -109.04156889134771     (Spin = 1   Ms = 0)
+E[HF]     = -108.98350920726615    (Spin = 1   Ms = 0)
+NBasis = 60
+
+[Molecular Orbitals]
+---+-------+------------+------------------
+ # |  Sym  |   energy   |     category
+---+-------+------------+------------------
+ 0 |   Ag  |   -15.6816 | Frozen Core
+ 1 |  B1u  |   -15.6780 | Frozen Core
+ 2 |   Ag  |    -1.4698 | Frozen Core
+ 3 |  B1u  |    -0.7774 | Frozen Core
+ 4 |   Ag  |    -0.6324 | Active (occupied)
+ 5 |  B2u  |    -0.6121 | Active (occupied)
+ 6 |  B3u  |    -0.6121 | Active (occupied)
+ 7 |  B2g  |     0.1620 | Active (virtual)
+ 8 |  B3g  |     0.1620 | Active (virtual)
+ 9 |  B1u  |     0.4255 | Active (virtual)
+10 |   Ag  |     0.5618 | Secondary
+11 |  B2u  |     0.5625 | Secondary
+12 |  B3u  |     0.5625 | Secondary
+13 |   Ag  |     0.6725 | Secondary
+14 |  B2g  |     0.7320 | Secondary
+15 |  B3g  |     0.7320 | Secondary
+16 |  B1u  |     0.9255 | Secondary
+17 |   Ag  |     1.0483 | Secondary
+18 |  B1g  |     1.0483 | Secondary
+19 |  B1u  |     1.0905 | Secondary
+20 |  B2u  |     1.3431 | Secondary
+21 |  B3u  |     1.3431 | Secondary
+22 |   Au  |     1.5130 | Secondary
+23 |  B1u  |     1.5130 | Secondary
+24 |   Ag  |     1.9323 | Secondary
+25 |  B2g  |     1.9413 | Secondary
+26 |  B3g  |     1.9413 | Secondary
+27 |  B1u  |     2.2499 | Secondary
+28 |  B2u  |     3.1658 | Secondary
+29 |  B3u  |     3.1658 | Secondary
+30 |   Ag  |     3.3037 | Secondary
+31 |  B2g  |     3.5098 | Secondary
+32 |  B3g  |     3.5098 | Secondary
+33 |  B1u  |     3.7564 | Secondary
+34 |   Ag  |     3.8288 | Secondary
+35 |  B1g  |     3.8288 | Secondary
+36 |  B2u  |     3.9581 | Secondary
+37 |  B3u  |     3.9581 | Secondary
+38 |  B2u  |     3.9879 | Secondary
+39 |  B3u  |     3.9879 | Secondary
+40 |   Ag  |     4.3929 | Secondary
+41 |  B2g  |     4.4478 | Secondary
+42 |  B3g  |     4.4478 | Secondary
+43 |   Ag  |     4.7723 | Secondary
+44 |  B1g  |     4.7723 | Secondary
+45 |  B2g  |     4.8835 | Secondary
+46 |  B3g  |     4.8835 | Secondary
+47 |   Au  |     4.9077 | Secondary
+48 |  B1u  |     4.9077 | Secondary
+49 |  B1u  |     5.0267 | Secondary
+50 |   Au  |     5.3102 | Secondary
+51 |  B1u  |     5.3102 | Secondary
+52 |  B2u  |     5.4206 | Secondary
+53 |  B3u  |     5.4206 | Secondary
+54 |   Ag  |     5.5593 | Secondary
+55 |  B1u  |     6.1835 | Secondary
+56 |  B2g  |     6.8616 | Secondary
+57 |  B3g  |     6.8616 | Secondary
+58 |   Ag  |     7.0204 | Secondary
+59 |  B1u  |    16.7291 | Secondary
+---+-------+------------+------------------
+
+Tapering-Off Results:
+List of Tapered-off Qubits:  [0, 1, 2, 4, 6]
+Qubit: 0    Tau: 1.0 [Z0 Z3 Z5 Z7 Z9 Z10]
+Qubit: 1    Tau: 1.0 [Z1 Z3 Z5 Z7 Z9 Z11]
+Qubit: 2    Tau: 1.0 [Z2 Z3 Z8 Z9]
+Qubit: 4    Tau: 1.0 [Z4 Z5 Z8 Z9 Z10 Z11]
+Qubit: 6    Tau: 1.0 [Z6 Z7 Z8 Z9 Z10 Z11]
+
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -108.983509207266  <S**2> = +0.000000000000000  rho = 1  
+     1: E[sauccgd] = -109.018335929659  <S**2> = +0.000017765943329  Grad = 4.62e-01  CPU Time =  0.04  (0.00 / step)
+     2: E[sauccgd] = -109.028195026191  <S**2> = +0.000004174061872  Grad = 2.44e-01  CPU Time =  0.03  (0.01 / step)
+     3: E[sauccgd] = -109.036605758244  <S**2> = +0.000001404089326  Grad = 1.58e-01  CPU Time =  0.03  (0.01 / step)
+     4: E[sauccgd] = -109.040485795279  <S**2> = +0.000001299300479  Grad = 1.06e-01  CPU Time =  0.03  (0.01 / step)
+     5: E[sauccgd] = -109.040933353488  <S**2> = +0.000001260519473  Grad = 8.78e-02  CPU Time =  0.05  (0.01 / step)
+     6: E[sauccgd] = -109.041337308127  <S**2> = +0.000001781894806  Grad = 3.41e-02  CPU Time =  0.03  (0.01 / step)
+     7: E[sauccgd] = -109.041452684949  <S**2> = +0.000001819749089  Grad = 1.85e-02  CPU Time =  0.03  (0.01 / step)
+     8: E[sauccgd] = -109.041496169900  <S**2> = +0.000001585905427  Grad = 4.93e-03  CPU Time =  0.03  (0.01 / step)
+     9: E[sauccgd] = -109.041498718708  <S**2> = +0.000001526680525  Grad = 2.59e-03  CPU Time =  0.03  (0.01 / step)
+    10: E[sauccgd] = -109.041499232887  <S**2> = +0.000001502452625  Grad = 2.69e-03  CPU Time =  0.03  (0.01 / step)
+    11: E[sauccgd] = -109.041499551702  <S**2> = +0.000001512340725  Grad = 9.69e-04  CPU Time =  0.03  (0.01 / step)
+    12: E[sauccgd] = -109.041499611760  <S**2> = +0.000001521630632  Grad = 3.62e-04  CPU Time =  0.03  (0.01 / step)
+ Final: E[sauccgd] = -109.041499611760  <S**2> = +0.000001521630632  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9764 +0.0000i
+| 0000101 > : -0.1112 +0.0000i
+| 0011010 > : -0.1112 +0.0000i
+
+
+VQE Done: CPU Time =          0.3833
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 1
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -0.05809564820263226  (C0 = 0.8675649425665369)
+Golden Section done in 2
+
+
+
+||g|| = 0.13661672445316939 ---> Updated with scaling factor 1.2135254915624212
+
+
+Next energy estimation:  -109.07571165578365
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.075711655783  <S**2> = +0.000001521630632  rho = 1  
+     1: E[sauccgd] = -109.076834792435  <S**2> = +0.000004000155726  Grad = 8.83e-02  CPU Time =  0.09  (0.01 / step)
+     2: E[sauccgd] = -109.077197534632  <S**2> = +0.000003753848957  Grad = 5.85e-02  CPU Time =  0.03  (0.01 / step)
+     3: E[sauccgd] = -109.077636879099  <S**2> = +0.000002622942123  Grad = 3.23e-02  CPU Time =  0.03  (0.01 / step)
+     4: E[sauccgd] = -109.077695185713  <S**2> = +0.000003011610828  Grad = 3.46e-02  CPU Time =  0.03  (0.01 / step)
+     5: E[sauccgd] = -109.077729443184  <S**2> = +0.000002837928430  Grad = 1.24e-02  CPU Time =  0.03  (0.01 / step)
+     6: E[sauccgd] = -109.077739593357  <S**2> = +0.000002712114059  Grad = 4.07e-03  CPU Time =  0.03  (0.01 / step)
+     7: E[sauccgd] = -109.077741255350  <S**2> = +0.000002681896405  Grad = 2.82e-03  CPU Time =  0.03  (0.01 / step)
+     8: E[sauccgd] = -109.077742315358  <S**2> = +0.000002648136689  Grad = 1.06e-03  CPU Time =  0.03  (0.01 / step)
+     9: E[sauccgd] = -109.077742452455  <S**2> = +0.000002654245244  Grad = 1.01e-03  CPU Time =  0.03  (0.01 / step)
+    10: E[sauccgd] = -109.077742648287  <S**2> = +0.000002665777996  Grad = 1.11e-03  CPU Time =  0.03  (0.01 / step)
+    11: E[sauccgd] = -109.077742901940  <S**2> = +0.000002661312727  Grad = 1.03e-03  CPU Time =  0.03  (0.01 / step)
+    12: E[sauccgd] = -109.077743508373  <S**2> = +0.000002674375181  Grad = 1.84e-03  CPU Time =  0.03  (0.01 / step)
+    13: E[sauccgd] = -109.077744164994  <S**2> = +0.000002658516453  Grad = 2.38e-03  CPU Time =  0.03  (0.01 / step)
+    14: E[sauccgd] = -109.077744292577  <S**2> = +0.000002740890875  Grad = 6.08e-03  CPU Time =  0.03  (0.01 / step)
+    15: E[sauccgd] = -109.077745792598  <S**2> = +0.000002684905184  Grad = 2.10e-03  CPU Time =  0.03  (0.01 / step)
+    16: E[sauccgd] = -109.077746237562  <S**2> = +0.000002658357335  Grad = 8.50e-04  CPU Time =  0.03  (0.01 / step)
+    17: E[sauccgd] = -109.077746258204  <S**2> = +0.000002667379990  Grad = 5.18e-04  CPU Time =  0.03  (0.01 / step)
+ Final: E[sauccgd] = -109.077746258204  <S**2> = +0.000002667379990  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9688 +0.0000i
+| 0000101 > : -0.1308 +0.0000i
+| 0011010 > : -0.1307 +0.0000i
+
+
+VQE Done: CPU Time =          0.5637
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 2
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -0.008410167525225727  (C0 = 0.6981085728815114)
+Golden Section done in 1
+
+
+
+deltaE = -0.03624664644354425    ||g|| = 0.03508340456329537 ---> Updated with scaling factor 1.0364745084375788
+
+
+Next energy estimation:  -109.0841313387462
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.084131338747  <S**2> = +0.000002667379990  rho = 1  
+     1: E[sauccgd] = -109.086014127358  <S**2> = +0.000002739558464  Grad = 1.39e-01  CPU Time =  0.09  (0.01 / step)
+     2: E[sauccgd] = -109.086777920278  <S**2> = +0.000002769444856  Grad = 6.86e-02  CPU Time =  0.03  (0.01 / step)
+     3: E[sauccgd] = -109.087006809953  <S**2> = +0.000002611691591  Grad = 1.89e-02  CPU Time =  0.03  (0.01 / step)
+     4: E[sauccgd] = -109.087036486806  <S**2> = +0.000002651851977  Grad = 1.22e-02  CPU Time =  0.03  (0.01 / step)
+     5: E[sauccgd] = -109.087052797023  <S**2> = +0.000002501626289  Grad = 7.18e-03  CPU Time =  0.03  (0.01 / step)
+     6: E[sauccgd] = -109.087054916903  <S**2> = +0.000002698426507  Grad = 8.86e-03  CPU Time =  0.03  (0.01 / step)
+     7: E[sauccgd] = -109.087057642099  <S**2> = +0.000002582521474  Grad = 3.24e-03  CPU Time =  0.03  (0.01 / step)
+     8: E[sauccgd] = -109.087058515106  <S**2> = +0.000002528309566  Grad = 1.88e-03  CPU Time =  0.03  (0.01 / step)
+     9: E[sauccgd] = -109.087059001922  <S**2> = +0.000002510818256  Grad = 2.52e-03  CPU Time =  0.03  (0.01 / step)
+    10: E[sauccgd] = -109.087059384949  <S**2> = +0.000002499449736  Grad = 1.84e-03  CPU Time =  0.03  (0.01 / step)
+    11: E[sauccgd] = -109.087059657507  <S**2> = +0.000002510122001  Grad = 1.66e-03  CPU Time =  0.03  (0.01 / step)
+    12: E[sauccgd] = -109.087060658593  <S**2> = +0.000002539295471  Grad = 3.47e-03  CPU Time =  0.03  (0.01 / step)
+    13: E[sauccgd] = -109.087061574080  <S**2> = +0.000002550774016  Grad = 4.25e-03  CPU Time =  0.03  (0.01 / step)
+    14: E[sauccgd] = -109.087063895719  <S**2> = +0.000002569901864  Grad = 5.68e-03  CPU Time =  0.03  (0.01 / step)
+    15: E[sauccgd] = -109.087067469501  <S**2> = +0.000002601623963  Grad = 4.38e-03  CPU Time =  0.03  (0.01 / step)
+    16: E[sauccgd] = -109.087068436891  <S**2> = +0.000002612159390  Grad = 3.54e-03  CPU Time =  0.05  (0.01 / step)
+    17: E[sauccgd] = -109.087069167645  <S**2> = +0.000002582433679  Grad = 1.51e-03  CPU Time =  0.03  (0.01 / step)
+    18: E[sauccgd] = -109.087069278741  <S**2> = +0.000002570935638  Grad = 9.92e-04  CPU Time =  0.05  (0.01 / step)
+    19: E[sauccgd] = -109.087069430922  <S**2> = +0.000002561009803  Grad = 8.92e-04  CPU Time =  0.03  (0.01 / step)
+    20: E[sauccgd] = -109.087069446795  <S**2> = +0.000002560945739  Grad = 5.95e-04  CPU Time =  0.05  (0.01 / step)
+ Final: E[sauccgd] = -109.087069446795  <S**2> = +0.000002560945739  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9659 +0.0000i
+| 0000101 > : -0.1356 +0.0000i
+| 0011010 > : -0.1356 +0.0000i
+
+
+VQE Done: CPU Time =          0.7190
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 3
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -0.012038205736745834  (C0 = 0.6475857559416064)
+Golden Section done in 1
+
+
+
+deltaE = -0.009323188591579878    ||g|| = 0.028217002184455147 ---> Updated with scaling factor 1.0364745084375788
+
+
+Next energy estimation:  -109.0976349095165
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.097634909515  <S**2> = +0.000002560945739  rho = 1  
+     1: E[sauccgd] = -109.105905520621  <S**2> = +0.000002068148500  Grad = 2.89e-01  CPU Time =  0.09  (0.01 / step)
+     2: E[sauccgd] = -109.107287108683  <S**2> = +0.000001805437544  Grad = 1.52e-01  CPU Time =  0.03  (0.01 / step)
+     3: E[sauccgd] = -109.108356569542  <S**2> = +0.000001446390962  Grad = 8.56e-02  CPU Time =  0.03  (0.01 / step)
+     4: E[sauccgd] = -109.108701182150  <S**2> = +0.000001460962112  Grad = 3.91e-02  CPU Time =  0.03  (0.01 / step)
+     5: E[sauccgd] = -109.108779265772  <S**2> = +0.000001593460259  Grad = 1.19e-02  CPU Time =  0.03  (0.01 / step)
+     6: E[sauccgd] = -109.108790434731  <S**2> = +0.000001607553854  Grad = 6.81e-03  CPU Time =  0.03  (0.01 / step)
+     7: E[sauccgd] = -109.108794975362  <S**2> = +0.000001650384355  Grad = 7.56e-03  CPU Time =  0.03  (0.01 / step)
+     8: E[sauccgd] = -109.108798268413  <S**2> = +0.000001684685515  Grad = 7.65e-03  CPU Time =  0.03  (0.01 / step)
+     9: E[sauccgd] = -109.108800694851  <S**2> = +0.000001681492838  Grad = 3.87e-03  CPU Time =  0.03  (0.01 / step)
+    10: E[sauccgd] = -109.108802264188  <S**2> = +0.000001685295812  Grad = 3.46e-03  CPU Time =  0.03  (0.01 / step)
+    11: E[sauccgd] = -109.108803593229  <S**2> = +0.000001693587278  Grad = 3.59e-03  CPU Time =  0.03  (0.01 / step)
+    12: E[sauccgd] = -109.108811532751  <S**2> = +0.000001718715257  Grad = 6.89e-03  CPU Time =  0.03  (0.01 / step)
+    13: E[sauccgd] = -109.108821614832  <S**2> = +0.000001802969201  Grad = 1.09e-02  CPU Time =  0.03  (0.01 / step)
+    14: E[sauccgd] = -109.108825820045  <S**2> = +0.000001793779752  Grad = 1.41e-02  CPU Time =  0.05  (0.01 / step)
+    15: E[sauccgd] = -109.108835471192  <S**2> = +0.000001822010922  Grad = 9.54e-03  CPU Time =  0.03  (0.01 / step)
+    16: E[sauccgd] = -109.108841035272  <S**2> = +0.000001807078059  Grad = 4.75e-03  CPU Time =  0.03  (0.01 / step)
+    17: E[sauccgd] = -109.108842444014  <S**2> = +0.000001853864895  Grad = 3.29e-03  CPU Time =  0.03  (0.01 / step)
+    18: E[sauccgd] = -109.108842881538  <S**2> = +0.000001809166460  Grad = 1.23e-03  CPU Time =  0.03  (0.01 / step)
+    19: E[sauccgd] = -109.108842972358  <S**2> = +0.000001814886701  Grad = 7.46e-04  CPU Time =  0.03  (0.01 / step)
+ Final: E[sauccgd] = -109.108842972358  <S**2> = +0.000001814886701  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9666 +0.0000i
+| 0000101 > : -0.1284 +0.0000i
+| 0011010 > : -0.1285 +0.0000i
+
+
+VQE Done: CPU Time =          0.6476
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 4
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -0.015025956527036694  (C0 = 0.8930940642098539)
+Golden Section done in 1
+
+
+
+deltaE = -0.02177352556275025    ||g|| = 0.050248003522824346 ---> Updated with scaling factor 1.0364745084375788
+
+
+Next energy estimation:  -109.1168732180851
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.116873218087  <S**2> = +0.000001814886701  rho = 1  
+     1: E[sauccgd] = -109.118220449333  <S**2> = +0.000001705129384  Grad = 1.55e-01  CPU Time =  0.09  (0.01 / step)
+     2: E[sauccgd] = -109.118589665846  <S**2> = +0.000001615113530  Grad = 5.63e-02  CPU Time =  0.03  (0.01 / step)
+     3: E[sauccgd] = -109.118702779931  <S**2> = +0.000001554953346  Grad = 4.06e-02  CPU Time =  0.03  (0.01 / step)
+     4: E[sauccgd] = -109.118822835051  <S**2> = +0.000001523441739  Grad = 2.05e-02  CPU Time =  0.03  (0.01 / step)
+     5: E[sauccgd] = -109.118845480791  <S**2> = +0.000001624128324  Grad = 8.49e-03  CPU Time =  0.03  (0.01 / step)
+     6: E[sauccgd] = -109.118852679597  <S**2> = +0.000001609890777  Grad = 5.34e-03  CPU Time =  0.13  (0.01 / step)
+     7: E[sauccgd] = -109.118854573677  <S**2> = +0.000001648673514  Grad = 3.83e-03  CPU Time =  0.03  (0.01 / step)
+     8: E[sauccgd] = -109.118855303365  <S**2> = +0.000001649329129  Grad = 4.40e-03  CPU Time =  0.03  (0.01 / step)
+     9: E[sauccgd] = -109.118855799619  <S**2> = +0.000001647536985  Grad = 1.59e-03  CPU Time =  0.03  (0.01 / step)
+    10: E[sauccgd] = -109.118855898278  <S**2> = +0.000001651475217  Grad = 1.23e-03  CPU Time =  0.03  (0.01 / step)
+ Final: E[sauccgd] = -109.118855898278  <S**2> = +0.000001651475217  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9672 +0.0000i
+| 0000101 > : -0.1226 +0.0000i
+| 0011010 > : -0.1227 +0.0000i
+
+
+VQE Done: CPU Time =          0.4663
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 5
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -0.0005978872643395815  (C0 = 0.9965921228279788)
+Golden Section done in 0
+
+
+
+deltaE = -0.010012925919980376    ||g|| = 0.01919459583360629 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -109.1191387775002
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.119138777500  <S**2> = +0.000001651475217  rho = 1  
+     1: E[sauccgd] = -109.119151146777  <S**2> = +0.000001663173272  Grad = 1.55e-02  CPU Time =  0.09  (0.01 / step)
+     2: E[sauccgd] = -109.119154817412  <S**2> = +0.000001655136585  Grad = 2.04e-03  CPU Time =  0.03  (0.01 / step)
+     3: E[sauccgd] = -109.119154935282  <S**2> = +0.000001653587973  Grad = 1.78e-03  CPU Time =  0.03  (0.01 / step)
+     4: E[sauccgd] = -109.119155427093  <S**2> = +0.000001653388746  Grad = 1.91e-03  CPU Time =  0.03  (0.01 / step)
+     5: E[sauccgd] = -109.119155497479  <S**2> = +0.000001660834636  Grad = 3.13e-03  CPU Time =  0.03  (0.01 / step)
+ Final: E[sauccgd] = -109.119155497479  <S**2> = +0.000001660834636  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9671 +0.0000i
+| 0000101 > : -0.1222 +0.0000i
+| 0011010 > : -0.1222 +0.0000i
+
+
+VQE Done: CPU Time =          0.2178
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 6
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -6.953271920394434e-05  (C0 = 0.9995661112660865)
+Golden Section done in 0
+
+
+
+deltaE = -0.0002995992016110449    ||g|| = 0.005877011824311287 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -109.11918818730217
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.119188187302  <S**2> = +0.000001660834636  rho = 1  
+     1: E[sauccgd] = -109.119188983701  <S**2> = +0.000001668084918  Grad = 9.68e-03  CPU Time =  0.09  (0.01 / step)
+     2: E[sauccgd] = -109.119190415599  <S**2> = +0.000001663924436  Grad = 9.68e-04  CPU Time =  0.03  (0.01 / step)
+     3: E[sauccgd] = -109.119190441263  <S**2> = +0.000001664410005  Grad = 9.46e-04  CPU Time =  0.03  (0.01 / step)
+ Final: E[sauccgd] = -109.119190441263  <S**2> = +0.000001664410005  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9671 +0.0000i
+| 0000101 > : -0.1221 +0.0000i
+| 0011010 > : -0.1222 +0.0000i
+
+
+VQE Done: CPU Time =          0.1604
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 7
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -7.634520108545637e-06  (C0 = 0.9999500481564114)
+Golden Section done in 0
+
+
+
+deltaE = -3.4943783973062637e-05    ||g|| = 0.0017984869483343856 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -109.1191940232855
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.119194023285  <S**2> = +0.000001664410005  rho = 1  
+     1: E[sauccgd] = -109.119194229951  <S**2> = +0.000001665078300  Grad = 2.16e-03  CPU Time =  0.09  (0.01 / step)
+     2: E[sauccgd] = -109.119194305167  <S**2> = +0.000001664856220  Grad = 1.06e-03  CPU Time =  0.03  (0.01 / step)
+ Final: E[sauccgd] = -109.119194305167  <S**2> = +0.000001664856220  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9671 +0.0000i
+| 0000101 > : -0.1221 +0.0000i
+| 0011010 > : -0.1222 +0.0000i
+
+
+VQE Done: CPU Time =          0.1333
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 8
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -8.54995659838067e-07  (C0 = 0.9999942810203853)
+Golden Section done in 0
+
+
+
+deltaE = -3.863903287992798e-06    ||g|| = 0.0005706764818230331 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -109.11919470606621
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.119194706064  <S**2> = +0.000001664856220  rho = 1  
+     1: E[sauccgd] = -109.119194768730  <S**2> = +0.000001666225513  Grad = 1.26e-03  CPU Time =  0.09  (0.01 / step)
+ Final: E[sauccgd] = -109.119194768730  <S**2> = +0.000001666225513  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9671 +0.0000i
+| 0000101 > : -0.1221 +0.0000i
+| 0011010 > : -0.1222 +0.0000i
+
+
+VQE Done: CPU Time =          0.1039
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 9
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -1.193950215180703e-07  (C0 = 0.9999991860769903)
+Golden Section done in 0
+
+
+
+deltaE = -4.635634240912623e-07    ||g|| = 0.0002000626168078 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -109.11919482470223
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.119194824702  <S**2> = +0.000001666225513  rho = 1  
+     1: E[sauccgd] = -109.119194862831  <S**2> = +0.000001665673650  Grad = 3.05e-03  CPU Time =  0.09  (0.01 / step)
+ Final: E[sauccgd] = -109.119194862831  <S**2> = +0.000001665673650  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9671 +0.0000i
+| 0000101 > : -0.1220 +0.0000i
+| 0011010 > : -0.1221 +0.0000i
+
+
+VQE Done: CPU Time =          0.1020
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 10
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -1.6101566050574615e-08  (C0 = 0.9999999412344756)
+Golden Section done in 0
+
+
+
+deltaE = -9.410096879491903e-08    ||g|| = 0.00013737823206456972 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -109.11919487037865
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.119194870379  <S**2> = +0.000001665673650  rho = 1  
+     1: E[sauccgd] = -109.119194931540  <S**2> = +0.000001669565327  Grad = 2.69e-03  CPU Time =  0.10  (0.01 / step)
+ Final: E[sauccgd] = -109.119194931540  <S**2> = +0.000001669565327  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9671 +0.0000i
+| 0000101 > : -0.1220 +0.0000i
+| 0011010 > : -0.1221 +0.0000i
+
+
+VQE Done: CPU Time =          0.1165
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 11
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -8.134191619788948e-08  (C0 = 0.9999994640490962)
+Golden Section done in 0
+
+
+
+deltaE = -6.870897095723194e-08    ||g|| = 0.00017856439165657312 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -109.11919496967252
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for sauccgd
+Number of VQE parameters: 33
+Initial configuration: | 0111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[sauccgd] = -109.119194969672  <S**2> = +0.000001669565327  rho = 1  
+     1: E[sauccgd] = -109.119195055070  <S**2> = +0.000001668147347  Grad = 1.17e-03  CPU Time =  0.09  (0.01 / step)
+ Final: E[sauccgd] = -109.119195055070  <S**2> = +0.000001668147347  rho = 1 
+
+(sauccgd state)
+    Basis            Coef
+| 0000011 > : +0.9671 +0.0000i
+| 0000101 > : -0.1220 +0.0000i
+| 0011010 > : -0.1221 +0.0000i
+
+
+VQE Done: CPU Time =          0.1042
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 12
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -9.607185621384246e-09  (C0 = 0.9999999382699498)
+Golden Section done in 0
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+     Convergence of orbital optimizer with 11 cycles
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+  Final: E[oo-sauccgd] = -109.11919505506967 
+Current states are not tapered-off. No back-transformation done
+Current operators are not tapered-off. No back-transformation done
+Current pauli_list is not tapered-off. No back-transformation done
+Current theta_list is not tapered-off. No back-transformation done
+sauccgd (vqe) 
+      Basis              Coef
+| 000000111111 > : +0.9671 +0.0000i
+| 000011001111 > : -0.1220 +0.0000i
+| 001100110011 > : -0.1221 +0.0000i
+
+ === Computing 1RDM === 
+
+Dipole moment from 1RDM (in Debye):
+x = 0.00000  y = -0.00000  z = 0.00000
+| mu | = 0.00000
+
+Dipole moment from relaxed 1RDM (in Debye):
+x = -0.00000     y = -0.00000    z = 0.00000
+| mu | = 0.00000
+Saved in ./n2_oo-sauccgd.qkt.
+Normal termination of quket at 2022-05-12 22:08:50.706226

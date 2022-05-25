@@ -1,0 +1,567 @@
+///////////////////////////////////////////////////////////////////////////////////
+///                                                                             ///
+///                                                                             ///
+///              QQQ       UUU  UUU    KKK   KK    EEEEEEE    TTTTTTT           ///
+///             Q   Q       u    U      K   K       E    E    T  T  T           ///
+///            Q     Q      U    U      K  K        E  E         T              ///
+///            Q     Q      U    U      KKK         EEEE         T              ///
+///            Q QQQ Q      U    U      K  K        E  E         T              ///
+///             Q   Q       U    U      K   K       E    E       T              ///
+///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
+///                                                                             ///
+///                      Quantum Computing Simulator Ver 0.8.0                  ///
+///                                                                             ///
+///        Copyright 2019-2022                                                  ///
+///        QC Project Team, Ten-no Research Group                               ///
+///        All rights Reserved.                                                 ///
+///                                                                             ///
+///////////////////////////////////////////////////////////////////////////////////
+2022-05-12 22:07:03.993126: 
+32 processes x 1 = Total 32 cores
+
+##################### INPUT ########################
+basis       = 6-31g**
+ansatz      = uccd
+oo          = True
+maxiter     = 100
+n_orbitals  = 5
+n_electrons = 6
+multiplicity = 1
+charge       = 0
+taper_off   = True
+#n_secondary_orbitals = 0
+geometry:
+   O
+   H 1 0.9614
+   H 1 0.9614 2 104.5136
+
+####################################################
+
++-------------+
+|  Job #   1  |
++-------------+
+Basis set = 6-31g**
+
+*** Geometry ******************************
+  O     0.0000000    0.0000000    0.0000000
+  H     0.9614000    0.0000000    0.0000000
+  H    -0.2409363    0.0000000    0.9307200
+*******************************************
+
+Symmetry C2v : C2v(Abelian)
+E[FCI]    = -76.02872025986794     (Spin = 1   Ms = 0)
+E[HF]     = -76.02236377373235    (Spin = 1   Ms = 0)
+NBasis = 24
+
+[Molecular Orbitals]
+---+-------+------------+------------------
+ # |  Sym  |   energy   |     category
+---+-------+------------+------------------
+ 0 |   A1  |   -20.5584 | Frozen Core
+ 1 |   A1  |    -1.3377 | Frozen Core
+ 2 |   B1  |    -0.7007 | Active (occupied)
+ 3 |   A1  |    -0.5677 | Active (occupied)
+ 4 |   B2  |    -0.4963 | Active (occupied)
+ 5 |   A1  |     0.2147 | Active (virtual)
+ 6 |   B1  |     0.3040 | Active (virtual)
+ 7 |   B1  |     1.0027 | Secondary
+ 8 |   A1  |     1.0854 | Secondary
+ 9 |   B2  |     1.1695 | Secondary
+10 |   A1  |     1.1919 | Secondary
+11 |   B1  |     1.2952 | Secondary
+12 |   A1  |     1.5986 | Secondary
+13 |   A2  |     1.8035 | Secondary
+14 |   A1  |     1.8308 | Secondary
+15 |   B2  |     1.9255 | Secondary
+16 |   B1  |     2.5719 | Secondary
+17 |   A1  |     2.5870 | Secondary
+18 |   B1  |     2.7994 | Secondary
+19 |   A2  |     2.9755 | Secondary
+20 |   B2  |     2.9857 | Secondary
+21 |   A1  |     3.3705 | Secondary
+22 |   A1  |     3.7353 | Secondary
+23 |   B1  |     3.9207 | Secondary
+---+-------+------------+------------------
+
+Tapering-Off Results:
+List of Tapered-off Qubits:  [0, 1, 2, 4]
+Qubit: 0    Tau: 1.0 [Z0 Z3 Z5 Z7 Z8]
+Qubit: 1    Tau: 1.0 [Z1 Z3 Z5 Z7 Z9]
+Qubit: 2    Tau: 1.0 [Z2 Z3 Z6 Z7]
+Qubit: 4    Tau: 1.0 [Z4 Z5]
+
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.022363773732  <S**2> = +0.000000000000000  rho = 1  
+     1: E[uccd] = -76.028301885366  <S**2> = +0.000000000045809  Grad = 2.76e-02  CPU Time =  0.02  (0.00 / step)
+     2: E[uccd] = -76.028435247110  <S**2> = +0.000000000368051  Grad = 1.57e-03  CPU Time =  0.00  (0.00 / step)
+     3: E[uccd] = -76.028435764879  <S**2> = +0.000000000284234  Grad = 3.52e-04  CPU Time =  0.00  (0.00 / step)
+     4: E[uccd] = -76.028435791994  <S**2> = +0.000000000253383  Grad = 8.52e-05  CPU Time =  0.00  (0.00 / step)
+ Final: E[uccd] = -76.028435791994  <S**2> = +0.000000000253383  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9980 +0.0000i
+
+
+VQE Done: CPU Time =          0.0422
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 1
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -0.033467932795938585  (C0 = -0.5859787047343369)
+Golden Section done in 3
+
+
+
+||g|| = 0.04330628691639061 ---> Updated with scaling factor 0.9688470506254732
+
+
+Next energy estimation:  -76.05350913658056
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.053509136581  <S**2> = +0.000000000253383  rho = 1  
+     1: E[uccd] = -76.068127193786  <S**2> = +0.000000039980899  Grad = 5.67e-02  CPU Time =  0.02  (0.00 / step)
+     2: E[uccd] = -76.068503323742  <S**2> = +0.000000009173668  Grad = 9.21e-03  CPU Time =  0.01  (0.00 / step)
+     3: E[uccd] = -76.068513953842  <S**2> = +0.000000000279759  Grad = 6.51e-04  CPU Time =  0.01  (0.00 / step)
+     4: E[uccd] = -76.068514006041  <S**2> = +0.000000000062964  Grad = 3.95e-05  CPU Time =  0.01  (0.00 / step)
+ Final: E[uccd] = -76.068514006041  <S**2> = +0.000000000062964  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9909 +0.0000i
+
+
+VQE Done: CPU Time =          0.0456
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 2
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -0.008919553546706016  (C0 = 0.9061408679774724)
+Golden Section done in 0
+
+
+
+deltaE = -0.04007821404761103    ||g|| = 0.10544893817760881 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -76.07275833016095
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.072758330161  <S**2> = +0.000000000062964  rho = 1  
+     1: E[uccd] = -76.073196927243  <S**2> = +0.000000005710160  Grad = 1.01e-02  CPU Time =  0.02  (0.00 / step)
+     2: E[uccd] = -76.073209975219  <S**2> = +0.000000000286350  Grad = 1.39e-03  CPU Time =  0.01  (0.00 / step)
+     3: E[uccd] = -76.073210157347  <S**2> = +0.000000000036086  Grad = 2.79e-04  CPU Time =  0.01  (0.00 / step)
+     4: E[uccd] = -76.073210165037  <S**2> = +0.000000000025163  Grad = 4.21e-05  CPU Time =  0.01  (0.00 / step)
+ Final: E[uccd] = -76.073210165037  <S**2> = +0.000000000025163  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9895 +0.0000i
+
+
+VQE Done: CPU Time =          0.0443
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 3
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -0.0006897088210957965  (C0 = -0.9969326075629681)
+Golden Section done in 0
+
+
+
+deltaE = -0.004696158995656674    ||g|| = 0.028335493326061896 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -76.07353372709473
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.073533727095  <S**2> = +0.000000000025163  rho = 1  
+     1: E[uccd] = -76.073553809453  <S**2> = +0.000000000164653  Grad = 2.08e-03  CPU Time =  0.03  (0.00 / step)
+     2: E[uccd] = -76.073554374701  <S**2> = +0.000000000089164  Grad = 2.32e-04  CPU Time =  0.01  (0.00 / step)
+     3: E[uccd] = -76.073554380808  <S**2> = +0.000000000051839  Grad = 4.95e-05  CPU Time =  0.01  (0.00 / step)
+ Final: E[uccd] = -76.073554380808  <S**2> = +0.000000000051839  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9892 +0.0000i
+
+
+VQE Done: CPU Time =          0.0501
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 4
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -7.345403828828008e-05  (C0 = 0.9996803118920026)
+Golden Section done in 0
+
+
+
+deltaE = -0.0003442157712640892    ||g|| = 0.008101311651891143 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -76.07358880520474
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.073588805205  <S**2> = +0.000000000051839  rho = 1  
+     1: E[uccd] = -76.073591158551  <S**2> = +0.000000000145886  Grad = 6.62e-04  CPU Time =  0.02  (0.00 / step)
+     2: E[uccd] = -76.073591215995  <S**2> = +0.000000000038405  Grad = 1.02e-04  CPU Time =  0.01  (0.00 / step)
+ Final: E[uccd] = -76.073591215995  <S**2> = +0.000000000038405  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9891 +0.0000i
+
+
+VQE Done: CPU Time =          0.0337
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 5
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Warning: Too small C0 in AH : 3.639873456522664e-06
+This usually means the Hessian is not positive semi-definite and there is a lower state.
+Target lowest eigenvalue of augmented Hessian:  -0.000342165893622447  (C0 = 1.0)
+Golden Section done in 1
+
+
+
+deltaE = -3.6835186534744935e-05    ||g|| = 0.002424853252789971 ---> Updated with scaling factor 1.0364745084375788
+
+
+Next energy estimation:  -76.07368430292696
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.073684302927  <S**2> = +0.000000000038405  rho = 1  
+     1: E[uccd] = -76.073997900116  <S**2> = +0.000000000024099  Grad = 9.70e-03  CPU Time =  0.02  (0.00 / step)
+     2: E[uccd] = -76.074007111317  <S**2> = +0.000000000117673  Grad = 4.54e-04  CPU Time =  0.01  (0.00 / step)
+     3: E[uccd] = -76.074007134502  <S**2> = +0.000000000122526  Grad = 8.97e-05  CPU Time =  0.01  (0.00 / step)
+ Final: E[uccd] = -76.074007134502  <S**2> = +0.000000000122526  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9891 +0.0000i
+
+
+VQE Done: CPU Time =          0.0387
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 6
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -0.0006233298421266924  (C0 = 0.8711716385917616)
+Golden Section done in 0
+
+
+
+deltaE = -0.0004159185076275662    ||g|| = 0.009648401824109672 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -76.07431269600201
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.074312696002  <S**2> = +0.000000000122526  rho = 1  
+     1: E[uccd] = -76.074325592770  <S**2> = +0.000000000047300  Grad = 1.80e-03  CPU Time =  0.02  (0.00 / step)
+     2: E[uccd] = -76.074325883450  <S**2> = +0.000000000029247  Grad = 1.49e-04  CPU Time =  0.01  (0.00 / step)
+     3: E[uccd] = -76.074325886011  <S**2> = +0.000000000001933  Grad = 3.95e-05  CPU Time =  0.01  (0.00 / step)
+ Final: E[uccd] = -76.074325886011  <S**2> = +0.000000000001933  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9890 +0.0000i
+
+
+VQE Done: CPU Time =          0.0387
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 7
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -4.5074028068668066e-05  (C0 = 0.9932771526424924)
+Golden Section done in 0
+
+
+
+deltaE = -0.0003187515086011672    ||g|| = 0.0024864642531886327 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -76.07434715184509
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.074347151845  <S**2> = +0.000000000001933  rho = 1  
+     1: E[uccd] = -76.074347452349  <S**2> = +0.000000000005943  Grad = 3.62e-04  CPU Time =  0.02  (0.00 / step)
+     2: E[uccd] = -76.074347468527  <S**2> = +0.000000000014958  Grad = 9.31e-05  CPU Time =  0.00  (0.00 / step)
+ Final: E[uccd] = -76.074347468527  <S**2> = +0.000000000014958  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9890 +0.0000i
+
+
+VQE Done: CPU Time =          0.0312
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 8
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -3.5079110834262193e-06  (C0 = 0.9995330424855546)
+Golden Section done in 0
+
+
+
+deltaE = -2.1582515685736325e-05    ||g|| = 0.0006774538269966225 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -76.07434911488035
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.074349114880  <S**2> = +0.000000000014958  rho = 1  
+     1: E[uccd] = -76.074349155926  <S**2> = +0.000000000066541  Grad = 1.55e-04  CPU Time =  0.02  (0.00 / step)
+ Final: E[uccd] = -76.074349155926  <S**2> = +0.000000000066541  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9890 +0.0000i
+
+
+VQE Done: CPU Time =          0.0268
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 9
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -2.8113694746482005e-07  (C0 = 0.9999695872125945)
+Golden Section done in 0
+
+
+
+deltaE = -1.6873998021083025e-06    ||g|| = 0.00020402039907028372 ---> Updated with scaling factor 0.75
+
+
+Next energy estimation:  -76.07434928774829
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
+Entered VQE driver
+Performing VQE for uccd
+Number of VQE parameters: 12
+Initial configuration: | 111111 >
+Convergence criteria: ftol = 1E-09, gtol = 1E-05
+Circuit order: Exp[T1] Exp[T2] |0>
+Initial E[uccd] = -76.074349287748  <S**2> = +0.000000000066541  rho = 1  
+     1: E[uccd] = -76.074349299732  <S**2> = +0.000000000067592  Grad = 7.49e-05  CPU Time =  0.02  (0.00 / step)
+ Final: E[uccd] = -76.074349299732  <S**2> = +0.000000000067592  rho = 1 
+
+(uccd state)
+   Basis           Coef
+| 000011 > : +0.9890 +0.0000i
+
+
+VQE Done: CPU Time =          0.0252
+
+
+States     backtransformed.
+Operators  backtransformed.
+pauli_list backtransformed.
+theta_list backtransformed.
+
+
+""""""""""""""""""""""""""""""""""""""
+     Orbital-Optimization Cycle 10
+""""""""""""""""""""""""""""""""""""""
+
+ === Computing 1RDM === 
+ === Computing 2RDM === 
+Running Davidson to get update by AH
+Target lowest eigenvalue of augmented Hessian:  -3.068223781517222e-08  (C0 = 0.9999979648550135)
+Golden Section done in 0
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+     Convergence of orbital optimizer with 9 cycles
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+  Final: E[oo-uccd] = -76.07434929973232 
+Current states are not tapered-off. No back-transformation done
+Current operators are not tapered-off. No back-transformation done
+Current pauli_list is not tapered-off. No back-transformation done
+Current theta_list is not tapered-off. No back-transformation done
+uccd (vqe) 
+     Basis             Coef
+| 0000111111 > : +0.9890 +0.0000i
+
+ === Computing 1RDM === 
+
+Dipole moment from 1RDM (in Debye):
+x = 1.25392  y = 0.00002  z = 1.61985
+| mu | = 2.04847
+
+Dipole moment from relaxed 1RDM (in Debye):
+x = 1.25379     y = 0.00001    z = 1.61970
+| mu | = 2.04827
+Saved in ./h2o_oo-uccd.qkt.
+Normal termination of quket at 2022-05-12 22:07:12.877571

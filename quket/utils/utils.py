@@ -24,6 +24,10 @@ import re
 import time
 import copy
 
+import os
+import sys
+import psutil
+
 import numpy as np
 import scipy as sp
 from numpy import linalg as LA
@@ -88,164 +92,474 @@ def jac_mpi_num(cost, theta, stepsize=1e-8):
     if cf.debug:
         prints(f' cost = {E0:22.16f}    ||g|| = {cf.grad:4.2e}    g_max = {cf.grad_max:4.2e}')
         prints(f'Time for gradient:  {t1-t0:0.3f}')
+        printmat(grad_r)
     return grad_r
 
-def _jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, init_state=None, Hamiltonian=None):
-    """Function
-    ::::::::::::::::
-    :::Deprecated:::
-    ::::::::::::::::
-    Given a cost function of varaibles theta,
-    return the first derivatives (jacobian)
-    computed with MPI.
-
-    This is a faster version of jac_mpi, where
-    we first perform H U[theta]|HF>, and 
-    in the loop we create U[theta + delta]|HF>
-    as a vector state. We take the inner product
-    of these state vectors to evaluate the
-    shifted energy.
-
-    <HF|U[theta+ delta]! H U[theta]|HF> - E
-    ---------------------------------------
-                     delta
-
-
-    Args:
-        create_state (func): function to prepare a VQE state by theta
-        Quket (QuketData): QuketData instance
-        theta (1darray): theta list
-        stepsize (float): Step-size for numerical derivative of wave function
-        init_state (QuantumState): Initial state to be used in create_state()
-        Hamiltonian (QubitOperator): Hamiltonian H for which we take the derivative of expectation, <VQE|H|VQE>
-
-    Author(s): Takashi Tsuchimochi
-    """
-    from quket.opelib import evolve  
-    ### Just in case, broadcast theta...
-    t0 = time.time()
-    theta = mpi.bcast(theta, root=0)
-
-    ndim = theta.size
-    theta_d = copy.copy(theta)
-
-    if Hamiltonian is None:
-        Hamiltonian = Quket.operators.jw_Hamiltonian
-    
-    grad = np.zeros(ndim)
-    grad_r = np.zeros(ndim)
-    grad_test = np.zeros(ndim)
-    if init_state is None:
-        init_state = Quket.init_state
-    state = create_state(theta, init_state=init_state)
-    from quket.opelib import evolve  
-    if Quket.projection.SpinProj:
-        from quket.projection import S2Proj
-        Pstate = S2Proj( Quket , state, normalize=False)
-        norm = inner_product(Pstate, state)  ### <phi|P|phi>
-        Hstate = evolve(Hamiltonian,  Pstate, parallel=True)  ## HP|phi>
-        E0 = (inner_product(state, Hstate)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
-        Pstate.multiply_coef(-E0) ## -E0 P|phi>
-        Hstate.add_state(Pstate)  ## (H-E0) P|phi>
-        Hstate.multiply_coef(1/norm)  ## (H-E0) P|phi> / <phi|P|phi>
-        #Hstate.multiply_coef(1/norm)  ## H P|phi> / <phi|P|phi>
-        #Pstate.multiply_coef(1/norm) ##  P|phi> / <phi|P|phi>
-        ### Required to set E0 to zero 
-        #E0 = 0
-    else:
-        Hstate = evolve(Hamiltonian, state, parallel=True)
-        E0 = inner_product(state, Hstate).real
-        Pstate = None
-        
-    t1 = time.time()
-
-    ### S4 penalty
-    if Quket.constraint_lambda > 0:
-        s = (Quket.spin - 1)/2
-        S4state = evolve(Quket.operators.jw_S4, state, parallel=True)
-        S4state.multiply_coef(Quket.constraint_lambda)
-        S2state = evolve(Quket.operators.jw_S2, state, parallel=True)
-        S2state.multiply_coef(- Quket.constraint_lambda * s * (s+1) )
-        state_ = state.copy() 
-        state_.multiply_coef(Quket.constraint_lambda * ( s * (s+1) )**2 )
-        Hstate.add_state(S4state)
-        Hstate.add_state(S2state)
-        Hstate.add_state(state_)
-        E0 = inner_product(state, Hstate).real
-    
-    if Quket.adapt.mode == 'pauli':
-    ### Sz penalty
-        if Quket.constraint_lambda_Sz > 0:
-            #  Sz ** 2
-            Sz2 = Quket.operators.jw_Sz * Quket.operators.jw_Sz
-            Sz2state = evolve(Sz2, state, parallel=True) ## Sz|Phi>
-            ## Ms2 = <Phi|Sz**2|Phi>
-            Ms2 = inner_product(state, Sz2state).real
-            ### lambda (Sz**2 - Ms2)|Phi>
-            state_ = state.copy()
-            state_.multiply_coef(-Ms2)
-            Sz2state.add_state(state_)
-            Sz2state.multiply_coef(Quket.constraint_lambda_Sz)
-            Hstate.add_state(Sz2state)
-        if Quket.constraint_lambda_S2_expectation > 0 :
-            # penalty (<S**2> - s(s+1))
-            S2state = evolve(Quket.operators.jw_S2, state, parallel=True) ## S2|Phi>
-            ## S2 = <Phi|S**2|Phi>
-            S2 = inner_product(state, S2state).real
-
-            state_ = state.copy()
-            state_.multiply_coef(-S2)
-            S2state.add_state(state_)
-
-            ## lambda (S2-<S**2>)|Phi>
-            S2state.multiply_coef(Quket.constraint_lambda_S2_expectation)
-            Hstate.add_state(S2state)
-
-    ### orthogonal constraints
-    nstates = len(Quket.lower_states)
-    for i in range(nstates):
-        Ei = Quket.lower_states[i][0]
-        overlap = inner_product(Quket.lower_states[i][1], state).real
-        istate = Quket.lower_states[i][1].copy()
-        istate.multiply_coef(-Ei*overlap)
-        Hstate.add_state(istate)
-        E0 += -Ei * abs(overlap)**2
-        
-    
-    t_create = 0
-    t_inner = 0
-    ipos, my_ndim = mpi.myrange(ndim)
-    for iloop in range(ipos, ipos+my_ndim):
-        theta_d[iloop] += stepsize
-        t0 = time.time()
-        state = create_state(theta_d, init_state=init_state)
-        t1 = time.time()
-        t_create += t1 - t0
-        Ep = inner_product(state, Hstate).real
-        t2 = time.time()
-        t_inner += t2 - t1
-        if Quket.projection.SpinProj:
-            if abs(Ep/E0) > 1e-15:
-                grad[iloop] = 2*(Ep)/stepsize
-        elif abs((Ep-E0)/E0) > 1e-15:
-            grad[iloop] = 2*(Ep-E0)/stepsize
-        else:
-            # this may well be round-off error. 
-            # w have to implement analytic gradient...
-            pass
-        theta_d[iloop] -= stepsize
-    grad_r = mpi.allreduce(grad, mpi.MPI.SUM)
-    cf.grad = np.linalg.norm(grad_r)
-    cf.gradv = np.copy(grad_r)
-    cf.grad_max = max(grad_r)
-    t2 = time.time()
-    if cf.debug:
-        prints(f' cost = {E0:22.16f}    ||g|| = {cf.grad:4.2e}    g_max = {cf.grad_max:4.2e}')
-        prints(f'Create state:  {t_create:0.3f}   Inner_product:  {t_inner:0.3f}')
-        printmat(cf.gradv, 'gradients')
-    #    prints(f'jac_mpi_deriv: evolve   {t1-t0}')
-    #    prints(f'jac_mpi_deriv: gradient {t2-t1}')
-    return grad_r
+#def _jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, init_state=None, Hamiltonian=None):
+#    """Function
+#    ::::::::::::::::
+#    :::Deprecated:::
+#    ::::::::::::::::
+#    Given a cost function of varaibles theta,
+#    return the first derivatives (jacobian)
+#    computed with MPI.
+#
+#    This is a faster version of jac_mpi, where
+#    we first perform H U[theta]|HF>, and 
+#    in the loop we create U[theta + delta]|HF>
+#    as a vector state. We take the inner product
+#    of these state vectors to evaluate the
+#    shifted energy.
+#
+#    <HF|U[theta+ delta]! H U[theta]|HF> - E
+#    ---------------------------------------
+#                     delta
+#
+#
+#    Args:
+#        create_state (func): function to prepare a VQE state by theta
+#        Quket (QuketData): QuketData instance
+#        theta (1darray): theta list
+#        stepsize (float): Step-size for numerical derivative of wave function
+#        init_state (QuantumState): Initial state to be used in create_state()
+#        Hamiltonian (QubitOperator): Hamiltonian H for which we take the derivative of expectation, <VQE|H|VQE>
+#
+#    Author(s): Takashi Tsuchimochi
+#    """
+#    from quket.opelib import evolve  
+#    ### Just in case, broadcast theta...
+#    t0 = time.time()
+#    theta = mpi.bcast(theta, root=0)
+#
+#    ndim = theta.size
+#    theta_d = copy.copy(theta)
+#
+#    if Hamiltonian is None:
+#        Hamiltonian = Quket.operators.jw_Hamiltonian
+#    
+#    grad = np.zeros(ndim)
+#    grad_r = np.zeros(ndim)
+#    grad_test = np.zeros(ndim)
+#    if init_state is None:
+#        init_state = Quket.init_state
+#    state = create_state(theta, init_state=init_state)
+#    from quket.opelib import evolve  
+#    if Quket.projection.SpinProj:
+#        from quket.projection import S2Proj
+#        Pstate = S2Proj( Quket , state, normalize=False)
+#        norm = inner_product(Pstate, state)  ### <phi|P|phi>
+#        Hstate = evolve(Hamiltonian,  Pstate, parallel=True)  ## HP|phi>
+#        E0 = (inner_product(state, Hstate)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
+#        Pstate.multiply_coef(-E0) ## -E0 P|phi>
+#        Hstate.add_state(Pstate)  ## (H-E0) P|phi>
+#        Hstate.multiply_coef(1/norm)  ## (H-E0) P|phi> / <phi|P|phi>
+#        #Hstate.multiply_coef(1/norm)  ## H P|phi> / <phi|P|phi>
+#        #Pstate.multiply_coef(1/norm) ##  P|phi> / <phi|P|phi>
+#        ### Required to set E0 to zero 
+#        #E0 = 0
+#    else:
+#        Hstate = evolve(Hamiltonian, state, parallel=True)
+#        E0 = inner_product(state, Hstate).real
+#        Pstate = None
+#        
+#    t1 = time.time()
+#
+#    ### S4 penalty
+#    if Quket.constraint_lambda > 0:
+#        s = (Quket.spin - 1)/2
+#        S4state = evolve(Quket.operators.jw_S4, state, parallel=True)
+#        S4state.multiply_coef(Quket.constraint_lambda)
+#        S2state = evolve(Quket.operators.jw_S2, state, parallel=True)
+#        S2state.multiply_coef(- Quket.constraint_lambda * s * (s+1) )
+#        state_ = state.copy() 
+#        state_.multiply_coef(Quket.constraint_lambda * ( s * (s+1) )**2 )
+#        Hstate.add_state(S4state)
+#        Hstate.add_state(S2state)
+#        Hstate.add_state(state_)
+#        E0 = inner_product(state, Hstate).real
+#    
+#    if Quket.adapt.mode == 'pauli':
+#    ### Sz penalty
+#        if Quket.constraint_lambda_Sz > 0:
+#            #  Sz ** 2
+#            Sz2 = Quket.operators.jw_Sz * Quket.operators.jw_Sz
+#            Sz2state = evolve(Sz2, state, parallel=True) ## Sz|Phi>
+#            ## Ms2 = <Phi|Sz**2|Phi>
+#            Ms2 = inner_product(state, Sz2state).real
+#            ### lambda (Sz**2 - Ms2)|Phi>
+#            state_ = state.copy()
+#            state_.multiply_coef(-Ms2)
+#            Sz2state.add_state(state_)
+#            Sz2state.multiply_coef(Quket.constraint_lambda_Sz)
+#            Hstate.add_state(Sz2state)
+#        if Quket.constraint_lambda_S2_expectation > 0 :
+#            # penalty (<S**2> - s(s+1))
+#            S2state = evolve(Quket.operators.jw_S2, state, parallel=True) ## S2|Phi>
+#            ## S2 = <Phi|S**2|Phi>
+#            S2 = inner_product(state, S2state).real
+#
+#            state_ = state.copy()
+#            state_.multiply_coef(-S2)
+#            S2state.add_state(state_)
+#
+#            ## lambda (S2-<S**2>)|Phi>
+#            S2state.multiply_coef(Quket.constraint_lambda_S2_expectation)
+#            Hstate.add_state(S2state)
+#
+#    ### orthogonal constraints
+#    nstates = len(Quket.lower_states)
+#    for i in range(nstates):
+#        Ei = Quket.lower_states[i][0]
+#        overlap = inner_product(Quket.lower_states[i][1], state).real
+#        istate = Quket.lower_states[i][1].copy()
+#        istate.multiply_coef(-Ei*overlap)
+#        Hstate.add_state(istate)
+#        E0 += -Ei * abs(overlap)**2
+#        
+#    
+#    t_create = 0
+#    t_inner = 0
+#    ipos, my_ndim = mpi.myrange(ndim)
+#    for iloop in range(ipos, ipos+my_ndim):
+#        theta_d[iloop] += stepsize
+#        t0 = time.time()
+#        state = create_state(theta_d, init_state=init_state)
+#        t1 = time.time()
+#        t_create += t1 - t0
+#        Ep = inner_product(state, Hstate).real
+#        t2 = time.time()
+#        t_inner += t2 - t1
+#        if Quket.projection.SpinProj:
+#            if abs(Ep/E0) > 1e-15:
+#                grad[iloop] = 2*(Ep)/stepsize
+#        elif abs((Ep-E0)/E0) > 1e-15:
+#            grad[iloop] = 2*(Ep-E0)/stepsize
+#        else:
+#            # this may well be round-off error. 
+#            # w have to implement analytic gradient...
+#            pass
+#        theta_d[iloop] -= stepsize
+#    grad_r = mpi.allreduce(grad, mpi.MPI.SUM)
+#    cf.grad = np.linalg.norm(grad_r)
+#    cf.gradv = np.copy(grad_r)
+#    cf.grad_max = max(grad_r)
+#    t2 = time.time()
+#    if cf.debug:
+#        prints(f' cost = {E0:22.16f}    ||g|| = {cf.grad:4.2e}    g_max = {cf.grad_max:4.2e}')
+#        prints(f'Create state:  {t_create:0.3f}   Inner_product:  {t_inner:0.3f}')
+#        printmat(cf.gradv, 'gradients')
+#    #    prints(f'jac_mpi_deriv: evolve   {t1-t0}')
+#    #    prints(f'jac_mpi_deriv: gradient {t2-t1}')
+#    return grad_r
+#
+#def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None, init_state=None, Hamiltonian=None):
+#    """Function
+#    Given a cost function of varaibles theta,
+#    return the first derivatives (jacobian)
+#    computed with MPI.
+#
+#    This is a faster version of jac_mpi, where we perform 
+#     grad_r[i] = d/dtheta[i]   <psi(theta[:])| H |psi(theta[:])>
+#               =  <psi(theta[:])| H  d/dtheta[i] |psi(theta[:])>
+#               = 2 * Re <H| U[n-1] U[n-2] ... U[i+1] sigma[i] U[i] ... U[1] U[0] |0>
+#    
+#    Here,
+#        <H|  =  <psi(theta[:])| H
+#        U[i] = exp(theta[i] sigma[i]). 
+#    
+#    We do this in a step-by-step, sweep-like manner, because creating 
+#    the derivative state d/dtheta[i] |psi(theta[:])> is the most time-consuming part.
+#    In order to do so, it is convenient to first prepare `UHstate` as
+#    
+#       |UH> = U[0]! U[1]! ... U[i]! ... U[n-2]! U[n-1]! |H>  
+#    
+#    Then, set |0'> = |0> and |UH'> = |UH> and then do the following:
+#    (0-a)   |0'>   <--  U[0] |0'> 
+#    (0-b)   |s0'> = sigma[0] |0'>  
+#    (0-c)   |UH'>  <--  U[0] |UH'>  (= U[1]! ... U[i]! ... U[n-2]! U[n-1]! |H> ) 
+#    (0-d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[i] ... U[1] sigma[0] U[0] |0>
+#    (1-a)   |0'>   <--  U[1] |0'>  
+#    (1-b)   |s0'> = sigma[1] |0'>
+#    (1-c)   |UH'>  <--  U[1] |UH'>  (= U[2]! ... U[i]! ... U[n-2]! U[n-1]! |H> )
+#    (1-d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[i] ... U[2] sigma[1] U[1] U[0] |0>
+#    ...
+#    (i-a)   |0'>   <--  U[i] |0'>  
+#    (i-b)   |s0'> = sigma[i] |0'>
+#    (i-c)   |UH'>  <--  U[i] |UH'>  (= U[i]! ... U[n-2]! U[n-1]! |H> )
+#    (i-d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[i+1] sigma[i] U[i] ... U[2] U[1] U[0] |0>
+#    ...
+#
+#
+#    Args:
+#        create_state (func): function to prepare a VQE state by theta
+#        Quket (QuketData): QuketData instance
+#        theta (1darray): theta list
+#        stepsize (float): Step-size for numerical derivative of wave function
+#        init_state (QuantumState): Initial state to be used in create_state()
+#        Hamiltonian (QubitOperator): Hamiltonian H for which we take the derivative of expectation, <VQE|H|VQE>
+#
+#    Author(s): Takashi Tsuchimochi
+#    """
+#    t_initial = time.time()
+#    from quket.opelib import evolve  
+#    ### Just in case, broadcast theta...
+#    t0 = time.time()
+#    theta = mpi.bcast(theta, root=0)
+#
+#    ndim = theta.size
+#    theta_d = copy.copy(theta)
+#
+#    if Hamiltonian is None:
+#        Hamiltonian = Quket.operators.jw_Hamiltonian
+#    
+#    grad = np.zeros(ndim)
+#    grad_r = np.zeros(ndim)
+#    grad_test = np.zeros(ndim)
+#    if init_state is None:
+#        init_state = Quket.init_state
+#    if current_state is None:
+#        state = create_state(theta, init_state=init_state)
+#    else:
+#        state = current_state.copy()
+#    from quket.opelib import evolve  
+#    if Quket.projection.SpinProj:
+#        from quket.projection import S2Proj
+#        Pstate = S2Proj( Quket , state, normalize=False)
+#        norm = inner_product(Pstate, state)  ### <phi|P|phi>
+#        Hstate = evolve(Hamiltonian,  Pstate, parallel=True)  ## HP|phi>
+#        E0 = (inner_product(state, Hstate)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
+#        Pstate.multiply_coef(-E0) ## -E0 P|phi>
+#        Hstate.add_state(Pstate)  ## (H-E0) P|phi>
+#        Hstate.multiply_coef(1/norm)  ## (H-E0) P|phi> / <phi|P|phi>
+#        #Hstate.multiply_coef(1/norm)  ## H P|phi> / <phi|P|phi>
+#        #Pstate.multiply_coef(1/norm) ##  P|phi> / <phi|P|phi>
+#        ### Required to set E0 to zero 
+#        #E0 = 0
+#        del(Pstate)
+#    else:
+#        Hstate = evolve(Hamiltonian, state, parallel=True)
+#        E0 = inner_product(state, Hstate).real
+#        Pstate = None
+#
+#    ### S4 penalty
+#    if Quket.constraint_lambda > 0:
+#        s = (Quket.spin - 1)/2
+#        S4state = evolve(Quket.operators.jw_S4, state, parallel=True)
+#        S4state.multiply_coef(Quket.constraint_lambda)
+#        S2state = evolve(Quket.operators.jw_S2, state, parallel=True)
+#        S2state.multiply_coef(- Quket.constraint_lambda * s * (s+1) )
+#        state_ = state.copy() 
+#        state_.multiply_coef(Quket.constraint_lambda * ( s * (s+1) )**2 )
+#        Hstate.add_state(S4state)
+#        Hstate.add_state(S2state)
+#        Hstate.add_state(state_)
+#        E0 = inner_product(state, Hstate).real
+#        del(S4state)
+#    
+#    if Quket.adapt.mode == 'pauli':
+#    ### Sz penalty
+#        if Quket.constraint_lambda_Sz > 0:
+#            #  Sz ** 2
+#            Sz2 = Quket.operators.jw_Sz * Quket.operators.jw_Sz
+#            Sz2state = evolve(Sz2, state, parallel=True) ## Sz|Phi>
+#            ## Ms2 = <Phi|Sz**2|Phi>
+#            Ms2 = inner_product(state, Sz2state).real
+#            ### lambda (Sz**2 - Ms2)|Phi>
+#            state_ = state.copy()
+#            state_.multiply_coef(-Ms2)
+#            Sz2state.add_state(state_)
+#            Sz2state.multiply_coef(Quket.constraint_lambda_Sz)
+#            Hstate.add_state(Sz2state)
+#            del(Sz2state)
+#        if Quket.constraint_lambda_S2_expectation > 0 :
+#            # penalty (<S**2> - s(s+1))
+#            S2state = evolve(Quket.operators.jw_S2, state, parallel=True) ## S2|Phi>
+#            ## S2 = <Phi|S**2|Phi>
+#            S2 = inner_product(state, S2state).real
+#
+#            state_ = state.copy()
+#            state_.multiply_coef(-S2)
+#            S2state.add_state(state_)
+#
+#            ## lambda (S2-<S**2>)|Phi>
+#            S2state.multiply_coef(Quket.constraint_lambda_S2_expectation)
+#            Hstate.add_state(S2state)
+#            del(S2state)
+#
+#    ### orthogonal constraints
+#    nstates = len(Quket.lower_states)
+#    istate = None
+#    for i in range(nstates):
+#        Ei = Quket.lower_states[i][0]
+#        overlap = inner_product(Quket.lower_states[i][1], state).real
+#        istate = Quket.lower_states[i][1].copy()
+#        istate.multiply_coef(-Ei*overlap)
+#        Hstate.add_state(istate)
+#        E0 += -Ei * abs(overlap)**2
+#    if istate is not None:
+#        del(istate)
+#    
+#    t1 = time.time()
+#    t_hstate = t1 - t0
+#    if Quket.rho == 1:
+#        ### Exact state-vector treatment with very efficient sweep algorithm
+#        t_cu = 0
+#        t_cuH = 0
+#        t_sigma = 0
+#        t_inner = 0
+#        ipos, my_ndim = mpi.myrange(ndim)
+#
+#        #### Check available memory
+#        #mem_dict, proc_dict = mpi.mem_proc_dict()
+#        #### Check single state memory
+#        #state_size = state.get_vector().nbytes
+#        #### Check if all the intermediate states can be stored
+#        #store_vector = True
+#        #for (proc, mem_available), (_, nprocs) in zip(mem_dict.items(), proc_dict.items()):
+#        #    prints(f'For {proc}, we have {mem_available/nprocs} memory per processor.'
+#        #           f'Each QuantumState has the size of {state_size}, so we estimate'
+#        #           f'we can store {(mem_available/nprocs)//state_size} states.')
+#        #    nstates_per_proc = (mem_available/nprocs)//state_size
+#        #    if nstates_per_proc < my_ndim:
+#        #        store_vector = False
+#
+#        ### Overwrite
+#        state = init_state
+#        ### Set the size of pauli_list to that of theta_list
+#        pauli_list = Quket.pauli_list[:ndim]
+#        from quket.opelib import create_exp_state
+#        for iloop in range(ipos, ipos+my_ndim):
+#            t0 = time.time()
+#            if iloop == ipos:
+#                ### Create intermediate state 
+#                #    prod_i^ipos exp(theta[i] * pauli[i]) |0> 
+#                #    prod'_{i=n-1}^{ipos+1} exp(theta[i] * pauli[i]) H|psi>   (backward) 
+#                t0 = time.time()
+#                for k in range(ipos):
+#                    if type(pauli_list[k]) is list:
+#                        for pauli in pauli_list[k]:
+#                            state = create_exp_state(Quket, init_state=state, \
+#                                                      pauli_list=[pauli], \
+#                                                      theta_list=[theta[k]])
+#                    else:
+#                        state = create_exp_state(Quket, init_state=state, \
+#                                                pauli_list=[pauli_list[k]], \
+#                                                theta_list=[theta[k]])
+#                for k in range(1,ndim-ipos+1):
+#                    if type(pauli_list[-k]) is list:
+#                        for pauli in reversed(pauli_list[-k]):
+#                            Hstate = create_exp_state(Quket, init_state=Hstate, \
+#                                              pauli_list=[hermitian_conjugated(pauli)], \
+#                                              theta_list=[theta[-k]])
+#                    else: 
+#                        Hstate = create_exp_state(Quket, init_state=Hstate, \
+#                                                  pauli_list=[hermitian_conjugated(pauli_list[-k])], \
+#                                                  theta_list=[theta[-k]])
+#                t1 = time.time()
+#                t_init = t1-t0
+#            ###  Now we take one step forward and compute the derivative of the intermediate state 
+#            ###
+#            if type(pauli_list[iloop]) is list: 
+#                ###
+#                ### Non-commutatitive because of 'spin-free' operator
+#                ### 
+#                ### We have to decompose pauli
+#                for k, pauli in enumerate(pauli_list[iloop]):
+#                    t0 = time.time()
+#                    #  (a)   |0'>   <--  U[iloop][k] |0'> 
+#                    state = create_exp_state(Quket, init_state=state,\
+#                                             pauli_list=[pauli],\
+#                                             theta_list=[theta[iloop]])
+#                    t1 = time.time()
+#                    t_cu += t1-t0
+#                    t0 = time.time()
+#                    #  (b)   sigma[iloop][k] |0'>  
+#                    sigma_state = evolve(pauli, state, parallel=False)
+#                    #  (c)   |UH'>  <--  U[iloop][k] |UH'>  (= U[i]! ... U[n-2]! U[n-1]! |H> ) 
+#                    t1 = time.time()
+#                    t_sigma += t1-t0
+#                    t0 = time.time()
+#                    #if iloop != ipos:
+#                    Hstate = create_exp_state(Quket, init_state=Hstate,\
+#                                         pauli_list=[pauli],\
+#                                         theta_list=[theta[iloop]])
+#                    t1 = time.time()
+#                    t_cuH += t1 - t0
+#                    grad[iloop] += 2 * inner_product(sigma_state, Hstate).real
+#                    t2 = time.time()
+#                    t_inner += t2 - t1
+#
+#
+#            else:  ### Commutative
+#                #  (a)   |0'>   <--  U[iloop] |0'> 
+#                t0 = time.time()
+#                state = create_exp_state(Quket, init_state=state,\
+#                                         pauli_list=[pauli_list[iloop]],\
+#                                         theta_list=[theta[iloop]])
+#
+#                t1 = time.time()
+#                t_cu += t1 - t0
+#                t0 = time.time()
+#                #  (b)   sigma[iloop] |0'>  
+#                sigma_state = evolve(pauli_list[iloop], state, parallel=False)
+#                t1 = time.time()
+#                t_sigma += t1 - t0
+#                t0 = time.time()
+#                #  (c)   |UH'>  <--  U[iloop] |UH'>  (= U[i]! ... U[n-2]! U[n-1]! |H> ) 
+#                #if iloop != ipos:
+#                Hstate = create_exp_state(Quket, init_state=Hstate,\
+#                                     pauli_list=[pauli_list[iloop]],\
+#                                     theta_list=[theta[iloop]])
+#
+#
+#                #  (d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... sigma[iloop] U[iloop] ... U[1] U[0] |0>
+#                t1 = time.time()
+#                t_cuH += t1 - t0
+#                grad[iloop] = 2 * inner_product(sigma_state, Hstate).real
+#                t2 = time.time()
+#                t_inner += t2 - t1
+#    else:
+#        ### For rho > 1, currently only numerical derivatives are available
+#        t_create = 0
+#        t_inner = 0
+#        ipos, my_ndim = mpi.myrange(ndim)
+#        for iloop in range(ipos, ipos+my_ndim):
+#            theta_d[iloop] += stepsize
+#            t0 = time.time()
+#            state = create_state(theta_d, init_state=init_state)
+#            t1 = time.time()
+#            t_create += t1 - t0
+#            Ep = inner_product(state, Hstate).real
+#            t2 = time.time()
+#            t_inner += t2 - t1
+#            if Quket.projection.SpinProj:
+#                if abs(Ep/E0) > 1e-15:
+#                    grad[iloop] = 2*(Ep)/stepsize
+#            elif abs((Ep-E0)/E0) > 1e-15:
+#                grad[iloop] = 2*(Ep-E0)/stepsize
+#            else:
+#                # this may well be round-off error. 
+#                # w have to implement analytic gradient...
+#                pass
+#            theta_d[iloop] -= stepsize
+#    grad_r = mpi.allreduce(grad, mpi.MPI.SUM)
+#    cf.grad = np.linalg.norm(grad_r)
+#    cf.gradv = np.copy(grad_r)
+#    cf.grad_max = max(grad_r)
+#    if cf.debug:
+#        prints(f' cost = {E0:22.16f}    ||g|| = {cf.grad:4.2e}    g_max = {cf.grad_max:4.2e}')
+#    #    for irank in range(mpi.nprocs):
+#    #        if irank == mpi.rank:
+#    #            #prints(f'{mpi.rank=}   Initial |H>:  {t_hstate:0.3f}   U!|0>:  {t_cu:0.3f}    U!|H>: {t_cuH:0.3f}    sigma|0>:  {t_sigma:0.3f}   Inner_product:  {t_inner:0.3f}', root=mpi.rank, flush=True)
+#    #            prints(f'{mpi.rank=}    Initial |H>:  {t_hstate:0.3f}   Initial U!|H>: {t_init:0.3f}    U!|0>:  {t_cu:0.3f}    U!|H>: {t_cuH:0.3f}    sigma|0>:  {t_sigma:0.3f}   Inner_product:  {t_inner:0.3f}',root=mpi.rank)
+#    #        mpi.barrier()
+#    #    prints(f'jac_mpi_deriv: evolve   {t1-t0}')
+#    #    prints(f'jac_mpi_deriv: gradient {t2-t1}')
+#    t_final = time.time()
+#    #printmat(grad_r)
+#    #prints('T_grad = ',t_final- t_initial)
+#    return grad_r
+#
 
 def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None, init_state=None, Hamiltonian=None):
     """Function
@@ -263,27 +577,24 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
         U[i] = exp(theta[i] sigma[i]). 
     
     We do this in a step-by-step, sweep-like manner, because creating 
-    the derivative state d/dtheta[i] |psi(theta[:])> is the most time-consuming part.
-    In order to do so, it is convenient to first prepare `UHstate` as
-    
-       |UH> = U[0]! U[1]! ... U[i]! ... U[n-2]! U[n-1]! |H>  
-    
-    Then, set |0'> = |0> and |UH'> = |UH> and then do the following:
-    (0-a)   |0'>   <--  U[0] |0'> 
-    (0-b)   |s0'> = sigma[0] |0'>  
-    (0-c)   |UH'>  <--  U[0] |UH'>  (= U[1]! ... U[i]! ... U[n-2]! U[n-1]! |H> ) 
-    (0-d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[i] ... U[1] sigma[0] U[0] |0>
-    (1-a)   |0'>   <--  U[1] |0'>  
-    (1-b)   |s0'> = sigma[1] |0'>
-    (1-c)   |UH'>  <--  U[1] |UH'>  (= U[2]! ... U[i]! ... U[n-2]! U[n-1]! |H> )
-    (1-d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[i] ... U[2] sigma[1] U[1] U[0] |0>
-    ...
-    (i-a)   |0'>   <--  U[i] |0'>  
-    (i-b)   |s0'> = sigma[i] |0'>
-    (i-c)   |UH'>  <--  U[i] |UH'>  (= U[i]! ... U[n-2]! U[n-1]! |H> )
-    (i-d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[i+1] sigma[i] U[i] ... U[2] U[1] U[0] |0>
-    ...
+    the derivative state d/dtheta[i] |psi(theta[:])>  and is time-consuming.
 
+    Set   |psi'>   <--  |psi>  =  U[n-1] U[n-2] ... U[1] U[0]  |0> 
+    Set   |H'>  <--  |H> = H|psi> 
+    (0-a)   |s_psi'> = sigma[n-1] |psi'> =  sigma[n-1] U[n-1] U[n-2] ... U[1] U[0]  |0> 
+    (0-b)  Evaluate <H'|s_psi'> = <H| sigma[n-1] U[n-1] U[n-2] ... U[i] ... U[1] U[0] |0>
+    (0-c)   |psi'>   <--  U[n-1]! |psi'> 
+    (0-d)   |H'>  <--  U[n-1]! |H'>  
+    (1-a)   |s_psi'> = sigma[n-2] |psi'>  
+    (1-b)  Evaluate <H'|s_psi'> = <H| U[n-1] sigma[n-2] U[n-2] ... U[i] ... U[1] U[0] |0>
+    (1-c)   |psi'>   <--  U[n-2]! |psi'> 
+    (1-d)   |H'>  <--  U[n-2]! |H'>  
+    ...
+    (i-a)   |s_psi'> = sigma[n-i-1] |0'>
+    (i-b)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[n-i] sigma[n-i-1] U[n-i-1] ... U[2] U[1] U[0] |0>
+    (i-c)   |psi'>   <--  U[n-i-1]! |psi'>  
+    (i-d)   |H'>  <--  U[n-i-1]! |H'>  
+    ...
 
     Args:
         create_state (func): function to prepare a VQE state by theta
@@ -295,6 +606,7 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
 
     Author(s): Takashi Tsuchimochi
     """
+    t_initial = time.time()
     from quket.opelib import evolve  
     ### Just in case, broadcast theta...
     t0 = time.time()
@@ -329,6 +641,7 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
         #Pstate.multiply_coef(1/norm) ##  P|phi> / <phi|P|phi>
         ### Required to set E0 to zero 
         #E0 = 0
+        del(Pstate)
     else:
         Hstate = evolve(Hamiltonian, state, parallel=True)
         E0 = inner_product(state, Hstate).real
@@ -347,7 +660,8 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
         Hstate.add_state(S2state)
         Hstate.add_state(state_)
         E0 = inner_product(state, Hstate).real
-    
+        del(S4state)
+     
     if Quket.adapt.mode == 'pauli':
     ### Sz penalty
         if Quket.constraint_lambda_Sz > 0:
@@ -362,6 +676,7 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
             Sz2state.add_state(state_)
             Sz2state.multiply_coef(Quket.constraint_lambda_Sz)
             Hstate.add_state(Sz2state)
+            del(Sz2state)
         if Quket.constraint_lambda_S2_expectation > 0 :
             # penalty (<S**2> - s(s+1))
             S2state = evolve(Quket.operators.jw_S2, state, parallel=True) ## S2|Phi>
@@ -375,9 +690,11 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
             ## lambda (S2-<S**2>)|Phi>
             S2state.multiply_coef(Quket.constraint_lambda_S2_expectation)
             Hstate.add_state(S2state)
+            del(S2state)
 
     ### orthogonal constraints
     nstates = len(Quket.lower_states)
+    istate = None
     for i in range(nstates):
         Ei = Quket.lower_states[i][0]
         overlap = inner_product(Quket.lower_states[i][1], state).real
@@ -385,39 +702,88 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
         istate.multiply_coef(-Ei*overlap)
         Hstate.add_state(istate)
         E0 += -Ei * abs(overlap)**2
-        
+    if istate is not None:
+        del(istate)
+    
     t1 = time.time()
     t_hstate = t1 - t0
     if Quket.rho == 1:
+        ### Exponential ansatz with one Trotter-slice.
         ### Exact state-vector treatment with very efficient sweep algorithm
-        t_create = 0
+        t_cu = 0
+        t_cuH = 0
+        t_sigma = 0
         t_inner = 0
-        ipos, my_ndim = mpi.myrange(ndim)
-        ### Overwrite
-        state = init_state
+        ipos, my_ndim = mpi.myrange(ndim, backward=True)
+        #ipos, my_ndim = mpi.myrange(ndim)
+
+        ### Check available memory
+        #mem_dict, proc_dict = mpi.mem_proc_dict()
+        #### Check single state memory
+        #state_size = state.get_vector().nbytes
+        ### Check if all the intermediate states can be stored
+        #store_vector = True
+        #for (proc, mem_available), (_, nprocs) in zip(mem_dict.items(), proc_dict.items()):
+        #    prints(f'For {proc}, we have {mem_available/nprocs} memory per processor.'
+        #           f'Each QuantumState has the size of {state_size}, so we estimate'
+        #           f'we can store {(mem_available/nprocs)//state_size} states.')
+        #    nstates_per_proc = (mem_available/nprocs)//state_size
+        #    if nstates_per_proc < my_ndim:
+        #        store_vector = False
+
         ### Set the size of pauli_list to that of theta_list
         pauli_list = Quket.pauli_list[:ndim]
         from quket.opelib import create_exp_state
-        for iloop in range(ipos, ipos+my_ndim):
-            t0 = time.time()
-            if iloop == ipos:
-                ### Create intermediate state 
-                #    prod_i^ipos exp(theta[i] * pauli[i]) |0> 
-                #    prod'_{i=n-1}^{ipos+1} exp(theta[i] * pauli[i]) H|psi>   (backward) 
-                for k in range(ipos):
-                    state = create_exp_state(Quket, init_state=state, \
-                                              pauli_list=[pauli_list[k]], \
-                                              theta_list=[theta[k]])
-                for k in range(1,ndim-ipos+1):
-                    if type(pauli_list[-k]) is list:
-                        for pauli in reversed(pauli_list[-k]):
-                            Hstate = create_exp_state(Quket, init_state=Hstate, \
-                                              pauli_list=[hermitian_conjugated(pauli)], \
-                                              theta_list=[theta[-k]])
-                    else: 
-                        Hstate = create_exp_state(Quket, init_state=Hstate, \
-                                                  pauli_list=[hermitian_conjugated(pauli_list[-k])], \
-                                                  theta_list=[theta[-k]])
+        for iloop in range(ndim - ipos - 1, ndim - (ipos + my_ndim) -1, -1):
+            if iloop == ndim-ipos-1:
+                ### Initial setting for each MPI rank
+                ### Each MPI rank starts with the U[ndim-ipos-1]! ... U[n-1]! |state>
+                ### Depending on the value 'ndim-ipos-1', the initial state should change to evolve each state faster. 
+                ### if ndim - ipos - 1 < ndim//2
+                ###   Better to start from init_state
+                ### else
+                ###   Better to start from current state
+                t0 = time.time()
+                backward = ndim-ipos-1 >= ndim//2
+                if not backward:
+                    state = init_state.copy()
+                    for ifor in range(ndim-ipos):
+                        # state <---  U[n-ipos] ... U[0] |init_state>
+                        state = create_exp_state(Quket, init_state=state,\
+                                                 pauli_list=[pauli_list[ifor]],\
+                                                     theta_list=[theta[ifor]])
+
+                for irev in range(ndim-1, ndim-ipos-1, -1):
+                    if type(pauli_list[irev]) is list: 
+                        for k in reversed(range(len(pauli_list[irev]))):
+                            if backward: 
+                            #if True:
+                                # state <---  U[n-ipos-1]! ... U[n-1]! |state>  =  U[n-ipos-2] ... U[0] |state>
+                                state = create_exp_state(Quket, init_state=state,\
+                                                         pauli_list=[hermitian_conjugated(pauli_list[irev][k])],\
+                                                         theta_list=[theta[irev]])
+                            # Hstate <---  U[n-ipos-1]! ... U[n-1]! H|state>
+                            Hstate = create_exp_state(Quket, init_state=Hstate,\
+                                                 pauli_list=[hermitian_conjugated(pauli_list[irev][k])],\
+                                                 theta_list=[theta[irev]])
+                    else:
+                        if backward: 
+                        #if True:
+                            # state <---  U[n-ipos-1]! ... U[n-1]! |state>
+                            state = create_exp_state(Quket, init_state=state,\
+                                                     pauli_list=[hermitian_conjugated(pauli_list[irev])],\
+                                                     theta_list=[theta[irev]])
+                        # Hstate <---  U[n-ipos-1]! ... U[n-1]! H|state>
+                        Hstate = create_exp_state(Quket, init_state=Hstate,\
+                                         pauli_list=[hermitian_conjugated(pauli_list[irev])],\
+                                         theta_list=[theta[irev]])
+                #for irank in range(mpi.nprocs):
+                #    if irank == mpi.rank:
+                #        print_state(state, f'{mpi.rank=}', root=mpi.rank)
+                #    mpi.barrier()
+                t1 = time.time()
+                t_init = t1-t0
+
             ###  Now we take one step forward and compute the derivative of the intermediate state 
             ###
             if type(pauli_list[iloop]) is list: 
@@ -425,47 +791,66 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
                 ### Non-commutatitive because of 'spin-free' operator
                 ### 
                 ### We have to decompose pauli
-                for k, pauli in enumerate(pauli_list[iloop]):
-                    #  (a)   |0'>   <--  U[iloop][k] |0'> 
-                    state = create_exp_state(Quket, init_state=state,\
-                                             pauli_list=[pauli],\
-                                             theta_list=[theta[iloop]])
-                    #  (b)   sigma[iloop][k] |0'>  
-                    sigma_state = evolve(pauli, state, parallel=False)
-                    #  (c)   |UH'>  <--  U[iloop][k] |UH'>  (= U[i]! ... U[n-2]! U[n-1]! |H> ) 
-                    #if iloop != ipos:
-                    Hstate = create_exp_state(Quket, init_state=Hstate,\
-                                         pauli_list=[pauli_list[iloop][-k]],\
-                                         theta_list=[theta[iloop]])
+                for k in reversed(range(len(pauli_list[iloop]))):
+                    #  (a)   sigma[iloop][k] |psi'>  
+                    t0 = time.time()
+                    sigma_state = evolve(pauli_list[iloop][k], state, parallel=False)
                     t1 = time.time()
-                    t_create += t1 - t0
+                    t_sigma += t1-t0
+
+                    #  (b)  Evaluate <H'|s|psi'> = <H| U[n-1] U[n-2] ... sigma[iloop] U[iloop] ... U[1] U[0] |0>
                     grad[iloop] += 2 * inner_product(sigma_state, Hstate).real
                     t2 = time.time()
                     t_inner += t2 - t1
 
-            else:  ### Commutative
-                #  (a)   |0'>   <--  U[iloop] |0'> 
-                state = create_exp_state(Quket, init_state=state,\
-                                         pauli_list=[pauli_list[iloop]],\
+                    # For next state, downgrade the states
+                    #if iloop != ndim-(ipos+my_ndim):
+                    #  (c)   |psi'>   <--  U[iloop][k]! |psi'> 
+                    t0 = time.time()
+                    state = create_exp_state(Quket, init_state=state,\
+                                             pauli_list=[hermitian_conjugated(pauli_list[iloop][k])],\
+                                             theta_list=[theta[iloop]])
+
+                    t1 = time.time()
+                    t_cu += t1-t0
+                    t0 = time.time()
+                    #  (d)   |H'>  <--  U[iloop][k]! |H'>  (= U[iloop]! ... U[n-2]! U[n-1]! |H> ) 
+                    Hstate = create_exp_state(Quket, init_state=Hstate,\
+                                         pauli_list=[hermitian_conjugated(pauli_list[iloop][k])],\
                                          theta_list=[theta[iloop]])
-                #  (b)   sigma[iloop] |0'>  
+                    t1 = time.time()
+                    t_cuH += t1-t0
+                    
+
+            else:  ### Commutative
+                #  (a)   sigma[iloop] |psi'>  
+                t0 = time.time()
                 sigma_state = evolve(pauli_list[iloop], state, parallel=False)
-
-                #  (c)   |UH'>  <--  U[iloop] |UH'>  (= U[i]! ... U[n-2]! U[n-1]! |H> ) 
-                #if iloop != ipos:
-                Hstate = create_exp_state(Quket, init_state=Hstate,\
-                                     pauli_list=[pauli_list[iloop]],\
-                                     theta_list=[theta[iloop]])
-
-                #print_state(state,  f'{iloop} right_state')
-                #print_state(Hstate, f'{iloop} left_state')
-                #print_state(sigma_state,  f'{iloop} sigma_state')
-                #  (d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... sigma[iloop] U[iloop] ... U[1] U[0] |0>
                 t1 = time.time()
-                t_create += t1 - t0
+                t_sigma += t1-t0
+                #  (b)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... sigma[iloop] U[iloop] ... U[1] U[0] |0>
                 grad[iloop] = 2 * inner_product(sigma_state, Hstate).real
                 t2 = time.time()
                 t_inner += t2 - t1
+
+                # For next state, downgrade the states
+                #if iloop != ndim-(ipos+my_ndim):
+                t0 = time.time()
+                #  (c)   |psi'>   <--  U[iloop]! |psi'> 
+                state = create_exp_state(Quket, init_state=state,\
+                                         pauli_list=[hermitian_conjugated(pauli_list[iloop])],\
+                                         theta_list=[theta[iloop]])
+                t1 = time.time()
+                t_cu += t1-t0
+                t0 = time.time()
+                #  (d)   |H'>  <--  U[iloop]! |H'>  (= U[iloop]! ... U[n-2]! U[n-1]! |H> ) 
+                Hstate = create_exp_state(Quket, init_state=Hstate,\
+                                     pauli_list=[hermitian_conjugated(pauli_list[iloop])],\
+                                     theta_list=[theta[iloop]])
+                t1 = time.time()
+                t_cuH += t1-t0
+
+
     else:
         ### For rho > 1, currently only numerical derivatives are available
         t_create = 0
@@ -496,10 +881,15 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
     cf.grad_max = max(grad_r)
     if cf.debug:
         prints(f' cost = {E0:22.16f}    ||g|| = {cf.grad:4.2e}    g_max = {cf.grad_max:4.2e}')
-        prints(f'Hstate:  {t_hstate:0.3f}   Create state:  {t_create:0.3f}   Inner_product:  {t_inner:0.3f}')
-    #    prints(f'jac_mpi_deriv: evolve   {t1-t0}')
-    #    prints(f'jac_mpi_deriv: gradient {t2-t1}')
+        #for irank in range(mpi.nprocs):
+        #    if irank == mpi.rank:
+        #        prints(f'{mpi.rank=}    Initial |H>:  {t_hstate:0.3f}   Initial U!|H>: {t_init:0.3f}    U!|0>:  {t_cu:0.3f}    U!|H>: {t_cuH:0.3f}    sigma|0>:  {t_sigma:0.3f}   Inner_product:  {t_inner:0.3f}',root=mpi.rank)
+        #    mpi.barrier()
+
+    t_final = time.time()
     return grad_r
+
+
 
 def jac_mpi_deriv_SA(create_state, Quket, theta, stepsize=1e-8):
     """Function

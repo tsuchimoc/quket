@@ -1853,6 +1853,18 @@ class QuketData():
 
     ###############################################
 
+    def vqe(self):
+        from quket.vqe.vqe import vqe
+        self.ndim = len(self.pauli_list)
+        if self.theta_list is None:
+            self.theta_list = np.zeros(self.ndim)
+        elif self.ndim != len(self.theta_list):
+            prints(f'Length of pauli_list {len(self.pauli_list)} != Length of theta_list {len(self.theta_list)}')
+            return
+        self.cf.opt_options['maxiter'] = self.maxiter
+        vqe(self)
+ 
+
     def grad(self):
         # Nuclear gradient 
         from quket.post import grad 

@@ -28,6 +28,14 @@ import sys
 import time
 from argparse import ArgumentParser
 
+# Debugging option.
+debug = False
+"""
+>>> import quket.config as cf
+>>> cf.debug = True
+"""
+# or set debug = True in the input.
+
 def set_filenames(input):
     """Function
     Set file names and paths based on input.
@@ -191,8 +199,6 @@ abelian_groups =['C1', 'C2', 'Ci', 'Cs', 'C2v', 'C2h', 'D2', 'D2h']
 ##################################
 _units = "angstrom"
 _bohr_to_angstrom = 0.529177249
-# Debugging
-debug = False
 timing = False
 fast_evaluation = True
 fswap = False

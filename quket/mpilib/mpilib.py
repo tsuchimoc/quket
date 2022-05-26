@@ -28,6 +28,7 @@ try:
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     nprocs = comm.Get_size()
+    name = MPI.Get_processor_name()
 
 except ImportError as error:
     print('mpi4py is not imported. no MPI.')
@@ -35,6 +36,8 @@ except ImportError as error:
         SUM = 'SUM'
         MAX = 'MAX'
         COMM_WORLD = None
+        def Get_processor_name(self):
+            return 'dummy'
     class Comm():
         def Bcast(self, buf, root):
             return None
@@ -114,7 +117,7 @@ def recv(buf=None, source=0, tag=0):
 def barrier():    
     comm.Barrier()
     
-def myrange(ndim):
+def myrange(ndim, backward=False):
     """
         Calculate process-dependent range for MPI distribution of `ndim` range.
         Image
@@ -129,14 +132,37 @@ def myrange(ndim):
 
         Returns `ipos` and `my_ndim`
 
+        If backward = True, Process nprocs-1 gains the largest my_ndim.
+
     Author(s): Takashi Tsuchimochi
     """
     nrem = ndim%nprocs
     nblk = (ndim-nrem)//nprocs
-    if rank < nrem:
-        my_ndim = nblk + 1
-        ipos = my_ndim*rank
+    if not backward:
+        if rank < nrem:
+            my_ndim = nblk + 1
+            ipos = my_ndim*rank
+        else:
+            my_ndim = nblk
+            ipos = my_ndim*rank + nrem
     else:
-        my_ndim = nblk
-        ipos = my_ndim*rank + nrem
+        if rank < nprocs-nrem:
+            my_ndim = nblk
+            ipos = my_ndim*rank
+        else:
+            my_ndim = nblk + 1
+            ipos = nblk*(nprocs-nrem)  + (rank - nprocs + nrem) * nrem
+        
     return ipos, my_ndim
+
+def mem_proc_dict():
+    import quket.utils.memory as mem
+    mem_list = gather(mem.available())
+    proc_list = gather(MPI.Get_processor_name())
+    mem_list = bcast(mem_list)
+    proc_list = bcast(proc_list)
+    mem_dict = dict(zip(proc_list,mem_list))
+    proc_dict = {}
+    for proc, mem in mem_dict.items(): 
+        proc_dict[proc] = proc_list.count(proc)
+    return mem_dict, proc_dict

@@ -714,8 +714,8 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
         t_cuH = 0
         t_sigma = 0
         t_inner = 0
-        ipos, my_ndim = mpi.myrange(ndim, backward=True)
-        #ipos, my_ndim = mpi.myrange(ndim)
+        #ipos, my_ndim = mpi.myrange(ndim, backward=True)
+        ipos, my_ndim = mpi.myrange(ndim)
 
         ### Check available memory
         #mem_dict, proc_dict = mpi.mem_proc_dict()

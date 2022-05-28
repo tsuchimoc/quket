@@ -815,10 +815,6 @@ class QuketData():
                 self.model = "heisenberg"
             else:
                 self.model = "chemical"
-        else:
-            # Default
-            self.model = "chemical"
-            kwds["basis"] = "sto-3g"
 
         #######################
         # Create parent class #

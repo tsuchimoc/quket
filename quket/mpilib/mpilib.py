@@ -44,13 +44,13 @@ except ImportError as error:
         def bcast(self, buf, root):
             pass
         def Allreduce(self, sendbuf, recvbuf, op):
-            pass
+            raise Exception("This function is not meant for no MPI version!")
         def allreduce(self, sendbuf, op):
-            return None
+            return sendbuf
         def Gather(self, sendobj, recvobj, root):
-            pass
+            raise Exception("This function is not meant for no MPI version!")
         def gather(self, sendobj, root):
-            return None
+            return sendobj
         def send(self, obj, dest, tag): 
             pass
         def recv(self, buf, source, tag): 

@@ -86,7 +86,7 @@ for job_no, kwds in enumerate(kwds_list, 1):
             tstamp('QuketData initialized')
         if Quket.method != 'mbe':
             # Transform Jordan-Wigner Operators to Qulacs Format
-            Quket.jw_to_qulacs()
+            Quket.openfermion_to_qulacs()
             ### Tweaking orbitals...
             if Quket.alter_pairs != []:
                 ## Switch orbitals
@@ -118,9 +118,9 @@ for job_no, kwds in enumerate(kwds_list, 1):
     if Quket.run_qubitfci:
         Quket.fci2qubit()
 
-    if Quket.cf.taper_off or Quket.symmetry_pauli:
-        Quket.tapering.run()
-        if Quket.cf.taper_off and Quket.method != 'mbe':
+    if Quket.cf.do_taper_off or Quket.symmetry_pauli:
+        Quket.tapering.run(mapping=Quket.cf.mapping)
+        if Quket.cf.do_taper_off and Quket.method != 'mbe':
             ### Create excitation-pauli list, and transform relevant stuff by unitary
             Quket.transform_all(reduce=True)
         elif Quket.get_allowed_pauli_list:
@@ -152,7 +152,7 @@ for job_no, kwds in enumerate(kwds_list, 1):
                        Quket.cf.Kappa_to_T1)
 
             if Quket.cf.oo:
-                if Quket.cf.taper_off:
+                if Quket.cf.do_taper_off:
                     Quket.transform_all(backtransform=True) 
                 from quket.orbital.oo import oo
                 oo(Quket, Quket.oo_maxiter, Quket.oo_gtol, Quket.oo_ftol)
@@ -178,12 +178,15 @@ for job_no, kwds in enumerate(kwds_list, 1):
             QITE_driver(Quket)
 
         if Quket.method != 'mbe':
-            if Quket.cf.taper_off:
+            if Quket.cf.do_taper_off:
                 # Back to the original space
                 Quket.transform_all(backtransform=True)
             Quket.prop()
             
-
+    
+    #################
+    # Post-VQE part #
+    #################
     # Nuclear gradient and/or Geometry optimization 
     if Quket.do_grad or Quket.geom_opt:
         from quket.post import grad 

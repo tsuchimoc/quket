@@ -12,10 +12,10 @@ def _requires_from_file(filename):
 
 setup(
     name="quket",
-    version="0.8.0",
+    version="0.9",
     license="Apache License",
     description="Quantum Unified Kernel and Emulator Toolbox",
-    author="Takashi Tsuchimochi",
+    author="Takashi Tsuchimochi, et al.",
     email="tsuchimochi@gmail.com",
     url="https://qithub.com/tsuchimoc/quket.git",
     packages=find_packages(),

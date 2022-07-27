@@ -9,15 +9,15 @@
 ///             Q   Q       U    U      K   K       E    E       T              ///
 ///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
 ///                                                                             ///
-///                      Quantum Computing Simulator Ver 0.8.1                  ///
+///                      Quantum Computing Simulator Ver 0.9                    ///
 ///                                                                             ///
 ///        Copyright 2019-2022                                                  ///
 ///        The Quket Developers                                                 ///
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 12:38:13.967846: 
-16 processes x 2 = Total 32 cores
+2022-07-27 19:52:35.679496: 
+8 processes x 4 = Total 32 cores
 
 ##################### INPUT ########################
 basis        = sto-6G
@@ -55,8 +55,8 @@ Basis set = sto-6G
 *******************************************
 
 Symmetry C2v : C2v(Abelian)
-E[FCI]    = -75.46331558033867     (Spin = 1   Ms = 0)
-E[HF]     = -74.99009251884597    (Spin = 1   Ms = 0)
+E[FCI]    = -75.463315580335     (Spin = 1   Ms = 0)
+E[HF]     = -74.990092518846     (Spin = 1   Ms = 0)
 NBasis = 7
 
 [Molecular Orbitals]
@@ -88,8 +88,8 @@ Basis set = sto-6G
 *******************************************
 
 Symmetry C2v : C2v(Abelian)
-E[FCI]    = -75.46035718349654     (Spin = 1   Ms = 0)
-E[HF]     = -74.92680637169788    (Spin = 1   Ms = 0)
+E[FCI]    = -75.460357183497     (Spin = 1   Ms = 0)
+E[HF]     = -74.926806371698     (Spin = 1   Ms = 0)
 NBasis = 7
 
 [Molecular Orbitals]
@@ -112,20 +112,20 @@ Initial configuration: |0000111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[sauccsd] = -74.926806371698  <S**2> = +0.000000000000000  rho = 10  
-     1: E[sauccsd] = -75.199036098106  <S**2> = +0.000084677397145  Grad = 1.09e+00  CPU Time =    0.14469  (0.01 / step)
-     2: E[sauccsd] = -75.337961359057  <S**2> = +0.000037267172776  Grad = 8.39e-01  CPU Time =    0.05823  (0.01 / step)
-     3: E[sauccsd] = -75.434439446459  <S**2> = +0.000007373603614  Grad = 2.75e-01  CPU Time =    0.09811  (0.01 / step)
-     4: E[sauccsd] = -75.446232300537  <S**2> = +0.000040755379874  Grad = 1.91e-01  CPU Time =    0.05639  (0.01 / step)
-     5: E[sauccsd] = -75.452398775061  <S**2> = +0.000061314696414  Grad = 6.68e-02  CPU Time =    0.05615  (0.01 / step)
-     6: E[sauccsd] = -75.453642574821  <S**2> = +0.000070321145564  Grad = 4.81e-02  CPU Time =    0.05623  (0.01 / step)
-     7: E[sauccsd] = -75.454888424447  <S**2> = +0.000085903448370  Grad = 2.81e-02  CPU Time =    0.05617  (0.01 / step)
-     8: E[sauccsd] = -75.454975191375  <S**2> = +0.000082179184104  Grad = 1.37e-02  CPU Time =    0.09721  (0.01 / step)
-     9: E[sauccsd] = -75.455009109572  <S**2> = +0.000078174164245  Grad = 5.33e-03  CPU Time =    0.05602  (0.01 / step)
-    10: E[sauccsd] = -75.455011107880  <S**2> = +0.000080150583487  Grad = 2.08e-03  CPU Time =    0.05635  (0.01 / step)
-    11: E[sauccsd] = -75.455011456436  <S**2> = +0.000079579117659  Grad = 3.86e-04  CPU Time =    0.05573  (0.01 / step)
-    12: E[sauccsd] = -75.455011460448  <S**2> = +0.000079541559837  Grad = 3.31e-04  CPU Time =    0.18028  (0.01 / step)
- Final: E[sauccsd] = -75.455011460448  <S**2> = +0.000079541559837  rho = 10 
+Initial: E[sauccsd] = -74.926806371698  <S**2> = +0.000000  rho = 10  
+      1: E[sauccsd] = -75.199036103309  <S**2> = +0.000085  Grad = 1.09e+00  CPU Time =    0.19132  (0.01 / step)
+      2: E[sauccsd] = -75.337981976491  <S**2> = +0.000037  Grad = 8.38e-01  CPU Time =    0.08391  (0.01 / step)
+      3: E[sauccsd] = -75.434502916027  <S**2> = +0.000007  Grad = 2.75e-01  CPU Time =    0.15380  (0.01 / step)
+      4: E[sauccsd] = -75.446254319867  <S**2> = +0.000041  Grad = 1.91e-01  CPU Time =    0.08435  (0.01 / step)
+      5: E[sauccsd] = -75.452407245164  <S**2> = +0.000061  Grad = 6.66e-02  CPU Time =    0.08415  (0.01 / step)
+      6: E[sauccsd] = -75.453643098681  <S**2> = +0.000070  Grad = 4.77e-02  CPU Time =    0.08437  (0.01 / step)
+      7: E[sauccsd] = -75.454878354985  <S**2> = +0.000087  Grad = 2.95e-02  CPU Time =    0.08430  (0.01 / step)
+      8: E[sauccsd] = -75.454974631790  <S**2> = +0.000082  Grad = 1.40e-02  CPU Time =    0.15364  (0.01 / step)
+      9: E[sauccsd] = -75.455009046688  <S**2> = +0.000078  Grad = 5.09e-03  CPU Time =    0.08443  (0.01 / step)
+     10: E[sauccsd] = -75.455011243968  <S**2> = +0.000080  Grad = 1.23e-03  CPU Time =    0.08430  (0.01 / step)
+     11: E[sauccsd] = -75.455011457133  <S**2> = +0.000080  Grad = 4.05e-04  CPU Time =    0.08475  (0.01 / step)
+     12: E[sauccsd] = -75.455011462010  <S**2> = +0.000080  Grad = 4.51e-04  CPU Time =    0.15343  (0.01 / step)
+  Final: E[sauccsd] = -75.455011462010  <S**2> = +0.000080  rho = 10 
 
 (sauccsd state)
      Basis             Coef
@@ -136,10 +136,10 @@ Initial E[sauccsd] = -74.926806371698  <S**2> = +0.000000000000000  rho = 10
 | 1001011011 > : +0.2583 +0.0000i
 | 1001100111 > : -0.1836 +0.0000i
 | 1100110011 > : -0.3516 +0.0000i
-| 1111000011 > : +0.4216 +0.0000i
+| 1111000011 > : +0.4217 +0.0000i
 
 
-VQE Done: CPU Time =          0.9945
+VQE Done: CPU Time =          1.3507
 
 sauccsd (vqe) 
      Basis             Coef
@@ -150,17 +150,17 @@ sauccsd (vqe)
 | 1001011011 > : +0.2583 +0.0000i
 | 1001100111 > : -0.1836 +0.0000i
 | 1100110011 > : -0.3516 +0.0000i
-| 1111000011 > : +0.4216 +0.0000i
+| 1111000011 > : +0.4217 +0.0000i
 
  === Computing 1RDM === 
  === Computing 2RDM === 
 
 Dipole moment from 1RDM (in Debye):
-x = 0.00000  y = 0.01662  z = 0.00000
-| mu | = 0.01662
+x = 0.00000  y = 0.01668  z = 0.00000
+| mu | = 0.01668
 
 Dipole moment from relaxed 1RDM (in Debye):
-x = 0.00000     y = -0.00198    z = -0.00000
-| mu | = 0.00198
+x = -0.00000     y = -0.00231    z = -0.00000
+| mu | = 0.00231
 Saved in ./sauccsd_h2o.qkt.
-Normal termination of quket at 2022-05-25 12:38:16.309464
+Normal termination of quket at 2022-07-27 19:52:38.601868

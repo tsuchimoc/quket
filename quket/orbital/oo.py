@@ -163,8 +163,14 @@ def orbital_rotation(Quket, kappa_list=None, mo_coeff=None, mbe=False):
     # Construct new Hamiltonian
     Quket.operators.Hamiltonian = generate_hamiltonian(h1, h2.transpose(0,3,2,1), h0)
     if not mbe:
-        Quket.operators.jordan_wigner()
-        Quket.jw_to_qulacs()
+        if Quket.cf.mapping == "jordan_wigner":
+            Quket.operators.jordan_wigner()
+        elif Quket.cf.mapping == "bravyi_kitaev":
+            Quket.operators.bravyi_kitaev(Quket.n_qubits)
+        if Quket.tapered['operators']:
+            Quket.tapered['operators'] = False
+            Quket.transform_operators()
+        Quket.openfermion_to_qulacs()
 
 def wrap_energy(alpha, delta_kappa, kappa, Quket):
     """
@@ -279,15 +285,16 @@ def oo(Q, maxiter=None, gtol=None, ftol=None):
     from .grad import get_orbital_gradient
     from .hess_whole import get_orbital_hessian
 
+    Q.cf.theta_guess = 'prev'
     method = 'AH'
     if not Q.converge:
-        if Q.cf.taper_off:
+        if Q.cf.do_taper_off:
             Q.taper_off()
         Q.run()
-        if Q.cf.taper_off:
+        if Q.cf.do_taper_off:
             Q.transform_all(backtransform=True) 
     else:
-        if Q.cf.taper_off and Q.tapered["states"]:
+        if Q.cf.do_taper_off and Q.tapered["states"]:
             Q.transform_all(backtransform=True) 
     if maxiter is None:
         maxiter = Q.oo_maxiter
@@ -490,14 +497,14 @@ def oo(Q, maxiter=None, gtol=None, ftol=None):
         if Q.run_qubitfci:
             Q.fci2qubit()
         t0 = time()
-        if Q.cf.taper_off:
+        if Q.cf.do_taper_off:
             Q.transform_all()
         #Q.theta_list *= 0
         Q.run()
         macro_cycle += 1
         t0 = time()
         prints()
-        if Q.cf.taper_off:
+        if Q.cf.do_taper_off:
             Q.transform_all(backtransform=True)
         
         deltaE = Q.energy - Eold

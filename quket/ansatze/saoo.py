@@ -14,11 +14,12 @@ import time
 
 import numpy as np
 
-from qulacs import QuantumState
 
 from quket import config as cf
 from quket.fileio import (SaveTheta, print_state, print_amplitudes, prints)
 from quket.opelib import set_exp_circuit
+from quket.utils import transform_state_jw2bk
+from quket.lib import QuantumState
 
 def cost_uccgd_forSAOO(Quket, print_level, qulacs_hamiltonian, qulacs_s2,
                        theta_list):
@@ -59,6 +60,8 @@ def cost_uccgd_forSAOO(Quket, print_level, qulacs_hamiltonian, qulacs_s2,
         cf.ncnot = 0
         state = QuantumState(n_qubits)
         state.set_computational_basis(det)
+        if Quket.cf.mapping == "bravyi_kitaev":
+            state = transform_state_jw2bk(state)
         for i in range(rho):
             circuit.update_quantum_state(state)
             if Quket.projection.SpinProj:

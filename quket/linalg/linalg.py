@@ -410,3 +410,90 @@ def tikhonov(A, eps=1e-6):
         a_reg[k] = a[k]/(a[k]**2 + eps) 
     return v.T @ np.diag(a_reg) @ u.T
 
+
+def _Decompose_expK_to_Givens_rotations(K, eps=1e-12):
+    """
+    Given a skew matrix K, the unitary as defined by its exponential
+    U = exp(K) is decomposed to M Givens rotations:
+    
+       U = uM(thetaM) ... u2(theta2) u1(theta1)
+    
+    where |theta1| > |theta2| > ... > |thetaM|
+    This subroutine is by no means efficient but works.
+    
+    A list that contains the Givens indices i,j and
+    rotation angle theta is returned.
+
+    Arg(s):
+        K (np.ndarray): squared, skew matrix
+        eps (float): threshold to terminate 
+
+    Return(s):
+        u_list (list): A list of i, j, theta
+
+    Author(s): Takashi Tsuchimochi
+    """
+    ndim = K.shape[0]
+    if ndim != K.shape[1]:
+        raise ValueError(f"The K matrix has to be square and skew.")
+    if np.linalg.norm(K+np.conjugate(K.T)) > 1e-12:
+        raise ValueError(f"The K matrix has to be square and skew.")
+    expK = sp.linalg.expm(K)
+    abs_tril_expK = abs(np.tril(expK,-1))
+    theta = 1
+    u_list = []
+    # Performing Givens rotations to determine decomposed u1, u2, ...
+    while np.linalg.norm(abs_tril_expK) > eps:
+        abs_tril_expK = abs(np.tril(expK,-1))
+        j = np.argmax(abs_tril_expK)//ndim
+        i = np.argmax(abs_tril_expK)%ndim
+        aji = expK[j,i]
+        ajj = expK[j,j]
+        theta = np.arctan(-aji/ajj)
+        u = np.eye(ndim)
+        # This is actually u_dagger
+        u[i,i] = np.cos(theta)
+        u[j,i] = np.sin(theta)
+        u[i,j] = -np.sin(theta)
+        u[j,j] = np.cos(theta)
+        expK = expK @ u
+        if abs(theta) > eps:
+            u_list.append([i,j,theta])
+        else:
+            break
+    return u_list
+
+def Decompose_expK_to_Givens_rotations(K, eps=1e-12):
+    """
+    Given a skew matrix K, the unitary as defined by its exponential
+    U = exp(K) is decomposed to M Givens rotations:
+    
+       U = uM(thetaM) ... u2(theta2) u1(theta1)
+    
+    where |theta1| > |theta2| > ... > |thetaM|
+    This subroutine is by no means efficient but works.
+    
+    A list of actual u1, u2, ... matrices is returned. 
+
+    Arg(s):
+        K (np.ndarray): squared, skew matrix
+        eps (float): threshold to terminate 
+
+    Return(s):
+        u_list (list): A list of i, j, theta
+
+    Author(s): Takashi Tsuchimochi
+    """
+    ndim = K.shape[0]
+    u_list = _Decompose_expK_to_Givens_rotations(K, eps=eps)
+    umat_list = []
+    for i,j,theta in u_list:
+        u = np.eye(ndim)
+        u[i,i] = np.cos(theta)
+        u[j,i] = np.sin(theta)
+        u[i,j] = -np.sin(theta)
+        u[j,j] = np.cos(theta)
+        umat_list.append(u)
+    return umat_list
+
+    

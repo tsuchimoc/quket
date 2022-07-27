@@ -30,7 +30,9 @@ from .utils import(
     chkpostmethod,
     chkint,
     chknaturalnum,
-    chknum,
+    isint,
+    isfloat,
+    iscomplex,
     chkdet,
     chk_energy,
     is_commute,
@@ -48,8 +50,6 @@ from .utils import(
     order_pqrs,
     get_OpenFermion_integrals,
     generate_general_openfermion_operator,
-    make_gate,
-    Pauli2Circuit,
     to_pyscf_geom,
     remove_unpicklable,
     pauli_index,
@@ -59,5 +59,9 @@ from .utils import(
     get_unique_list,
     prepare_state,
     append_01qubits,
+    jw2bk,
+    bk2jw,
+    transform_state_jw2bk,
+    transform_state_bk2jw,
     )
-
+    

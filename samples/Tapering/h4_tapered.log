@@ -9,15 +9,15 @@
 ///             Q   Q       U    U      K   K       E    E       T              ///
 ///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
 ///                                                                             ///
-///                      Quantum Computing Simulator Ver 0.8.1                  ///
+///                      Quantum Computing Simulator Ver 0.9                    ///
 ///                                                                             ///
 ///        Copyright 2019-2022                                                  ///
 ///        The Quket Developers                                                 ///
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 12:40:07.358115: 
-16 processes x 2 = Total 32 cores
+2022-07-27 19:55:23.566754: 
+8 processes x 4 = Total 32 cores
 
 ##################### INPUT ########################
 basis        = sto-3G
@@ -62,8 +62,17 @@ Basis set = sto-3G
 *******************************************
 
 Symmetry D4h : D2h(Abelian)
-E[FCI]    = -1.82187714577383     (Spin = 1   Ms = 0)
-E[HF]     = -1.7014893632797827    (Spin = 1   Ms = 0)
+E[FCI]    = -1.821877145774     (Spin = 1   Ms = 0)
+E[HF]     = -1.701489363280     (Spin = 1   Ms = 0)
+Tapering-Off Results:
+List of Tapered-off Qubits:  [0, 1, 2, 4]
+Qubit: 0    Tau: 1.0 [Z0 Z3 Z5 Z6]
+Qubit: 1    Tau: 1.0 [Z1 Z3 Z5 Z7]
+Qubit: 2    Tau: 1.0 [Z2 Z3]
+Qubit: 4    Tau: 1.0 [Z4 Z5]
+
+States     transformed.
+Operators  transformed.
 NBasis = 4
 
 [Molecular Orbitals]
@@ -83,8 +92,8 @@ Qubit: 1    Tau: 1.0 [Z1 Z3 Z5 Z7]
 Qubit: 2    Tau: 1.0 [Z2 Z3]
 Qubit: 4    Tau: 1.0 [Z4 Z5]
 
-States     transformed.
-Operators  transformed.
+Current states are already tapered-off. No transformation done
+Current operators are already tapered-off. No transformation done
 
    Skipping job since maxiter = 0.
 
@@ -102,8 +111,17 @@ Basis set = 6-31G
 *******************************************
 
 Symmetry D4h : D2h(Abelian)
-E[FCI]    = -1.9766648666221185     (Spin = 1   Ms = 0)
-E[HF]     = -1.894729211957042    (Spin = 1   Ms = 0)
+E[FCI]    = -1.976664866622     (Spin = 1   Ms = 0)
+E[HF]     = -1.894729211957     (Spin = 1   Ms = 0)
+Tapering-Off Results:
+List of Tapered-off Qubits:  [0, 1, 2, 4]
+Qubit: 0    Tau: 1.0 [Z0 Z3 Z5 Z6 Z9 Z10 Z13 Z14]
+Qubit: 1    Tau: 1.0 [Z1 Z3 Z5 Z7 Z9 Z11 Z13 Z15]
+Qubit: 2    Tau: 1.0 [Z2 Z3 Z12 Z13]
+Qubit: 4    Tau: 1.0 [Z4 Z5 Z8 Z9]
+
+States     transformed.
+Operators  transformed.
 NBasis = 8
 
 [Molecular Orbitals]
@@ -127,10 +145,10 @@ Qubit: 1    Tau: 1.0 [Z1 Z3 Z5 Z7 Z9 Z11 Z13 Z15]
 Qubit: 2    Tau: 1.0 [Z2 Z3 Z12 Z13]
 Qubit: 4    Tau: 1.0 [Z4 Z5 Z8 Z9]
 
-States     transformed.
-Operators  transformed.
+Current states are already tapered-off. No transformation done
+Current operators are already tapered-off. No transformation done
 
    Skipping job since maxiter = 0.
 
 Saved in ./h4_tapered.qkt.
-Normal termination of quket at 2022-05-25 12:40:10.449681
+Normal termination of quket at 2022-07-27 19:55:27.576716

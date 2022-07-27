@@ -1,5 +1,4 @@
-# Copyright 2022 The Quket Developers
-#
+# Copyright 2022 The Quket Develop-1#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,14 +12,17 @@
 import numpy as np
 from itertools import product, combinations, combinations_with_replacement
 import itertools
-from qulacs import QuantumState
-from openfermion.ops import  QubitOperator, FermionOperator
-from openfermion.transforms import jordan_wigner,bravyi_kitaev
-from openfermion.utils import  hermitian_conjugated
+import openfermion
 
+import quket
 from quket.fileio import prints
 from quket.mpilib import mpilib as mpi
-from quket.utils import make_gate, int2occ
+from quket.utils.utils import int2occ
+from quket.opelib.circuit import make_gate, Pauli2Circuit
+from quket.lib import QubitOperator, FermionOperator, jordan_wigner, bravyi_kitaev, hermitian_conjugated
+from quket.lib import QuantumState
+from .circuit import set_exp_circuit
+import quket.config as cf
 
 
 def convert2List(excite_dict):
@@ -482,55 +484,38 @@ def get_excite_dict_sf(Quket):
     return excite_dict
 
 
-def exciter(wfn, creation_list, annihilation_list):
-    '''Function
-    Perform the excitation p1! p2! ... pn! qm ... q2 q1 to wfn in Qubit basis.
-    n and m do not have to be equal (i.e., ionized states can be obtained).
-
-    Args:
-        wfn (QuantumState): Reference wave function to be excited
-        creation_list (int list): list of [p1, p2 , ...]
-        annihilation_list (int list): list of [q1, q2 , ...]
-
-    Return:
-        Excited QuantumState
-    '''
-    # Qubit counts in wfn
-    n_qubits = wfn.get_qubit_count()
-    excitation_string = ''
-    for p in creation_list:
-        excitation_string = excitation_string + str(p)+'^ '
-        if p > n_qubits-1:
-            raise ValueError(f'Exciter is invoked with p={p} but qubit count in wfn is {n_qubits}.')
-    for q in annihilation_list[::-1]:
-        excitation_string = excitation_string + str(q)+' '
-        if q > n_qubits-1:
-            raise ValueError(f'Exciter is invoked with q={q} but qubit count in wfn is {n_qubits}.')
-    fermi_op = FermionOperator(excitation_string)
-    qubit_op = jordan_wigner(fermi_op)
-    return evolve(qubit_op, wfn)
-
-
-def evolve(operator, wfn, transformation='jordan_wigner', parallel=False):
+def evolve(operator, wfn, mapping=None, parallel=False):
     """
     Evolve a quantum state by operator,
        wfn' = operator * wfn
     where wfn and wfn' are in the QuantumState class,
     and operator is either in the FermionOperator or QubitOperator class.
-    If operator is in the FermionOperator class, first transform it by 'transformation'
+    If operator is in the FermionOperator class, first transform it by 'mapping'
     to QubitOperator.
+
+    Arg(s):
+        operator: either `FermionOperator`, `QubitOperator`, or a list of them
+        wfn: `QuantumState`
+        mapping (optional): If operator is `FermionOperator`, this must be specified. 
+                            Allowed options are 'jw', 'jordan_wigner', 'bk', or 'bravyi_kitaev'.
+        parallel (optional): Whether or not parallel execution is performed. 
+
+    Return(s):
+        result: operator * wfn as `QuantumState`
     """
     n_qubits = wfn.get_qubit_count()
     if type(operator) == list:
         for operator_ in operator:
-            wfn = evolve(operator_, wfn, transformation=transformation, parallel=parallel)
+            wfn = evolve(operator_, wfn, mapping=mapping, parallel=parallel)
         return wfn
-    elif type(operator) == FermionOperator:
-        if transformation == 'jordan_wigner':
+    elif isinstance(operator, (openfermion.FermionOperator, FermionOperator)):
+        if mapping in ('jw', 'jordan_wigner'):
             qubit_op = jordan_wigner(operator)
-        elif transformation == 'bravyi_kitaev':
+        elif mapping in ('bk', 'bravyi_kitaev'):
             qubit_op = bravyi_kitaev(operator, n_qubits)
-    elif type(operator) == QubitOperator:
+        else:
+            raise ValueError(f'Incorrect mapping = {mapping}')
+    elif isinstance(operator, (openfermion.QubitOperator, QubitOperator)):
         qubit_op = operator
     else:
         prints(f'operator = {type(operator)}')
@@ -538,24 +523,47 @@ def evolve(operator, wfn, transformation='jordan_wigner', parallel=False):
     result = QuantumState(n_qubits)
     result.multiply_coef(0)
     circuit_list = []
+    import time
     iterm = 0
     for pauli, coef in qubit_op.terms.items():
         if not parallel or iterm % mpi.nprocs == mpi.rank:
             wfn_ = wfn.copy()
-            wfn_.multiply_coef(coef)
 
-            index_list = []
-            id_list = []
-            for k in range(len(pauli)):
-                index_list.append(pauli[k][0])
-                id_list.append(pauli[k][1])
+            #if len(pauli) < 5:
+                #t0 = time.time()
+                #circuit = set_exp_circuit(n_qubits, [QubitOperator(pauli)], [np.pi/2])
+                #circuit.update_quantum_state(wfn_)
+                #wfn_.multiply_coef(-1j * coef)
+                #t1 = time.time()
+                #t_exp = t1-t0
 
-            circuit = make_gate(n_qubits, index_list, id_list)
+                #t0 = time.time()
+                #index_list = []
+                #id_list = []
+                #for k in range(len(pauli)):
+                #    index_list.append(pauli[k][0])
+                #    id_list.append(pauli[k][1])
+
+                #circuit = make_gate(n_qubits, index_list, id_list)
+                #circuit.update_quantum_state(wfn_)
+                #wfn_.multiply_coef(coef)
+                #t1 = time.time()
+                #t_makegate = t1-t0
+
+
+                #t0 = time.time()
+                #circuit = Pauli2Circuit(n_qubits, pauli)
+                #circuit.update_quantum_state(wfn_)
+                #wfn_.multiply_coef(coef)
+                #t1 = time.time()
+                #t_pauli2 = t1-t0
+            #prints(f'T:  {t_exp:0.5f}, {t_makegate:0.5f}, {t_pauli2:0.5f}   {len(pauli)}')
+            circuit = Pauli2Circuit(n_qubits, pauli)
             circuit.update_quantum_state(wfn_)
+            wfn_.multiply_coef(coef)
 
             result.add_state(wfn_)
         iterm += 1
-
     if parallel:
         # Allreduce to final quantum state
         my_vec = result.get_vector()
@@ -563,6 +571,49 @@ def evolve(operator, wfn, transformation='jordan_wigner', parallel=False):
         vec = mpi.allreduce(my_vec, mpi.MPI.SUM)
         result.load(vec)
     return result
+
+
+
+def devolve(operator, wfn, mapping=None, parallel=False, eps=1e-12):
+    """
+    Evolve a quantum state by INVERSE of operator,
+       wfn' = operator^-1 * wfn
+    where wfn and wfn' are in the QuantumState class,
+    and operator is either in the FermionOperator or QubitOperator class.
+    If operator is in the FermionOperator class, first transform it by 'mapping'
+    to QubitOperator.
+    operator must be invertible.  
+    The above equation is carried out by solving the linear equation
+       operator * wfn' = wfn
+    with CG, given wfn and operator.
+    
+    Author(s): Takashi Tsuchimochi
+    """
+    from qulacs.state import inner_product
+    
+    x = wfn.copy()
+    r = evolve(operator, wfn, mapping=mapping, parallel=parallel)
+    r.multiply_coef(-1)
+    r.add_state(wfn) # r = b - Hx
+    pk = r.copy()
+    r1 = r.copy()
+    
+    while np.sqrt(r1.get_squared_norm()) > eps:
+        Apk = evolve(operator, pk, mapping=mapping, parallel=parallel)
+        alpha_k = inner_product(r, pk)/inner_product(pk, Apk)
+        pk.multiply_coef(alpha_k)
+        x.add_state(pk)
+        
+        Apk.multiply_coef(-alpha_k)
+        r1 = r.copy()
+        r1.add_state(Apk)
+        
+        beta_k = inner_product(r1, r1)/inner_product(r,r)
+        
+        pk.multiply_coef(beta_k/alpha_k)
+        pk.add_state(r1)
+        r = r1.copy()
+    return x
 
 def FermionOperator_from_list(creation_list, annihilation_list):
     '''Function
@@ -585,4 +636,44 @@ def FermionOperator_from_list(creation_list, annihilation_list):
         excitation_string = excitation_string + str(q)+' '
     fermi_op = FermionOperator(excitation_string)
     return fermi_op
+
+
+def Taylor_U(operator, wfn, theta, threshold=1e-16, parallel=True):
+    """Function
+    Form 
+            wfn' = exp[-i theta operator] wfn
+    by Taylor-expansion.
+
+    Args:
+        operator: QubitOperator 
+        wfn: QuantumState
+    """
+    chi = wfn.copy()
+    chi_dash = wfn.copy()
+    d = 10.0
+    j = 1
+    phase = -1j
+    while d > 1e-16:
+        chi.multiply_coef(0)
+        #### MPI ###
+        #my_chi = chi.copy()
+        #ipos, my_nterms = mpi.myrange(nterms)
+        #for i in range(ipos, ipos+my_nterms):
+        #    chi_i = chi_dash.copy()
+        #    pauli = observable.get_term(i)
+        #    chi_i = multiply_Hpauli(chi_i, n, pauli, db, j)
+        #    my_chi.add_state(chi_i)
+        chi_dash = evolve(operator, chi_dash) 
+        # Add (shift * db/j) |chi_dash>
+        chi_dash.multiply_coef(phase*theta/j)
+        chi.add_state(chi_dash)
+
+        chi_dash = chi.copy()
+        # chi  = H.psi  ->  1/2 H.(H.psi) -> 1/3 H.(1/2 H.(H.psi)) ...
+        d = np.sqrt(chi.get_squared_norm())
+        j += 1
+        if mpi.rank == mpi.nprocs-1:
+            prints(j, operator,root=mpi.rank)
+
+    return chi
 

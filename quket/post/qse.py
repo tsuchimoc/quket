@@ -22,8 +22,6 @@ Quantum Subspace Expansion.
 """
 import numpy as np
 import scipy as sp
-from openfermion.ops import FermionOperator
-from openfermion.transforms import get_fermion_operator,jordan_wigner,bravyi_kitaev, normal_ordered
 import time
 from qulacs.state import inner_product
 
@@ -34,6 +32,8 @@ from quket.opelib import OpenFermionOperator2QulacsObservable, OpenFermionOperat
 from quket.opelib import evolve
 from quket.linalg import root_inv
 from quket.utils import int2occ
+from quket.utils.utils import get_tau
+from quket.lib import get_fermion_operator,jordan_wigner,bravyi_kitaev, normal_ordered
 from .rdm import get_1RDM_full, get_2RDM_full, get_3RDM_full, get_4RDM_full
 
 def QSE_driver(Quket, method="QSE"):
@@ -96,10 +96,10 @@ def QSE_driver(Quket, method="QSE"):
     
     prints(f"Number of operators in pool: {nexcite}") 
     if method in ["QSE"]:
-        Hmat, Smat = create_HS4QSE(Quket.operators.jw_Hamiltonian, excitation_list, Quket)
+        Hmat, Smat = create_HS4QSE(Quket.operators.qubit_Hamiltonian, excitation_list, Quket)
     if method in ["CIS"]:
         hc = False
-        Hmat, Smat = get_HS4CIS(Quket.operators.jw_Hamiltonian, excitation_list, Quket.state, Quket.operators.Hamiltonian, hc=hc)
+        Hmat, Smat = get_HS4CIS(Quket.operators.qubit_Hamiltonian, excitation_list, Quket.state, Quket.operators.Hamiltonian, hc=hc)
     # if cf.debug:
         #print(f"check Hqse - Hcis: \n{Hqse - Hcis}")
         #print(f"check Sqse - Scis: \n{Sqse - Scis}")
@@ -238,7 +238,7 @@ def cis_driver(Quket, print_level):
     #################################
     #print(excitation_list)
     hc = False
-    Hmat, Smat = get_HS4CIS(Quket.operators.jw_Hamiltonian, excitation_list, Quket.state, Quket.operators.Hamiltonian, hc=hc)
+    Hmat, Smat = get_HS4CIS(Quket.operators.qubit_Hamiltonian, excitation_list, Quket.state, Quket.operators.Hamiltonian, hc=hc)
     printmat(Smat, name="Smat")
     printmat(Hmat, name="Hmat")
 
@@ -282,7 +282,7 @@ def cis_driver(Quket, print_level):
     prints("\n Done: CPU Time =  ", "%15.4f" % cput)
 
 
-def get_HS4CIS(jw_H, E, state, H, transformation='jordan_wigner', hc=False):
+def get_HS4CIS(qubit_H, E, state, H, mapping='jordan_wigner', hc=False):
     """Function
     Given excitation list for anti-hermitized operators E[i],
     perform 
@@ -309,7 +309,7 @@ def get_HS4CIS(jw_H, E, state, H, transformation='jordan_wigner', hc=False):
     my_Hmat = np.zeros((size, size), dtype=float, order='F')
     Smat = np.zeros((size, size), dtype=float, order='F')
     my_Smat = np.zeros((size, size), dtype=float, order='F')
-    H_obs = OpenFermionOperator2QulacsGeneralOperator(jw_H, n_qubits)
+    H_obs = OpenFermionOperator2QulacsGeneralOperator(qubit_H, n_qubits, mapping=mapping)
 
     debug_H0 = np.zeros((size, size), dtype=float, order='F')
     debug_H1 = np.zeros((size, size), dtype=float, order='F')
@@ -319,28 +319,37 @@ def get_HS4CIS(jw_H, E, state, H, transformation='jordan_wigner', hc=False):
     #prints("H0(test):",H0)
     #prints("H1(test):",H1)
     #prints("H2(test):",H2)
-    jw_H0 = jordan_wigner(H0)
-    H0_obs = OpenFermionOperator2QulacsGeneralOperator(jw_H0, n_qubits)
+    if mapping in ("jw", "jordan_wigner"):
+        qubit_H0 = jordan_wigner(H0)
+    elif mapping in ("bk", "bravyi_kitaev"):
+        qubit_H0 = bravyi_kitaev(H0, n_qubits)
+    H0_obs = OpenFermionOperator2QulacsGeneralOperator(qubit_H0, n_qubits, mapping=mapping)
 
-    jw_H1 = jordan_wigner(H1)
-    H1_obs = OpenFermionOperator2QulacsGeneralOperator(jw_H1, n_qubits)
+    if mapping in ("jw", "jordan_wigner"):
+        qubit_H1 = jordan_wigner(H1)
+    elif mapping in ("bk", "bravyi_kitaev"):
+        qubit_H1 = bravyi_kitaev(H1, n_qubits)
+    H1_obs = OpenFermionOperator2QulacsGeneralOperator(qubit_H1, n_qubits, mapping=mapping)
 
-    jw_H2 = jordan_wigner(H2)
-    H2_obs = OpenFermionOperator2QulacsGeneralOperator(jw_H2, n_qubits)
+    if mapping in ("jw", "jordan_wigner"):
+        qubit_H2 = jordan_wigner(H2)
+    elif mapping in ("bk", "bravyi_kitaev"):
+        qubit_H2 = bravyi_kitaev(H2, n_qubits)
+    H2_obs = OpenFermionOperator2QulacsGeneralOperator(qubit_H2, n_qubits, mapping=mapping)
 
     #prints("H type:",type(H_obs),type(H0_obs))
 
     ij = 0
     for i in range(size):
         #print("i=",i)
-        tau_i = get_tau(E[i], transformation=transformation, hc=hc)
-        state_i = evolve(tau_i, state)
+        tau_i = get_tau(E[i], mapping=mapping, hc=hc, n_qubits=n_qubits)
+        state_i = evolve(tau_i, state, mapping=mapping)
         for j in range(i+1):
             if ij % mpi.nprocs == mpi.rank:
                 # prints(f'{ij}/{sizeT}')
                 #print("j=",j)
-                tau_j = get_tau(E[j], transformation=transformation, hc=hc)
-                state_j = evolve(tau_j, state)
+                tau_j = get_tau(E[j], mapping=mapping, hc=hc, n_qubits=n_qubits)
+                state_j = evolve(tau_j, state, mapping=mapping)
                 my_Hmat[i,j] = H_obs.get_transition_amplitude(state_i, state_j).real
                 my_Hmat[j,i] = my_Hmat[i,j]
                 my_Smat[i,j] = inner_product(state_i, state_j).real
@@ -369,49 +378,6 @@ def get_HS4CIS(jw_H, E, state, H, transformation='jordan_wigner', hc=False):
 
     return Hmat, Smat
 
-def get_tau(E, transformation='jordan_wigner', hc=True, n_qubits=None):
-    """
-    From orbital list [p,q], [p,q,r,s], ...,
-    generate pauli operators of its anti-hermitiian form 
-    The first half of the list means creation operators,
-    the last half of the list means annihilation operators,
-    e.g., E=[p,q,r,s] gives tau=p^ q^ r s - s r q^ p^
-    in QubitOperator basis.
-
-    Args:
-        E (list): integer list of p,q,...,r,s to represent the excitation p^ q^ ... r s 
-        hc (bool): Whether or not hermitian_conjugated is taken for E (E-E! or E).
-        transformation : jordan_wigner or bravyi_kitaev. 
-                         For bravyi_kitaev, n_qubits is required.
-    Returns: 
-        sigma (QubitOperator): Pauli string in QubitOperator class
-    """
-    rank = len(E)
-    #print("E:",E)
-    irank = 0
-    excitation_string = ''
-    for p in E:
-        if irank < rank//2: # creation 
-            excitation_string = excitation_string + str(p)+'^ '
-        else: # annihilation 
-            excitation_string = excitation_string + str(p)+' '
-        irank += 1
-    #prints(excitation_string)
-    fermi_op = FermionOperator(excitation_string)
-    if hc:
-        tau = fermi_op - hermitian_conjugated(fermi_op)
-    else:
-        tau = fermi_op
-    if transformation == 'jordan_wigner':
-        sigma = jordan_wigner(tau)
-    elif transformation == 'bravyi_kitaev':
-        if n_qubits is None:
-            raise ValueError('n_qubits is necessary for bravyi_kitaev')
-        sigma = bravyi_kitaev(tau, n_qubits)
-    #print(fermi_op)
-    return sigma
-
-
 def create_HS4QSE(H, E, Quket):
     """Function
     Given excitation list for operators E[i],
@@ -423,12 +389,13 @@ def create_HS4QSE(H, E, Quket):
     """
     size = len(E) 
     n_qubits = Quket.state.get_qubit_count()
+    mapping = Quket.cf.mapping
     E_nuc = Quket.nuclear_repulsion
     norbs = Quket.n_active_orbitals
-    D1 = get_1RDM_full(Quket.state)
-    D2 = get_2RDM_full(Quket.state)
-    D3 = get_3RDM_full(Quket.state)
-    D4 = get_4RDM_full(Quket.state)
+    D1 = get_1RDM_full(Quket.state, mapping=mapping)
+    D2 = get_2RDM_full(Quket.state, mapping=mapping)
+    D3 = get_3RDM_full(Quket.state, mapping=mapping)
+    D4 = get_4RDM_full(Quket.state, mapping=mapping)
 
     ncore = Quket.n_frozen_orbitals
     h_pr = Quket.one_body_integrals_active
@@ -605,10 +572,11 @@ def create_HS_VirtualQSE(H, E, Quket):
     n_qubits = Quket.state.get_qubit_count()
     E_nuc = Quket.nuclear_repulsion
     norbs = Quket.n_active_orbitals
-    D1 = get_1RDM_full(Quket.state)
-    D2 = get_2RDM_full(Quket.state)
-    D3 = get_3RDM_full(Quket.state)
-    D4 = get_4RDM_full(Quket.state)
+    mapping = Quket.cf.mapping
+    D1 = get_1RDM_full(Quket.state, mapping=mapping)
+    D2 = get_2RDM_full(Quket.state, mapping=mapping)
+    D3 = get_3RDM_full(Quket.state, mapping=mapping)
+    D4 = get_4RDM_full(Quket.state, mapping=mapping)
 
     ncore = Quket.n_frozen_orbitals
     h_pr = Quket.one_body_integrals_active

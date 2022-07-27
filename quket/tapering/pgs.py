@@ -31,7 +31,6 @@ import time
 
 import numpy as np
 
-from openfermion.ops import QubitOperator
 from openfermion.utils import commutator
 
 from quket import config as cf

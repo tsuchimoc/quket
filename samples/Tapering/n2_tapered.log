@@ -9,15 +9,15 @@
 ///             Q   Q       U    U      K   K       E    E       T              ///
 ///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
 ///                                                                             ///
-///                      Quantum Computing Simulator Ver 0.8.1                  ///
+///                      Quantum Computing Simulator Ver 0.9                    ///
 ///                                                                             ///
 ///        Copyright 2019-2022                                                  ///
 ///        The Quket Developers                                                 ///
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 12:40:14.461008: 
-16 processes x 2 = Total 32 cores
+2022-07-27 19:55:35.709046: 
+8 processes x 4 = Total 32 cores
 
 ##################### INPUT ########################
 basis        = sto-3G
@@ -43,8 +43,18 @@ Basis set = sto-3G
 *******************************************
 
 Symmetry Dooh : D2h(Abelian)
-E[FCI]    = -107.51339504311403     (Spin = 1   Ms = 0)
-E[HF]     = -107.18484646080222    (Spin = 1   Ms = 0)
+E[FCI]    = -107.513395043114     (Spin = 1   Ms = 0)
+E[HF]     = -107.184846460802     (Spin = 1   Ms = 0)
+Tapering-Off Results:
+List of Tapered-off Qubits:  [0, 1, 2, 4, 6]
+Qubit: 0    Tau: 1.0 [Z0 Z3 Z5 Z7 Z9 Z10]
+Qubit: 1    Tau: 1.0 [Z1 Z3 Z5 Z7 Z9 Z11]
+Qubit: 2    Tau: 1.0 [Z2 Z3 Z8 Z9]
+Qubit: 4    Tau: 1.0 [Z4 Z5 Z8 Z9 Z10 Z11]
+Qubit: 6    Tau: 1.0 [Z6 Z7 Z8 Z9 Z10 Z11]
+
+States     transformed.
+Operators  transformed.
 NBasis = 10
 
 [Molecular Orbitals]
@@ -71,10 +81,10 @@ Qubit: 2    Tau: 1.0 [Z2 Z3 Z8 Z9]
 Qubit: 4    Tau: 1.0 [Z4 Z5 Z8 Z9 Z10 Z11]
 Qubit: 6    Tau: 1.0 [Z6 Z7 Z8 Z9 Z10 Z11]
 
-States     transformed.
-Operators  transformed.
+Current states are already tapered-off. No transformation done
+Current operators are already tapered-off. No transformation done
 
    Skipping job since maxiter = 0.
 
 Saved in ./n2_tapered.qkt.
-Normal termination of quket at 2022-05-25 12:40:15.621321
+Normal termination of quket at 2022-07-27 19:55:37.100497

@@ -16,15 +16,19 @@ from quket import config as cf
 
 from ._version import __version__
 
-from qulacs.state import inner_product
 
 from quket.fileio import(
     printmat,
     printmath,
     print_state,
     )
+from quket.utils import(
+    transform_state_jw2bk,
+    transform_state_bk2jw,
+    )
 from quket.opelib import(
     evolve,
+    devolve,
     create_exp_state,
     )
 from quket.opelib import(
@@ -44,6 +48,22 @@ from quket.utils import(
 from quket.vqe import(
     vqe
     )
+from quket.lib import(
+    QuantumState,
+    QubitOperator, 
+    FermionOperator, 
+    jordan_wigner, 
+    reverse_jordan_wigner,
+    bravyi_kitaev, 
+    get_fermion_operator, 
+    commutator,
+    s_squared_operator,
+    number_operator,
+    normal_ordered,
+    hermitian_conjugated
+    )
+
+from qulacs.state import inner_product
 
 def create(read=None, log=None, job=0, **kwds):
     """Function
@@ -60,6 +80,7 @@ def create(read=None, log=None, job=0, **kwds):
 
     Author(s): Yuma Shimomoto, Takashi Tsuchimochi
     """
+    cf.debug = False
     if read is not None:
         # Setting input name
         read = read.strip()
@@ -98,16 +119,16 @@ def create(read=None, log=None, job=0, **kwds):
     Quket = QuketData(**init_dict)
     set_config(kwds, Quket)
     Quket.initialize(**kwds)
-    Quket.jw_to_qulacs()
-    ### Tweaking orbitals...
-    if Quket.alter_pairs != []:
-        ## Switch orbitals
-        Quket.alter(Quket.alter_pairs)
-    if Quket.local != []:
-        ## Localize orbitals
-        Quket.boys(*Quket.local)
-    Quket.set_projection()
-    Quket.get_pauli_list()
+    #Quket.jw_to_qulacs()
+    #### Tweaking orbitals...
+    #if Quket.alter_pairs != []:
+    #    ## Switch orbitals
+    #    Quket.alter(Quket.alter_pairs)
+    #if Quket.local != []:
+    #    ## Localize orbitals
+    #    Quket.boys(*Quket.local)
+    #Quket.set_projection()
+    #Quket.get_pauli_list()
     
     # Saving input 
     Quket._init_dict = init_dict
@@ -124,9 +145,13 @@ def create(read=None, log=None, job=0, **kwds):
         if cf.debug:
             printmat(Quket.overlap_integrals, name="Overlap", format=format)
 
-    if Quket.cf.taper_off:
-        Quket.tapering.run()
-        Quket.n_qubits_sym = Quket.n_qubits - len(Quket.tapering.redundant_bits)
+#    if Quket.cf.do_taper_off or Quket.symmetry_pauli:
+#        Quket.tapering.run(mapping=Quket.cf.mapping)
+#        if Quket.cf.do_taper_off and Quket.method != 'mbe':
+#            ### Create excitation-pauli list, and transform relevant stuff by unitary
+#            Quket.transform_all(reduce=True)
+#        elif Quket.get_allowed_pauli_list:
+#            Quket.get_allowed_pauli_list()
 
     if Quket.run_qubitfci:
         Quket.fci2qubit()

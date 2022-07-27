@@ -21,6 +21,8 @@ Initiating MPI and setting relevant arguments.
 
 """
 import numpy as np
+import qulacs
+from qulacs import DensityMatrix
 try:
     from mpi4py import MPI
     
@@ -38,6 +40,8 @@ except ImportError as error:
         COMM_WORLD = None
         def Get_processor_name(self):
             return 'dummy'
+        def Finalize(self):
+            pass
     class Comm():
         def Bcast(self, buf, root):
             return None
@@ -55,6 +59,8 @@ except ImportError as error:
             pass
         def recv(self, buf, source, tag): 
             return None
+        def Barrier(self):
+            pass
     comm = Comm()
     MPI = MPI()
     rank = 0
@@ -67,12 +73,18 @@ else:
 
 # Wrappers
 def bcast(buf, root=0):
+    from quket.lib import QuantumState
     if nprocs == 1:
         return buf
     if isinstance(buf, np.ndarray): 
         #comm.Bcast(buf, root)
         #return buf
         return comm.bcast(buf, root)
+    elif isinstance(buf, (QuantumState, qulacs.QuantumState)):
+        vec = buf.get_vector()
+        vec = comm.bcast(vec, root)
+        buf.load(vec)
+        return buf
     else:
         return comm.bcast(buf, root)
     

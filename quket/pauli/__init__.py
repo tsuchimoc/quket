@@ -16,6 +16,7 @@ from .pauli import(
     create_pauli_list_gt,
     create_pauli_list_gq,
     get_pauli_list_hamiltonian,
+    get_pauli_list_fermionic_hamiltonian,
     get_pauli_list_uccsd,
     get_pauli_list_uccsd_sf,
     get_pauli_list_uccsd_sf,

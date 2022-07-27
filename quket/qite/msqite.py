@@ -24,23 +24,18 @@ import time
 import scipy as sp
 import numpy as np
 from numpy import linalg as LA
-from qulacs import QuantumState
 from qulacs.state import inner_product
-from openfermion.transforms import reverse_jordan_wigner
-try:
-    from openfermion.utils import normal_ordered
-except:
-    from openfermion.transforms import normal_ordered
 from scipy.optimize import minimize
 
 from .qite_function import ( calc_Hpsi, Nonredundant_Overlap_list, Overlap_by_nonredundant_pauli_list, Overlap_by_pauli_list, Overlap_by_pauli_list_IJ, msqlanczos)
 from quket import config as cf
 from quket.mpilib import mpilib as mpi
 from quket.fileio import prints, print_state, printmat
-from quket.utils import fermi_to_str, chknum
+from quket.utils import fermi_to_str, isfloat
 from quket.linalg import lstsq, root_inv, Lowdin_orthonormalization, Lowdin_deriv_d
 from quket.opelib import evolve
 from quket.opelib import create_exp_state 
+from quket.lib import QuantumState, normal_ordered, reverse_jordan_wigner
 
 def msqite(Quket):
     """
@@ -159,7 +154,7 @@ def msqite(Quket):
         shift = [H_eff[x,x] for x in range(nstates)]
     elif Quket.shift in ['none', 'false']:
         shift = [0 for x in range(nstates)]
-    elif chknum(Quket.shift):
+    elif isfloat(Quket.shift):
         raise ValueError(f"shift {Quket.shift} cannot be used for MSQITE (multiple shifts are needed)")
     else:
         raise ValueError(f"unknown shift option: {Quket.shift}")

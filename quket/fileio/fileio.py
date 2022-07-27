@@ -28,7 +28,6 @@ import datetime
 import itertools
 
 import numpy as np
-from openfermion import QubitOperator
 
 from quket import config as cf
 from quket.mpilib import mpilib as mpi
@@ -139,8 +138,13 @@ def SaveTheta(ndim, save, filepath, opentype="w", offset=0):
                     nstates = 1
                     load = save
                 else:
+                    prints(f"WARNING!")
                     prints(f"Length of {filepath} needs to be divisible by ndim={ndim}")
-                    success = False
+                    prints(f"Your theta file is screwed up.")
+                    prints(f"Perhaps you switched on/off tapering-off during VQD calculation.")
+                    prints(f"Theta file is not stored, but k-th theta_list can be found in ")
+                    prints(f"   QuketData.lower_states[k]['theta_list']")
+                    return
             else:
                 nstates = load.size / ndim
         else:
@@ -154,7 +158,6 @@ def SaveTheta(ndim, save, filepath, opentype="w", offset=0):
         else:
             prints(f"offset={offset} but nstates={nstates} for {filepath}")
             success = False
-
         if opentype == "w":
             np.savetxt(filepath, save_)
         elif opentype == "a":
@@ -204,6 +207,7 @@ def SaveAdapt(Quket, filepath):
         #        prints(f'{icyc},   {b},  {a},  {j},  {i},  {spin},  {grad}', filepath=filepath)
 
 def LoadAdapt(Quket, filepath):
+    from quket.lib import QubitOperator
     #if Quket.adapt.mode in ('pauli', 'pauli_sz', 'pauli_yz', 'pauli_spin', 'pauli_spin_xy', 'qeb'):
     pauli_list = []
     grad_list = []
@@ -771,12 +775,16 @@ def printmath(A, mmax=10, filepath=cf.log, name=None, n=None, m=None, format="16
     if not mpi.main_rank:
         return
 
-    with open(filepath, 'a') as f:
-        print(file=f)
+    old_stdout = sys.stdout
+    if filepath is not None:
+        sys.stdout = open(filepath, 'a')
+    if True:
+    #with open(filepath, 'a') as f:
+        print()
         if name is not None:
-            print(name, '=', file=f)
+            print(name, '=')
         #if cf.debug:
-        ### set precisions
+        
 
         if format.find('f') != -1:
             ### Float
@@ -800,27 +808,27 @@ def printmath(A, mmax=10, filepath=cf.log, name=None, n=None, m=None, format="16
                 k=m//8 - 1 
             else:
                 k=m//8
-            print('{', end='', file=f)
+            print('{', end='')
             for i in range(n-1):
-                print('{', end='', file=f)
+                print('{', end='')
                 for j in range(k):
                     for jk in range(8):
-                        print(f"{A[i, j*8+jk]:{format}}, ", end='', file=f)
-                    print(file=f)
+                        print(f"{A[i, j*8+jk]:{format}}, ", end='')
+                    print()
                 j = k
                 for jk in range((m-1)%8):
-                    print(f"{A[i, j*8+jk]:{format}}, ", end='', file=f)
-                print(f"{A[i, j*8+(m-1)%8]:{format}}}}, ", file=f)
+                    print(f"{A[i, j*8+jk]:{format}}, ", end='')
+                print(f"{A[i, j*8+(m-1)%8]:{format}}}}, ")
             i = n-1
-            print('{', end='', file=f)
+            print('{', end='')
             for j in range(k):
                 for jk in range(8):
-                    print(f"{A[i, j*8+jk]:{format}}, ", end='', file=f)
-                print(file=f)
+                    print(f"{A[i, j*8+jk]:{format}}, ", end='')
+                print()
             j = k
             for jk in range((m-1)%8):
-                print(f"{A[i, j*8+jk]:{format}}, ", end='', file=f)
-            print(f"{A[i, j*8+(m-1)%8]:{format}} }}}}; ", file=f)
+                print(f"{A[i, j*8+jk]:{format}}, ", end='')
+            print(f"{A[i, j*8+(m-1)%8]:{format}} }}}}; ")
 
         elif dimension == 1:
             if n is None or m is None:
@@ -835,27 +843,27 @@ def printmath(A, mmax=10, filepath=cf.log, name=None, n=None, m=None, format="16
                 k=m//8 - 1 
             else:
                 k=m//8
-            print('{', end='', file=f)
+            print('{', end='')
             for i in range(n-1):
-                print('{', end='', file=f)
+                print('{', end='')
                 for j in range(k):
                     for jk in range(8):
-                        print(f"{A[i*m + j*8+jk]:{format}}, ", end='', file=f)
-                    print(file=f)
+                        print(f"{A[i*m + j*8+jk]:{format}}, ", end='')
+                    print()
                 j = k
                 for jk in range((m-1)%8):
-                    print(f"{A[i*m + j*8+jk]:{format}}, ", end='', file=f)
-                print(f"{A[i*m + j*8+(m-1)%8]:{format}}}}, ", file=f)
+                    print(f"{A[i*m + j*8+jk]:{format}}, ", end='')
+                print(f"{A[i*m + j*8+(m-1)%8]:{format}}}}, ")
             i = n-1
-            print('{', end='', file=f)
+            print('{', end='')
             for j in range(k):
                 for jk in range(8):
-                    print(f"{A[i*m + j*8+jk]:{format}}, ", end='', file=f)
-                print(file=f)
+                    print(f"{A[i*m + j*8+jk]:{format}}, ", end='')
+                print()
             j = k
             for jk in range((m-1)%8):
-                print(f"{A[i*m + j*8+jk]:{format}}, ", end='', file=f)
-            print(f"{A[i*m + j*8+(m-1)%8]:{format}} }}}}; ",  file=f)
-                
+                print(f"{A[i*m + j*8+jk]:{format}}, ", end='')
+            print(f"{A[i*m + j*8+(m-1)%8]:{format}} }}}}; ")
+    sys.stdout = old_stdout
             
                 

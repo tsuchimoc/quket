@@ -11,13 +11,12 @@ import os
 import sys
 
 ### CHANGE ACCORDINGLY ###
-nprocs=16
-nthreads=2
+#nprocs=16
+#nthreads=2
 ########
 
 QDIR = os.getcwd()
 SAMPLEDIR = QDIR+"/samples/"
-
 
 UCC_test_list = {
 "UCC/bsuccsd_h2o": -75.459750463545,  ##  Final:  E[uccsd] =  -75.459750463545 
@@ -56,7 +55,6 @@ PHF_test_list = {
 "PUCCD/puccd_n2": -108.496335627576,  ##  Final:  E[opt_puccd] = -108.496335627576   <S**2> =  0.000000000000001  rho = 1
 }
 
-
 Tapering_test_list = {
 "Tapering/h4_tapered": ["List of Tapered-off Qubits:  [0, 1, 2, 4]",
                         "Qubit: 0    Tau: 1.0 [Z0 Z3 Z5 Z6]",
@@ -71,11 +69,10 @@ Tapering_test_list = {
                         "Qubit: 6    Tau: 1.0 [Z6 Z7 Z8 Z9 Z10 Z11]"]
 }                        
 
-
 QITE_test_list = {
 "QITE/h4_cite": -2.033812415092,
 "QITE/h4_uccsd": -2.033809570175,
-"QITE/h4_hamiltonian": -2.033812406994
+"QITE/h4_ahva": -2.033812406994
 }
 
 MSQITE_test_list = {
@@ -176,7 +173,7 @@ OO_test_list={
 # Final: E[uccd] = -76.074349154614  <S**2> = +0.000000000085299  CNOT = 204  rho = 1
 # Final: E[uccd] = -76.074349297709  <S**2> = +0.000000000080063  CNOT = 204  rho = 1
 #  Final: E[oo-uccd] = -76.07434929770854         
-        "OO/n2_oo-sauccgd":-109.11919874033461
+        "OO/n2_oo-sauccgd": -109.119198740332,
 # Final: E[sauccgd] = -109.041499611760  <S**2> = +0.000001521630632  CNOT = 1458  rho = 1
 # Final: E[sauccgd] = -109.077746258204  <S**2> = +0.000002667379990  CNOT = 1458  rho = 1
 # Final: E[sauccgd] = -109.087069446795  <S**2> = +0.000002560945739  CNOT = 1458  rho = 1
@@ -191,6 +188,10 @@ OO_test_list={
 # Final: E[sauccgd] = -109.119195055070  <S**2> = +0.000001668147347  CNOT = 1458  rho = 1
 #  Final: E[oo-sauccgd] = -109.11919505506967 
         }
+User_defined_test_list = {
+"User-defined/random_hamiltonian": -1.332963129119,
+"User-defined/kitaev": -4.247573557412    #Final: E[hva] = -4.247573557412  <S**2> = +0.000000000000000  rho = 1 
+}
 
 import os
 import re
@@ -200,12 +201,52 @@ import sh
 import glob
 import numpy as np
 from math import isclose
-python = sh.which('python3.8')
+python=sys.executable
 np.set_printoptions(precision=10, suppress=True)
 np.set_printoptions(threshold=np.inf)
 np.set_printoptions(linewidth=2000)
 wildcard = "*"
-print('Running test calculations. This may take several minutes.')
+
+print(f'Running test calculations.') 
+print(f'Enter the number of MPI processes (Hit enter to skip)')
+########
+system=input()
+while True:
+    if isinstance(system, str):
+        try:
+            nprocs = int(system)
+            break
+        except:
+            if system == '':
+                nprocs = 1
+                break
+            else:
+                print(f'Unrecognized nprocs = {system}')
+                system=input()
+    else:
+        nprocs = 1
+        break
+print(f'Enter the number of threads (Hit enter to skip)')
+########
+system=input()
+while True:
+    if isinstance(system, str):
+        try:
+            nthreads = int(system)
+            break
+        except:
+            if system == '':
+                nthreads = 1
+                break
+            else:
+                print(f'Unrecognized nthreads = {system}')
+                system=input()
+    else:
+        nthreads = 1
+        break
+ 
+
+print(f'This may take several minutes.')
 
 UCC     = False
 PHF     = False
@@ -218,6 +259,7 @@ QITE    = False
 MSQITE  = False
 OPT     = False
 OO      = False
+USER    = False
 
 len_argv = len(sys.argv)
 if len_argv == 1:
@@ -232,6 +274,7 @@ if len_argv == 1:
     MSQITE  = True
     OPT     = True
     OO      = True
+    USER    = True
 else:
     for opt in sys.argv:
         if opt.lower() == "ucc":
@@ -256,6 +299,8 @@ else:
             OPT = True
         if opt.lower() == "oo":
             OO = True
+        if opt.lower() == "user":
+            USER = True
             
 
 def Submit(jobname, nprocs=1, nthreads=1):
@@ -289,7 +334,7 @@ def Submit(jobname, nprocs=1, nthreads=1):
         print("", file=f)
         print("cd ${PBS_O_WORKDIR}", file=f)
         print("", file=f)
-        print(f"export $OMP_NUM_THREADS={nthreads}", file=f)
+        print(f"export OMP_NUM_THREADS={nthreads}", file=f)
         print(f"mpirun -np {nprocs} {python} -m mpi4py {QDIR}/main.py {jobname} -nt {nthreads}", file=f)
         #print(f"mpirun -np {nprocs} -genv I_MPI_FABRICS tcp {python} -m mpi4py {QDIR}/main.py {jobname}", file=f)
     
@@ -308,7 +353,6 @@ def Submit(jobname, nprocs=1, nthreads=1):
         time.sleep(1)
         print(".", end="", flush=True)
     sh.rm(sh.glob(f"{jobname+o+wildcard}"))
-    sh.rm(sh.glob(f"{jobname+e+wildcard}"))
     sh.rm(sh.glob(f"{job_script}"))
     if os.path.isfile(f"{jobname+chk}"):
         sh.rm(sh.glob(f"{jobname+chk}"))
@@ -316,8 +360,7 @@ def Submit(jobname, nprocs=1, nthreads=1):
         sh.rm(sh.glob(f"{jobname+qkt}"))
     if os.path.isfile(f"{jobname+out}"):
         sh.rm(sh.glob(f"{jobname+out}"))
-    if os.path.isfile(f"{jobname+err}"):
-        sh.rm(sh.glob(f"{jobname+err}"))
+
 def run(sample):
     subdir = sample[:sample.find('/')]
     sample_name = sample[sample.find('/')+1:]
@@ -328,32 +371,12 @@ def run(sample):
     Submit(sample_name, nprocs=nprocs, nthreads=nthreads)
     return sample_log
 
-
-def ReadMatrix(NDim, Mat_name, filename):
-    """Function
-    Get Matrix(NDim, NDim) from file.
-    """
-    Nlines = ((NDim//10) + 1) * (NDim + 2)
-    log = str(sh.grep("-A", Nlines, Mat_name, filename)).split("\n")
-    Mat = np.zeros((NDim, NDim), dtype=float)
-    
-    for p in range(NDim):
-        for qq in range(NDim//10):
-            row = (NDim+2)*qq + 3
-            log_line = log[p+row].split()
-            for q in range(10):
-    #            print(log_line)
-    #            print('({}, {}) = {}'.format(p,qq*10+q,log_line[q+1]))
-                Mat[p, qq*10 + q] = float(log_line[q+1])
-        qq = NDim//10       
-        row = (NDim+2)*qq + 3
-        log_line = log[p+row].split()
-        for q in range(NDim%10):
-            #print(log_line)
-    #        print('({}, {}) = {}'.format(p,q+qq*10,log_line[q+1]))
-            Mat[p, qq*10 + q] = float(log_line[q+1])
-    return Mat    
-
+def delete_err(sample):
+    subdir = sample[:sample.find('/')]
+    sample_name = sample[sample.find('/')+1:]
+    sample_path = f"{SAMPLEDIR+subdir}"
+    sh.cd(sample_path)
+    sh.rm(sh.glob(f"{sample_name}.e{wildcard}"))
 
 ############
 #  UCC     #
@@ -375,6 +398,7 @@ if UCC:
             flag = False
         if flag:    
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
 
@@ -399,6 +423,7 @@ if ADAPT:
             results = None
         if flag:
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
 
@@ -423,10 +448,10 @@ if PHF:
             flag = False
         if flag:
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
 
-    
 ###############
 #  TAPERING   #
 ###############
@@ -447,6 +472,7 @@ if TAPER:
             flag = False
         if flag:    
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
 
@@ -499,6 +525,7 @@ if RDM:
             flag = False
         if flag:    
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
     
@@ -537,6 +564,7 @@ if Excited:
             flag = False
         if flag:    
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
     
@@ -561,8 +589,10 @@ if UpCCGSD:
             results = None
         if flag:    
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
+
 
 ############
 #  QITE    #
@@ -584,6 +614,7 @@ if QITE:
             flag = False
         if flag:    
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
 
@@ -616,6 +647,7 @@ if MSQITE:
             flag = False
         if flag:    
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
 
@@ -639,6 +671,7 @@ if OPT:
             flag = False
         if flag:    
             print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
 
@@ -662,6 +695,31 @@ if OO:
             flag = False
         if flag:    
             print(" passed")
+            delete_err(sample)
+        else: 
+            print(f" failed:\n Reference = {ref}   \n This code = {results}")
+
+##################
+#  USER-DEFINED  #
+##################
+if USER:
+    for sample, ref in User_defined_test_list.items():
+        print(sample,"", end="", flush=True)
+        sample_log = run(sample)
+        flag = True
+        results = None
+        try:
+            log = str(sh.grep("Final:", sample_log)).split("\n")
+            results = float(log[-2].split()[3])
+            if isclose(ref, results, abs_tol=1e-4):
+                pass
+            else:
+                flag = False
+        except:
+            flag = False
+        if flag:    
+            print(" passed")
+            delete_err(sample)
         else: 
             print(f" failed:\n Reference = {ref}   \n This code = {results}")
 

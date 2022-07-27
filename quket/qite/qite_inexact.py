@@ -15,16 +15,16 @@ import time
 import scipy as sp
 import numpy as np
 from numpy import linalg as LA
-from qulacs import QuantumState
 from qulacs.state import inner_product
 from qulacs.observable import create_observable_from_openfermion_text
-from openfermion.ops import QubitOperator
 
 from .qite_function import calc_delta, calc_psi, make_state1, calc_inner1
 from quket import config as cf
 from quket.mpilib import mpilib as mpi
 from quket.fileio import prints, print_state
 from quket.linalg import lstsq
+from quket.utils import transform_state_jw2bk
+from quket.lib import QuantumState, QubitOperator, FermionOperator
 
 
 def make_hamiltonian(model, nspin, nterm):
@@ -40,36 +40,36 @@ def make_hamiltonian(model, nspin, nterm):
         H = []
         active = []
         for term in range(nterm):
-            jw_hamiltonian = 0*QubitOperator("")
+            qubit_hamiltonian = 0*QubitOperator("")
             if term == nspin-1:
                 i = term
                 j = 0
                 active.append([i, j])
-                jw_hamiltonian += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
-                str_jw_hamiltonian = str(jw_hamiltonian)
+                qubit_hamiltonian += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
+                str_qubit_hamiltonian = str(qubit_hamiltonian)
                 observable = create_observable_from_openfermion_text(
-                        str_jw_hamiltonian)
+                        str_qubit_hamiltonian)
                 H.append(observable)
             else:
                 i = term
                 j = i + 1
                 active.append([i, j])
-                jw_hamiltonian += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
-                str_jw_hamiltonian = str(jw_hamiltonian)
+                qubit_hamiltonian += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
+                str_qubit_hamiltonian = str(qubit_hamiltonian)
                 observable = create_observable_from_openfermion_text(
-                        str_jw_hamiltonian)
+                        str_qubit_hamiltonian)
                 H.append(observable)
 
-        jw_hamiltonian_full = 0*QubitOperator("")
+        qubit_hamiltonian_full = 0*QubitOperator("")
         for i in range(nspin):
             if i < nspin-1:
                 j = i + 1
             else:
                 j = 0
-            jw_hamiltonian_full += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
-        str_jw_hamiltonian_full = str(jw_hamiltonian_full)
+            qubit_hamiltonian_full += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
+        str_qubit_hamiltonian_full = str(qubit_hamiltonian_full)
         observable_full = create_observable_from_openfermion_text(
-                str_jw_hamiltonian_full)
+                str_qubit_hamiltonian_full)
     return H, active, observable_full
 
 
@@ -88,6 +88,8 @@ def qite_inexact(Quket, nterm, D):
     delta = QuantumState(n)
     first_state = QuantumState(n)
     first_state.set_computational_basis(qbit)
+    if Quket.cf.mapping == "bravyi_kitaev":
+        first_state = transform_state_jw2bk(first_state)
 
     prints(f"Inexact QITE: Pauli operator group size = {size}")
 

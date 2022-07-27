@@ -16,11 +16,9 @@ from dataclasses import dataclass, field
 import sys
 import numpy as np
 try:
-    from openfermion.utils import number_operator, s_squared_operator
     from openfermion.hamiltonians import MolecularData
 except:
     from openfermion.chem import MolecularData
-    from openfermion.hamiltonians import number_operator, s_squared_operator
 
 
 from quket import config as cf
@@ -29,6 +27,7 @@ from quket.utils import run_pyscf_mod, prepare_pyscf_molecule_mod
 from quket.opelib import create_1body_operator
 from quket.fileio import prints, print_geom, error
 from quket.tapering import get_pointgroup_character_table
+from quket.lib import number_operator, s_squared_operator
 
 
 @dataclass
@@ -46,7 +45,7 @@ class Chemical(MolecularData):
     n_core_orbitals: int = 0
     n_frozen_orbitals: int = 0
     symmetry: bool = True
-    symmetry_subgroup: str = None  
+    symmetry_subgroup: str = None
     spin: int = None
     weights: int = None
     pyscf_guess: str = "minao"
@@ -220,14 +219,14 @@ class Chemical(MolecularData):
 
         # n_secondary_orbitals are only meant to be used for post calculations such as MBE and LUCC.
         # So, let it be inert until then...
-        self._n_secondary_orbitals = self.n_secondary_orbitals 
+        self._n_secondary_orbitals = self.n_secondary_orbitals
         self.n_secondary_orbitals = 0
         self.core_offset = self.n_core_orbitals
         self.n_frozenv_orbitals = self.n_orbitals - (self.ns + self.na + self.nc + self.nf)
         # Note; ns, na, nc, nf is abbreviation. Show property.
         #assert self.n_orbitals == self.ns + self.na + self.nc + self.nf
         #assert self.n_electrons == self.n_active_electrons + (self.nc + self.nf)*2
-        if  (self.n_electrons == self.n_active_electrons + (self.nc + self.nf)*2): 
+        if self.n_electrons == self.n_active_electrons + (self.nc + self.nf)*2:
             pass
         else:
             prints(f"Check and use the following space sizes at your own risk.\n"
@@ -267,17 +266,17 @@ class Chemical(MolecularData):
             prints("+----------------+")
             prints("| CHEMICAL STATE |")
             prints("+----------------+")
-            prints(f"basis={self.basis}")
-            prints(f"mo_basis={self.mo_basis}")
-            prints(f"n_orbitals={self.n_orbitals}")
-            prints(f"n_frozen_orbitals=\t{self.n_frozen_orbitals}")
+            prints(f"\tbasis={self.basis}")
+            prints(f"\tmo_basis={self.mo_basis}")
+            prints(f"\tn_orbitals={self.n_orbitals}")
+            prints(f"\tn_frozen_orbitals={self.n_frozen_orbitals}")
             prints(f"\tn_core_orbitals={self.n_core_orbitals}")
             prints(f"\tn_active_orbitals={self.n_active_orbitals}")
             prints(f"\tn_frozenv_orbitals={self.n_frozenv_orbitals}")
             prints(f"\tn_secondary_orbitals={self.n_secondary_orbitals}")
-            prints(f"n_electrons={self.n_electrons}")
+            prints(f"\tn_electrons={self.n_electrons}")
             prints(f"\tn_active_electrons={self.n_active_electrons}")
-            prints(f"excitation")
+            prints(f"\texcitation")
             prints(f"\tinclude={self.include}")
 
     #@property
@@ -575,14 +574,24 @@ class Chemical(MolecularData):
         else:
             spin = self.spin
         if run_fci:
-            prints(f"E[FCI]    = {fci_energy}     (Spin = {spin}   Ms = {self.Ms})")
+            if isinstance(fci_energy, float):
+                prints(f"E[FCI]    = {fci_energy:0.12f}     (Spin = {spin}   Ms = {self.Ms})")
+            else:
+                prints(f"E[FCI]    = {fci_energy[0]:0.12f}     (Spin = {spin}   Ms = {self.Ms})")
+                for i in range(1, len(fci_energy)):
+                    prints(f"            {fci_energy[i]:0.12f}     (Spin = {spin}   Ms = {self.Ms})")
         if run_mp2:
-            prints(f"E[MP2]    = {mp2_energy}     (Spin = {spin}   Ms = {self.Ms})")
+            prints(f"E[MP2]    = {mp2_energy:0.12f}     (Spin = {spin}   Ms = {self.Ms})")
         if run_ccsd:
-            prints(f"E[CCSD]   = {ccsd_energy}     (Spin = {spin}   Ms = {self.Ms})")
+            prints(f"E[CCSD]   = {ccsd_energy:0.12f}     (Spin = {spin}   Ms = {self.Ms})")
         if run_casscf:
-            prints(f"E[CASSCF] = {casscf_energy}     (Spin = {spin}   Ms = {self.Ms})")
-        prints(f"E[HF]     = {hf_energy}    (Spin = {self.Ms+1}   Ms = {self.Ms})")
+            if isinstance(fci_energy, float):
+                prints(f"E[CASSCF] = {casscf_energy:0.12f}     (Spin = {spin}   Ms = {self.Ms})")
+            else:
+                prints(f"E[CASSCF] = {casscf_energy[0]:0.12f}     (Spin = {spin}   Ms = {self.Ms})")
+                for i in range(1, len(fci_energy)):
+                    prints(f"            {casscf_energy[i]:0.12f}     (Spin = {spin}   Ms = {self.Ms})")
+        prints(f"E[HF]     = {hf_energy:0.12f}     (Spin = {self.Ms+1}   Ms = {self.Ms})")
 
         return Hamiltonian, S2, Number, Dipole
 

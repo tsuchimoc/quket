@@ -37,13 +37,13 @@ np.set_printoptions(precision=15, suppress=True)
 np.set_printoptions(threshold=np.inf)
 np.set_printoptions(linewidth=2000)
 
-from openfermion.ops import QubitOperator
-from openfermion.utils import commutator
 
 from quket.mpilib import mpilib as mpi
 from quket import config as cf
-from quket.utils import Pauli2Circuit
+from quket.utils import jw2bk
+from quket.opelib.circuit import Pauli2Circuit
 from quket.fileio import prints, tstamp
+from quket.lib import QubitOperator, commutator
 
 class Z2tapering():
     '''Class
@@ -91,9 +91,12 @@ class Z2tapering():
         else:
             self.n_qubits = n_qubits
         if det is not None:
-            ### For QUKET ###
-            self.det = det
-            #################
+            if type(det) is list:
+                self.det = det[0][1]
+            elif type(det) is int:
+                ### For QUKET ###
+                self.det = det
+                #################
         else:
             raise ValueError("Please input reference determinant. It is required.")
 
@@ -149,8 +152,9 @@ class Z2tapering():
             # Print Tapering-off result
             self.print_result(debug=cf.debug)
 
-            for bit,tau in zip(self.redundant_bits, self.commutative_taus):
-                prints(f"Qubit: {bit}    Tau: {tau}")
+            if self.redundant_bits is not None:
+                for bit,tau in zip(self.redundant_bits, self.commutative_taus):
+                    prints(f"Qubit: {bit}    Tau: {tau}")
 
         return "" 
 
@@ -229,7 +233,7 @@ class Z2tapering():
         prints(f"\n^^^^^^^^^^^^^^^^^^^^^^^\n   TAPERING.PY  DEBUG\n#######################\n")
         
         
-    def run(self, mode='np', mapping='jw'):
+    def run(self, mode='np', mapping='jordan_wigner', XZ='Z'):
         """Function
         Transform Hamiltonian based on the tapering-off techniques
         (arXiv:1701.08213; arXiv:1910.14644).
@@ -250,7 +254,6 @@ class Z2tapering():
             # This corresponds to a set of (gx|gz)
             self.E_kernel = binary_kernel(self.E_matrix)
             self.stage = 2
-
         # Initial PGS tapering if it is available
         if self.character_list is not None and len(self.character_list) != 0:
             if self.E_kernel is None:
@@ -277,25 +280,67 @@ class Z2tapering():
                 self.commutative_taus = list(compress(self.tau_list, tau_iscommute))
             self.stage = 4
 
+
         if self.commutative_taus is not None:
             # Get the list of commutative sigmas (Pauli X string)　e.g. IXIIIIIII
-            commutative_sigma_result = get_commutative_sigma(self.commutative_taus)
+            redundant_bits_Z, commutative_sigmas_Z, taus_Z = get_commutative_sigma(self.commutative_taus, 'Z')
+            redundant_bits_X, commutative_sigmas_X, taus_X = get_commutative_sigma(self.commutative_taus, 'X')
+            if (taus_Z != [] and taus_Z is not None) and XZ == 'Z':
+                self.redundant_bits = redundant_bits_Z
+                self.commutative_sigmas = commutative_sigmas_Z
+                self.commutative_taus = taus_Z
+                redundant_bits = redundant_bits_Z
+                commutative_sigmas = commutative_sigmas_Z
+                commutative_taus = taus_Z
+                #prints(self.redundant_bits)
+                #prints(self.commutative_sigmas)
+                #prints(taus_Z)
+                if taus_X != [] and taus_X is not None:
+                    prints('WARNING: X redudant tau exists. Only Z redundancy is considered.')
+            elif taus_X != [] and taus_X is not None and XZ == 'X':
+                if self.redundant_bits is not None:
+                    self.redundant_bits.extend(redundant_bits_X)
+                    self.commutative_sigmas.extend(commutative_sigmas_X)
+                    self.commutative_taus.extend(taus_X)
+                else:
+                    self.redundant_bits = redundant_bits_X
+                    self.commutative_sigmas = commutative_sigmas_X
+                    self.commutative_taus =taus_X
+                redundant_bits = redundant_bits_X
+                commutative_sigmas = commutative_sigmas_X
+                commutative_taus = taus_X
+            elif taus_Z == taus_X == [] or taus_Z == taus_X == None:
+                redundant_bits = None
+                self.redundant_bits = None
+                self.commutative_sigmas = None 
+                self.commutative_taus = None
+                #return
+                 
+
+
             # Combine tau and sigma to obtan Clifford Operators
             # iff those component found are valid for tapering.
             # Split the commutative_sigma_result into components
-            self.redundant_bits, self.commutative_sigmas = commutative_sigma_result
             self.stage = 5
 
-        if self.redundant_bits is not None and self.commutative_sigmas is not None:
+        if redundant_bits is not None and commutative_sigmas is not None:
             # Get all Clifford Operators Ui
-            self.clifford_operators = get_clifford_operator(self.commutative_sigmas, 
-                                                            self.commutative_taus)
+            clifford_operators = get_clifford_operator(commutative_taus, 
+                                                       commutative_sigmas)
+            if self.clifford_operators is not None and XZ == 'X':
+                self.clifford_operators.extend(clifford_operators)
+            else:
+                self.clifford_operators = clifford_operators
             self.stage = 6
+        else:
+            clifford_operators = None
+            
 
-        if self.clifford_operators is not None:
+        #if self.clifford_operators is not None:
+        if clifford_operators is not None:
             # Finally, transform the Hamiltonian by U = U0 * U1 * ... * Uk
             H_new = self.H_old
-            for clifford_operator in self.clifford_operators:
+            for clifford_operator in clifford_operators:
                 H_new  =  (clifford_operator * H_new * clifford_operator)
                 H_new.compress()
             # Clean up some 10e-7 terms especially in the case of NH3
@@ -309,15 +354,25 @@ class Z2tapering():
 
         if self.validity == []:
             # Obtain coefficients that replace the Pauli X or I on redundent qubits
+            if mapping in ('jw', 'jordan_wigner'):
+                det = self.det
+            elif mapping in ('bk', 'bravyi_kitaev'):
+                det = jw2bk(self.det, self.n_qubits)
+            else:
+                raise ValueError(f"Unrecognized mapping {mapping}")
+            
             self.X_eigvals = get_new_coefficient(self.commutative_taus, 
-                                                            self.det)
+                                                            det)
             # Replace redundent qubits by those coefficients 
             # and reconstruct Hamiltoian to remove redundent qubits
-            self.H_renew = tapering_off_operator(self.H_new, self.redundant_bits, 
-                                                            self.X_eigvals, 1)
+            #self.H_renew = tapering_off_operator(self.H_new, self.redundant_bits, 
+            #                                                self.X_eigvals, 1)
             self.stage = 9
 
-        self.n_qubits_sym = self.n_qubits - len(self.redundant_bits)
+        if self.redundant_bits is not None:
+            self.n_qubits_sym = self.n_qubits - len(self.redundant_bits)
+        else:
+            self.n_qubits_sym = self.n_qubits 
         t1 = time.time()
         self.timelog = t1-t0
         prints(self)
@@ -425,9 +480,9 @@ def get_commutative_tau(H, g_list, n_qubits, cutoff=6):
     return tau_list, tau_info
 
 
-def get_commutative_sigma(commutative_taus):
+def get_commutative_sigma(commutative_taus, XZ='Z'):
     '''Function
-    Returns a list of commutative Pauli X strings for construction of Clifford
+    Returns a list of commutative Pauli X (Z) strings for construction of Clifford
     Operators and the index of them. 
     Those indices indicate the redundent qubits that eligible to tapering-off.
     This function is in fact redundent if rref() is functioning well because
@@ -440,7 +495,7 @@ def get_commutative_sigma(commutative_taus):
 
     Returns:
         redundant_bits (int 1darray): List of index of Pauli X.
-        comutative_sigmas (QubitOperator 1darray): List of Pauli X strings
+        commutative_sigmas (QubitOperator 1darray): List of Pauli X strings
                                                     that commute with all other
                                                     Pauli Z strings.
 
@@ -449,26 +504,33 @@ def get_commutative_sigma(commutative_taus):
     # Reject if no commutative tau available
     nrows = len(commutative_taus) 
     if nrows == 0:
-        return None
+        return None, None, None
 
-    # Get position of all Z paulis
+    # Get position of all paulis
     z_positions = QubitOperatorInfoExtracter(commutative_taus, 0, tuple)
+    pauli_index = QubitOperatorInfoExtracter(commutative_taus, 1, tuple)
 
     # Searching for appropriate Pauli X string(Sigma) for each row(tau)
     redundant_bits = []
-    comutative_sigmas = []
+    commutative_sigmas = []
+    taus = []
     total_num_checked = 0
-
-    for tau1, Zs in zip(commutative_taus, z_positions):
+    for i, (tau1, Zs) in enumerate(zip(commutative_taus, z_positions)):
         ncols = len(Zs) # number of entries in ith row
         # Scan through all z_positions in a tau for the commutative Sigma
-        for Z in Zs:
+        for k, Z in enumerate(Zs):
             # Skip if the current bit is already confirmed as redundent bit
             # Otherwise do the commutativity check
             if Z in redundant_bits:
                 continue   
             # Sigma is a Pauli X string where X is right on redundent bit
-            sigma = QubitOperator((Z,'X'))
+            if pauli_index[i][k] == XZ:
+                if XZ == 'Z':
+                    sigma = QubitOperator((Z,'X'))
+                elif XZ == 'X':
+                    sigma = QubitOperator((Z,'Z'))
+            else:
+                continue
             # Compare Sigma to all other taus
             # If they all commutes, it is the redundent bit we are looking for
             # Keep track of how many rows Sigma commutes with
@@ -489,22 +551,23 @@ def get_commutative_sigma(commutative_taus):
                     break 
             if count == nrows-1:
                 redundant_bits.append(Z)
-                comutative_sigmas.append(sigma)
+                commutative_sigmas.append(sigma)
+                taus.append(tau1)
             # Since the Sigma is found for the current row(tau),
             # We can break the second layer of loop to save some resources
             # Else it will search for another available sigma within same tau
             break
 
-    if total_num_checked != nrows*(nrows-1):
-        prints(f'''Error occured in get_commutative_sigma().
-Should be in total {nrows*(nrows-1)} times checking sequences initiated
-but only {total_num_checked} times is recorded.
-rref() may be malfunctioning. Go check it.
-Usually it is due to the last pivot not subtracted from the matrix.\n''')
-    return redundant_bits, comutative_sigmas
+#    if total_num_checked != nrows*(nrows-1):
+#        prints(f'''Error occured in get_commutative_sigma().
+#Should be in total {nrows*(nrows-1)} times checking sequences initiated
+#but only {total_num_checked} times is recorded.
+#rref() may be malfunctioning. Go check it.
+#Usually it is due to the last pivot not subtracted from the matrix.\n''')
+    return redundant_bits, commutative_sigmas, taus
 
         
-def get_clifford_operator(commutative_taus, comutative_sigmas):
+def get_clifford_operator(commutative_taus, commutative_sigmas):
     '''Function
     Returns a list of Clifford Operator Unitary which is simply the sum of each 
     commutative tau and its commutative sigma counterpart. 
@@ -512,7 +575,7 @@ def get_clifford_operator(commutative_taus, comutative_sigmas):
     Args:
         commutative_taus (QubitOperator 1darray): List of Pauli Z strings
                                                     that commute with Hamiltonian.
-        comutative_sigmas (QubitOperator 1darray): List of Pauli X strings
+        commutative_sigmas (QubitOperator 1darray): List of Pauli X strings
                                                     that commute with all other
                                                     Pauli Z strings.
 
@@ -524,9 +587,14 @@ def get_clifford_operator(commutative_taus, comutative_sigmas):
 
 
     '''
-    clifford_operators = [ (1/np.sqrt(2)) * (sigma + tau)
-                              for sigma,tau in
-                              zip(comutative_sigmas,commutative_taus) ]
+    clifford_operators = []
+    for sigma, tau in zip(commutative_sigmas, commutative_taus):
+        index = QubitOperatorInfoExtracter(sigma, 0, tuple)
+        pauli_index = QubitOperatorInfoExtracter(sigma, 1, tuple)
+        if pauli_index[0][0] == 'Z':
+            clifford_operators.append((1/2) * (sigma + tau) * (QubitOperator((index[0][0],'X')) + QubitOperator((index[0][0],'Z'))))
+        elif pauli_index[0][0] == 'X':
+            clifford_operators.append((1/np.sqrt(2)) * (sigma + tau))
     return clifford_operators
 
 
@@ -544,6 +612,8 @@ def purify_hamiltonian(H, redundant_bits, keep='X'):
 
     Author(s): Takashi Tsuchimochi, TsangSiuChung
     '''
+    if redundant_bits is None:
+        return H
     # Prepare for fast set relation check
     redbits = frozenset(redundant_bits)
     forbidden = {'X', 'Y', 'Z'}
@@ -578,6 +648,8 @@ def judge_reduced_hamiltonian(H, redundant_bits, keep='X'):
 
     Author(s): Takashi Tsuchimochi, TsangSiuChung
     """
+    if redundant_bits is None:
+        return True
     # Prepare for fast set relation check
     redbits = frozenset(redundant_bits)
     forbidden = {'X', 'Y', 'Z'}
@@ -1250,7 +1322,7 @@ def Hamiltonian2n_qubits(H):
     # Get the number of qubits used in this Hamiltonian
     paulis = deque(H.terms.keys())
     paulis.popleft()
-    index_list = set( x[-1][0] for x in paulis )
+    index_list = set( x[-1][0] if x!=() else 0 for x in paulis )
     n_qubits = max(index_list) + 1 # plus 1 since total number = index+1
     return n_qubits
 
@@ -1343,7 +1415,7 @@ def gz_jw2bk(pgss):
          [0 0 0 0 0 0 0 0 0 1 0 0 0 0]]
     '''
     from openfermion.transforms import bravyi_kitaev
-    from openfermion.ops import FermionOperator
+    from quket.lib import FermionOperator
 
     width = pgss.shape[1]
     pgss_bk = []
@@ -1554,7 +1626,7 @@ def informative_openfermion_commutator(A,B,f=16):
     return commutativity, remainder, stat
 
 
-def include_pgss(E, pgss, mapping='jw'):
+def include_pgss(E, pgss, mapping='jordan_wigner'):
     '''Function
     Merge result from binary kernel and point group symmetry.
     Create a full set of symmetries for tapering off.
@@ -1562,7 +1634,7 @@ def include_pgss(E, pgss, mapping='jw'):
     Args:
         E (int 2darray): Binary kernel of Hamiltonian.
         pgss (int 2darray): Eigenvalues of point group symmetry.
-        mapping (str): Mapping Method. 'jw' for Jordan-Wigner, 'bk' for Bravyi-Kitaev.
+        mapping (str): Mapping Method. 
     Returns:
         Epgs (int 2darray): New binary kernel.
 
@@ -1576,7 +1648,7 @@ def include_pgss(E, pgss, mapping='jw'):
 
     if isinstance(Epgs, np.ndarray):
         pgss = np.where(np.array(pgss, dtype=int) == -1, 1, 0)
-        if mapping == 'bk':
+        if mapping in ('bk', 'bravyi_kitaev'):
             pgss = gz_jw2bk(pgss)
         width = Epgs.shape[1] - pgss.shape[1]
         complement = np.zeros((pgss.shape[0], width), dtype=int)
@@ -1585,7 +1657,7 @@ def include_pgss(E, pgss, mapping='jw'):
 
     elif isinstance(Epgs, list):
         pgssZ = [[1 if x == -1 else 0 for x in pgs] for pgs in pgss]
-        if mapping == 'bk':
+        if mapping in ('bk', 'bravyi_kitaev'):
             pgssZ = gz_jw2bk(pgssZ)
         pgss = list(map(BinList2Num, pgssZ))
         Epgs += pgss
@@ -1622,7 +1694,7 @@ def transform_state(state_old, U_list, redbits, eigvals_list, backtransform=Fals
         transformed_state (QuantumState): QuantumState instance transformed (normalized).
     
     """
-    from qulacs import QuantumState
+    from quket.lib import QuantumState
     nredbits = len(U_list)
     n_qubits_old = state_old.get_qubit_count()
     reduction = redbits is not None
@@ -1775,7 +1847,6 @@ def transform_operator(operator, clifford_operators, redundant_bits, X_eigvals, 
                                                         X_eigvals, 1)
     return new_operator
 
-
 def transform_pauli_list(Tapering, pauli_list, reduce=True):
     """Function
         Transform pauli_list to the tapered-off basis by using Tapering.
@@ -1796,8 +1867,9 @@ def transform_pauli_list(Tapering, pauli_list, reduce=True):
                 new_pauli_, allowed_ = transform_pauli(Tapering, pauli_, reduce)
                 if new_pauli_ is not None and new_pauli_ != QubitOperator('',0):
                     new_pauli_list_.append(new_pauli_)
-                allowed_pauli_list_.append(allowed_)
-            allowed = all(allowed_pauli_list_)
+                    allowed_pauli_list_.append(allowed_)
+            # Bug fixed. 
+            allowed = len(allowed_pauli_list_) > 0 and all(allowed_pauli_list_)
             if allowed: 
                 ### Quick check for commutativity
                 new_pauli_list_commute = [new_pauli_list_[0]]
@@ -1812,12 +1884,13 @@ def transform_pauli_list(Tapering, pauli_list, reduce=True):
             allowed_pauli_list.append(allowed)
         else:
             new_pauli, allowed = transform_pauli(Tapering, pauli, reduce)
-            if new_pauli:
+            if new_pauli != QubitOperator('',0) and new_pauli is not None:
                 new_pauli_list.append(new_pauli)
             allowed_pauli_list.append(allowed)
     new_pauli_list = mpi.allgather(new_pauli_list)
     allowed_pauli_list = mpi.allgather(allowed_pauli_list)
     return new_pauli_list, allowed_pauli_list
+
 
 def transform_pauli(Tapering, pauli, reduce):
     """Function

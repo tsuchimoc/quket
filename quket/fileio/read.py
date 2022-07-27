@@ -16,6 +16,8 @@ import string
 
 from quket import config as cf
 from quket.fileio import prints, error
+from quket.utils import isint, isfloat, iscomplex
+import numpy as np
 
 
 #############################
@@ -43,6 +45,7 @@ integers = {
         "oo_maxiter": "oo_maxiter",
         "hubbard_nx": "hubbard_nx",
         "hubbard_ny": "hubbard_ny",
+        "layers": "pauli_list_nlayers",
         #----- For VQE -----
         "ds": "DS",
         #----- For Symmetry-Projection -----
@@ -90,7 +93,7 @@ bools = {
         "print_fci": "print_fci",
         "approx_exp": "approx_exp",
         "debug": "debug",
-        "taper_off": "taper_off",
+        "taper_off": "do_taper_off",
         "fswap": "fswap",
         "fast_evaluation": "fast_evaluation",
         "numerical_derivative": "finite_difference",
@@ -151,18 +154,21 @@ strings = {
         "load": "load_file",
         "symmetry_subgroup": "symmetry_subgroup",
         "operator": "operator_basis",
-        "from_vir": "from_vir",
+        "mapping": "mapping",
         #----- For MBE -----
         "mo_basis": "mo_basis",
         "mbe_correlator": "mbe_correlator",
         "mbe_oo_ansatz": "mbe_oo_ansatz",
         #----- For QITE -----
         "shift": "shift",
-        "msqite": "msqite",
         #----- For Adapt-VQE -----
         "adapt_mode": "mode",
         "adapt_guess": "adapt_guess",
         "adapt_prop": "adapt_prop"
+        }
+strings_bools ={
+        "from_vir": "from_vir",
+        "msqite": "msqite",
         }
 comment = {
         "comment": "comment"
@@ -230,6 +236,7 @@ def read_multi(line):
      '00011111',
      '0.25']
     '''
+    prints(value)
     if len(value) == 1:
         ### Should have the regular integer form
         ### e.g.) 00001111 
@@ -278,11 +285,32 @@ def read_multi(line):
                 return False, False
     else:
         return False, False
+    # Check if state is single determinant
+    if len(state) == 1:
+        state = state[0][1]
     return state, weight
 
-def get_line(line):
+def read_pauli_list(lines):
+    str_pauli_list = []
+    for i, line in enumerate(lines):
+        line = re.sub(r" +", r" ", line).rstrip("\n").strip()
+        if line[-1] == "\\":
+            line = line.replace("\\","")
+
+        if i == 0:
+            key, line = line.split("=",1)
+            key = key.strip().lower()
+            if key != "pauli_list":
+                error("Something is wrong.")
+        line = line.split(",")
+        my_list = [line[i].strip() for i in range(len(line))]
+
+        str_pauli_list.extend(my_list)
+    return str_pauli_list
+
+def get_line(line, subsequent=False):
     # Removal of certain symbols and convert multi-space to single-space.
-    remstr = ":,'()"
+    remstr = ":,'"
     line = line.translate(str.maketrans(remstr, " "*len(remstr), ""))
     line = re.sub(r" +", r" ", line).rstrip("\n").strip()
     if len(line) == 0:
@@ -291,18 +319,48 @@ def get_line(line):
     if line[0] in ["!", "#"]:
         # Ignore comment line.
         return
+    if line[-1] == "\\":
+        line = line.replace("\\","")
+        cont = True
+    else:
+        cont = False
 
     if "=" not in line:
-        return line
-
-    key, value = line.split("=",1)
-    key = key.strip().lower()
+        if subsequent:
+            ### This line is supposed to be continued from the previous line
+            key = None
+            value = line
+        else:
+            return line
+#        key = None
+#        value = line
+#        if value == "@@@" or value == "clear":
+#            return value
+    else:
+        key, value = line.split("=",1)
+        key = key.strip()
     value = value.strip()
     value = value.split(" ")
     if len(value) == 1:
-        return key, value[0]
+        return key, value[0], cont
     else:
-        return key, value
+        return key, value, cont
+
+
+def replace_params(value, params):
+    if type(value) == list:
+        value_ = []
+        for v in value:
+            v_ = v
+            for key, param in params.items():
+                v_ = v_.replace(key, param)
+            value_.append(v_)
+        return value_
+    else:
+        value_ = value
+        for key, param in params.items():
+            value_ = value_.replace(key, param)
+        return value_
 
 def read_input():
     """Function:
@@ -354,6 +412,7 @@ def read_input():
         hubbard_u (float):      Hubbard U
         hubbard_nx (int):       Hubbard lattice size for x-direction
         hubbard_ny (int):       Hubbard lattice size for y-direction
+        hamiltonian:            Either fermionic or qubit Hamiltonian (FermionOperator, QubitOperator) or their string format
 
         Putting '@@@' in lines separates multiple jobs in one input file.
         (the options from previous jobs will be used unless redefined)
@@ -374,8 +433,8 @@ def read_input():
     ######################################
     kwds_list = []
     kwds = {}
+    params = {}
     # Values forced to be initialized
-    cf.lower_states = []
     # Add 'data_directory' for 'chemical'.
     kwds["data_directory"] = cf.input_dir
     # Add 'read' and initialize 
@@ -384,14 +443,28 @@ def read_input():
     while i < len(lines):
         line = get_line(lines[i])
         if isinstance(line, str):
-            key = line.strip()
+            key_ = line.strip()
+            key = key_.lower()
             value = ""
         elif isinstance(line, tuple):
-            key, value = line
+            key_, value, cont = line
+            if key_ is not None:
+                key = key_.lower()
+            else:
+                key = None
+            i_org = i
+            while cont:
+                #value[-1].replace("\\",'')
+                i += 1
+                line = get_line(lines[i], True)
+                _, value_, cont = line
+                value.extend(value_)
+
         else:
             i += 1
             continue
-
+        ### Check any parameters in value
+        value = replace_params(value, params)
         ################
         # Easy setting #
         ################
@@ -406,6 +479,14 @@ def read_input():
                 kwds[strings[key]] = list(map(str.lower, value))
             else:
                 kwds[strings[key]] = value.lower()
+        elif key in strings_bools:
+            if type(value) is str:
+                kwds[strings_bools[key]] = value.lower()
+            elif type(value) is bool:
+                kwds[strings_bools[key]] = str(value).lower()
+            else:
+                error(f"Type({key}={value}) is {type(value)} but it must be either str or bool.")
+            
         elif key in comment:
             kwds[comment[key]] = " ".join(value)
         ###########
@@ -485,13 +566,28 @@ def read_input():
             #elif type(value) is list:
             # e.g.) 0.5 * 000011  + 0.5 * 001100
             try:
-                state, weight = read_multi(value)
-                if len(state) == 1:
-                    kwds["det"] = state[0][1]
-                else: 
+                if isinstance(value, str):
+                    prints(value)
+                    if value.lower() == 'random':
+                        kwds["det"] = 'random'
+                        state = True
+                    else:
+                        state, weight = read_multi(value)
+                        kwds["det"] = state
+                elif isinstance(value, list):
+                    state, weight = read_multi(''.join(value))
                     kwds["det"] = state
             except:
-                error(f"Invalid determinant description '{value}'")
+                try:
+                    if value.lower() == 'random':
+                        kwds["det"] = 'random'
+                        state = True
+                    else:
+                        prints("EHRER")
+                        error(f"Invalid determinant description '{value}'")
+                except:
+                    prints("OR EHRER", ''.join(value))
+                    error(f"Invalid determinant description '{value}'")
             if not state:
                 error(f"The format of det = {value} is not correct.\n Use the following format:\n   det = coef * bit + coef * bit + ...")
             #else:
@@ -572,7 +668,6 @@ def read_input():
                 else:
                     j -= 1 
                     break
-            prints(states)
             kwds["init_states_info"] = states
             kwds["weights"] = weights
         elif key == "excited":
@@ -641,9 +736,23 @@ def read_input():
             # Clear all the keywords
             kwds = {}
             kwds["data_directory"] = cf.input_dir
-        else:
-            if value != "":
-                error(f"No option '{key}'")
+        elif key == "hamiltonian": 
+            if type(value) is not list:
+                value = [value]
+            kwds["user_defined_hamiltonian"] = ' '.join(value) 
+        elif key == "pauli_list": 
+            ### Need to deal with input with a more sophisticated manner
+            value = read_pauli_list(lines[i_org:i+1])
+            if type(value) is not list:
+                error(f"pauli_list must be a list\nyour entry: {value}")
+            kwds["user_defined_pauli_list"] = value
+            ### Since pauli_list is provided, this is user-defined ansatz.
+            kwds["ansatz"] = "user-defined"
+        elif value != "":
+            try:
+                params[key_] = str(eval("".join(value)))
+            except:
+                error(f"No option '{key_}'")
 
         # Go next line
         i += 1
@@ -710,15 +819,18 @@ def read_input_command_line(kwds_):
     """
     from quket.utils.utils import chkbool
     # Values forced to be initialized
-    cf.lower_states = []
     # Add 'data_directory' for 'chemical'.
     kwds = {}
     kwds["data_directory"] = cf.input_dir
     i = 0
-    for key, value in kwds_.items():
+    for key_, value in kwds_.items():
+        key = key_.lower()
         ################
         # Easy setting #
         ################
+        if value is None:
+            kwds[key] = None
+            continue
         if key in integers:
             kwds[integers[key]] = int(value)
         elif key in floats:
@@ -730,6 +842,13 @@ def read_input_command_line(kwds_):
                 kwds[strings[key]] = list(map(str.lower, value))
             else:
                 kwds[strings[key]] = value.lower()
+        elif key in strings_bools:
+            if type(value) is str:
+                kwds[strings_bools[key]] = value.lower()
+            elif type(value) is bool:
+                kwds[strings_bools[key]] = str(value).lower()
+            else:
+                error(f"Type({key}={value}) is {type(value)} but it must be either str or bool.")
         elif key in comment:
             kwds[comment[key]] = " ".join(value)
         ###########
@@ -745,6 +864,9 @@ def read_input_command_line(kwds_):
                 atom_basis = value[1::2]
                 kwds[key] = dict(zip(atoms, atom_basis))
         elif key == "geometry":
+            if value is None:
+                kwds["geometry"] = None
+                continue
             # See if this is list or str 
             if type(value) is list:
                 kwds[key] = value
@@ -813,19 +935,30 @@ def read_input_command_line(kwds_):
             else:
                 prints(f'Warning: Unrecognized geometry format {type(value)}\n {value}')
         elif key in ["det", "determinant"]:
+            if value is None:
+                kwds["det"] = None
+                continue
             #if value.isdecimal() and int(value) >= 0:
             #    # e.g.) 000011
             #    kwds["det"] = int(f"0b{value}", 2)
             #else:
             # e.g.) 0.5 * 000011  + 0.5 * 001100
             try:
-                state, weight = read_multi(value)
-                if len(state) == 1:
-                    kwds["det"] = state[0][1]
-                else: 
+                if value.lower() == 'random':
+                    kwds["det"] = 'random'
+                    state = True
+                else:
+                    state, weight = read_multi(value)
                     kwds["det"] = state
             except:
-                error(f"Invalid determinant description '{value}'")
+                try:
+                    if value.lower() == 'random':
+                        kwds["det"] = 'random'
+                        state = True
+                    else:
+                        error(f"Invalid determinant description '{value}'")
+                except:
+                    error(f"Invalid determinant description '{value}'")
             if not state:
                 error(f"The format of det = {value} is not correct.\n Use the following format:\n   det = coef * bit + coef * bit + ...")
         #######################
@@ -891,11 +1024,18 @@ def read_input_command_line(kwds_):
             #  weights = [0.25, 0.25, 0.35]
             states = []
             weights = []
-            for j in range(i+1, len(lines)):
-                next_line = get_line(lines[j])
-                if not isinstance(next_line, str):
-                    break
-                state, weight = read_multi(next_line)
+            for j in range(len(value)):
+                next_line = value[j]
+                if isinstance(next_line, str):
+                    state, weight = read_multi(next_line)
+                elif isinstance(next_line, tuple) or isinstance(next_line, list):
+                    if len(next_line) == 2:
+                        next_line = str(next_line[0])  + ' ' +  str(next_line[1]) 
+                        state, weight = read_multi(next_line)
+                    else:
+                        prints(f"incorrect specification for multi: {value}")
+                else:
+                    prints(f"incorrect specification for multi: {value}")
                 if state is not None:
                     states.append(state)
                     weights.append(weight)
@@ -976,6 +1116,16 @@ def read_input_command_line(kwds_):
             kwds["read"] = value
         #else:
         #    kwds[key] = value
+        elif key == "hamiltonian": 
+            if type(value) != str: 
+                value = str(value)
+            kwds["user_defined_hamiltonian"] = ''.join(value) 
+        elif key == "pauli_list": 
+            if type(value) is not list:
+                error(f"pauli_list must be a list\nyour entry: {value}")
+            kwds["user_defined_pauli_list"] = value
+            ### Since pauli_list is provided, this is user-defined ansatz.
+            kwds["ansatz"] = "user-defined"
         else:
             if value != "":
                 error(f"No option '{key}'")

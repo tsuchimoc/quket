@@ -9,15 +9,15 @@
 ///             Q   Q       U    U      K   K       E    E       T              ///
 ///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
 ///                                                                             ///
-///                      Quantum Computing Simulator Ver 0.8.1                  ///
+///                      Quantum Computing Simulator Ver 0.9                    ///
 ///                                                                             ///
 ///        Copyright 2019-2022                                                  ///
 ///        The Quket Developers                                                 ///
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 12:44:52.644536: 
-16 processes x 2 = Total 32 cores
+2022-07-27 20:01:47.700147: 
+8 processes x 4 = Total 32 cores
 
 ##################### INPUT ########################
 basis       = 6-31g**
@@ -50,7 +50,18 @@ Basis set = 6-31g**
 
 Symmetry C2v : C2v(Abelian)
 E[FCI]    = -76.028720259868     (Spin = 1   Ms = 0)
-E[HF]     = -76.02236377373238    (Spin = 1   Ms = 0)
+E[HF]     = -76.022363773732     (Spin = 1   Ms = 0)
+Tapering-Off Results:
+List of Tapered-off Qubits:  [0, 1, 2, 4]
+Qubit: 0    Tau: 1.0 [Z0 Z3 Z5 Z7 Z8]
+Qubit: 1    Tau: 1.0 [Z1 Z3 Z5 Z7 Z9]
+Qubit: 2    Tau: 1.0 [Z2 Z3 Z6 Z7]
+Qubit: 4    Tau: 1.0 [Z4 Z5]
+
+States     transformed.
+Operators  transformed.
+pauli_list transformed.
+theta_list transformed.
 NBasis = 24
 
 [Molecular Orbitals]
@@ -90,9 +101,10 @@ Qubit: 1    Tau: 1.0 [Z1 Z3 Z5 Z7 Z9]
 Qubit: 2    Tau: 1.0 [Z2 Z3 Z6 Z7]
 Qubit: 4    Tau: 1.0 [Z4 Z5]
 
-States     transformed.
-Operators  transformed.
+Current states are already tapered-off. No transformation done
+Current operators are already tapered-off. No transformation done
 pauli_list transformed.
+Current theta_list is already tapered-off. No transformation done
 Entered VQE driver
 Performing VQE for uccd
 Number of VQE parameters: 12
@@ -100,25 +112,24 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.022363773732  <S**2> = +0.000000000000000  rho = 1  
-     1: E[uccd] = -76.028301874435  <S**2> = +0.000000000045806  Grad = 2.75e-02  CPU Time =    0.02291  (0.00 / step)
-     2: E[uccd] = -76.028435244686  <S**2> = +0.000000000053025  Grad = 1.58e-03  CPU Time =    0.00621  (0.00 / step)
-     3: E[uccd] = -76.028435766017  <S**2> = +0.000000000003216  Grad = 3.38e-04  CPU Time =    0.00642  (0.00 / step)
-     4: E[uccd] = -76.028435793130  <S**2> = +0.000000000000009  Grad = 1.89e-05  CPU Time =    0.00616  (0.00 / step)
- Final: E[uccd] = -76.028435793130  <S**2> = +0.000000000000009  rho = 1 
+Initial: E[uccd] = -76.022363773732  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.028301874435  <S**2> = +0.000000  Grad = 2.75e-02  CPU Time =    0.02774  (0.00 / step)
+      2: E[uccd] = -76.028435244686  <S**2> = +0.000000  Grad = 1.58e-03  CPU Time =    0.00811  (0.00 / step)
+      3: E[uccd] = -76.028435766017  <S**2> = +0.000000  Grad = 3.38e-04  CPU Time =    0.00817  (0.00 / step)
+      4: E[uccd] = -76.028435793130  <S**2> = +0.000000  Grad = 1.89e-05  CPU Time =    0.00778  (0.00 / step)
+  Final: E[uccd] = -76.028435793130  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9980 +0.0000i
 
 
-VQE Done: CPU Time =          0.0490
+VQE Done: CPU Time =          0.0599
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -128,15 +139,15 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Target lowest eigenvalue of augmented Hessian:  -0.033468501685213294  (C0 = -0.585973630896528)
+Target lowest eigenvalue of augmented Hessian:  -0.03346850168521348  (C0 = -0.5859736308965218)
 Golden Section done in 3
 
 
 
-||g|| = 0.043305937197152 ---> Updated with scaling factor 0.9688470506254732
+||g|| = 0.04330593719715327 ---> Updated with scaling factor 0.9688470506254732
 
 
-Next energy estimation:  -76.05350918429843
+Next energy estimation:  -76.05350918429845
 States     transformed.
 Operators  transformed.
 pauli_list transformed.
@@ -148,26 +159,25 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.053509184298  <S**2> = +0.000000000000009  rho = 1  
-     1: E[uccd] = -76.068125836035  <S**2> = +0.000000039895601  Grad = 5.67e-02  CPU Time =    0.02630  (0.00 / step)
-     2: E[uccd] = -76.068501938424  <S**2> = +0.000000008176960  Grad = 9.20e-03  CPU Time =    0.00686  (0.00 / step)
-     3: E[uccd] = -76.068512564304  <S**2> = +0.000000000177099  Grad = 6.41e-04  CPU Time =    0.00621  (0.00 / step)
-     4: E[uccd] = -76.068512615468  <S**2> = +0.000000000001711  Grad = 3.57e-05  CPU Time =    0.00617  (0.00 / step)
- Final: E[uccd] = -76.068512615468  <S**2> = +0.000000000001711  rho = 1 
+Initial: E[uccd] = -76.053509184298  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.068125836035  <S**2> = +0.000000  Grad = 5.67e-02  CPU Time =    0.03496  (0.00 / step)
+      2: E[uccd] = -76.068501938424  <S**2> = +0.000000  Grad = 9.20e-03  CPU Time =    0.00955  (0.00 / step)
+      3: E[uccd] = -76.068512564304  <S**2> = +0.000000  Grad = 6.41e-04  CPU Time =    0.00817  (0.00 / step)
+      4: E[uccd] = -76.068512615468  <S**2> = +0.000000  Grad = 3.57e-05  CPU Time =    0.00821  (0.00 / step)
+  Final: E[uccd] = -76.068512615468  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9909 +0.0000i
 
 
-VQE Done: CPU Time =          0.0531
+VQE Done: CPU Time =          0.0692
 
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -177,15 +187,15 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Target lowest eigenvalue of augmented Hessian:  -0.008921474711598874  (C0 = 0.906112677776853)
+Target lowest eigenvalue of augmented Hessian:  -0.008921474711599995  (C0 = 0.9061126777768371)
 Golden Section done in 0
 
 
 
-deltaE = -0.04007682233829257    ||g|| = 0.10545872554251724 ---> Updated with scaling factor 0.75
+deltaE = -0.04007682233827836    ||g|| = 0.10545872554253276 ---> Updated with scaling factor 0.75
 
 
-Next energy estimation:  -76.07275794709673
+Next energy estimation:  -76.07275794709675
 States     transformed.
 Operators  transformed.
 pauli_list transformed.
@@ -197,26 +207,25 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.072757947097  <S**2> = +0.000000000001711  rho = 1  
-     1: E[uccd] = -76.073196736549  <S**2> = +0.000000005604903  Grad = 1.02e-02  CPU Time =    0.02567  (0.00 / step)
-     2: E[uccd] = -76.073209801092  <S**2> = +0.000000000339025  Grad = 1.40e-03  CPU Time =    0.00642  (0.00 / step)
-     3: E[uccd] = -76.073209985098  <S**2> = +0.000000000013314  Grad = 2.84e-04  CPU Time =    0.00647  (0.00 / step)
-     4: E[uccd] = -76.073209992768  <S**2> = +0.000000000001275  Grad = 2.92e-05  CPU Time =    0.00624  (0.00 / step)
- Final: E[uccd] = -76.073209992768  <S**2> = +0.000000000001275  rho = 1 
+Initial: E[uccd] = -76.072757947097  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.073196736549  <S**2> = +0.000000  Grad = 1.02e-02  CPU Time =    0.03425  (0.00 / step)
+      2: E[uccd] = -76.073209801092  <S**2> = +0.000000  Grad = 1.40e-03  CPU Time =    0.00842  (0.00 / step)
+      3: E[uccd] = -76.073209985098  <S**2> = +0.000000  Grad = 2.84e-04  CPU Time =    0.00794  (0.00 / step)
+      4: E[uccd] = -76.073209992768  <S**2> = +0.000000  Grad = 2.92e-05  CPU Time =    0.00800  (0.00 / step)
+  Final: E[uccd] = -76.073209992768  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9895 +0.0000i
 
 
-VQE Done: CPU Time =          0.0520
+VQE Done: CPU Time =          0.0669
 
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -226,15 +235,15 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Target lowest eigenvalue of augmented Hessian:  -0.0006901701132967183  (C0 = -0.996929899574963)
+Target lowest eigenvalue of augmented Hessian:  -0.0006901701132965856  (C0 = -0.9969298995749669)
 Golden Section done in 0
 
 
 
-deltaE = -0.004697377300445282    ||g|| = 0.028339105345764826 ---> Updated with scaling factor 0.75
+deltaE = -0.004697377300459493    ||g|| = 0.028339105345761607 ---> Updated with scaling factor 0.75
 
 
-Next energy estimation:  -76.07353377112157
+Next energy estimation:  -76.0735337711216
 States     transformed.
 Operators  transformed.
 pauli_list transformed.
@@ -246,25 +255,24 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.073533771122  <S**2> = +0.000000000001275  rho = 1  
-     1: E[uccd] = -76.073553819608  <S**2> = +0.000000000268032  Grad = 2.07e-03  CPU Time =    0.02505  (0.00 / step)
-     2: E[uccd] = -76.073554375500  <S**2> = +0.000000000019128  Grad = 2.44e-04  CPU Time =    0.00654  (0.00 / step)
-     3: E[uccd] = -76.073554381554  <S**2> = +0.000000000000517  Grad = 5.03e-05  CPU Time =    0.00636  (0.00 / step)
- Final: E[uccd] = -76.073554381554  <S**2> = +0.000000000000517  rho = 1 
+Initial: E[uccd] = -76.073533771122  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.073553819608  <S**2> = +0.000000  Grad = 2.07e-03  CPU Time =    0.03444  (0.00 / step)
+      2: E[uccd] = -76.073554375500  <S**2> = +0.000000  Grad = 2.44e-04  CPU Time =    0.01034  (0.00 / step)
+      3: E[uccd] = -76.073554381554  <S**2> = +0.000000  Grad = 5.03e-05  CPU Time =    0.00804  (0.00 / step)
+  Final: E[uccd] = -76.073554381554  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9892 +0.0000i
 
 
-VQE Done: CPU Time =          0.0451
+VQE Done: CPU Time =          0.0611
 
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -274,15 +282,15 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Target lowest eigenvalue of augmented Hessian:  -7.343467190286974e-05  (C0 = 0.999680496131512)
+Target lowest eigenvalue of augmented Hessian:  -7.343467190289018e-05  (C0 = 0.9996804961315121)
 Golden Section done in 0
 
 
 
-deltaE = -0.00034438878591913635    ||g|| = 0.008101814589477127 ---> Updated with scaling factor 0.75
+deltaE = -0.00034438878591913635    ||g|| = 0.008101814589489213 ---> Updated with scaling factor 0.75
 
 
-Next energy estimation:  -76.07358879696933
+Next energy estimation:  -76.0735887969693
 States     transformed.
 Operators  transformed.
 pauli_list transformed.
@@ -294,24 +302,23 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.073588796969  <S**2> = +0.000000000000517  rho = 1  
-     1: E[uccd] = -76.073591154790  <S**2> = +0.000000000042033  Grad = 6.70e-04  CPU Time =    0.02494  (0.00 / step)
-     2: E[uccd] = -76.073591213807  <S**2> = +0.000000000001536  Grad = 7.31e-05  CPU Time =    0.02148  (0.00 / step)
- Final: E[uccd] = -76.073591213807  <S**2> = +0.000000000001536  rho = 1 
+Initial: E[uccd] = -76.073588796969  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.073591154790  <S**2> = +0.000000  Grad = 6.70e-04  CPU Time =    0.03417  (0.00 / step)
+      2: E[uccd] = -76.073591213807  <S**2> = +0.000000  Grad = 7.31e-05  CPU Time =    0.00822  (0.00 / step)
+  Final: E[uccd] = -76.073591213807  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9891 +0.0000i
 
 
-VQE Done: CPU Time =          0.0540
+VQE Done: CPU Time =          0.0501
 
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -321,17 +328,17 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Warning: Too small C0 in AH : 3.1589807637266386e-06
+Warning: Too small C0 in AH : 2.7644986837894575e-06
 This usually means the Hessian is not positive semi-definite and there is a lower state.
-Target lowest eigenvalue of augmented Hessian:  -0.00034163363540837597  (C0 = 1.0)
+Target lowest eigenvalue of augmented Hessian:  -0.00034163367960635355  (C0 = 1.0)
 Golden Section done in 1
 
 
 
-deltaE = -3.6832252988006076e-05    ||g|| = 0.0024232794909597156 ---> Updated with scaling factor 1.0364745084375788
+deltaE = -3.683225288853009e-05    ||g|| = 0.0024232794909563545 ---> Updated with scaling factor 1.0364745084375788
 
 
-Next energy estimation:  -76.07368409876982
+Next energy estimation:  -76.0736840986317
 States     transformed.
 Operators  transformed.
 pauli_list transformed.
@@ -343,25 +350,24 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.073684098770  <S**2> = +0.000000000001536  rho = 1  
-     1: E[uccd] = -76.073997883194  <S**2> = +0.000000000002760  Grad = 9.70e-03  CPU Time =    0.02416  (0.00 / step)
-     2: E[uccd] = -76.074007090142  <S**2> = +0.000000000000636  Grad = 4.43e-04  CPU Time =    0.00632  (0.00 / step)
-     3: E[uccd] = -76.074007112812  <S**2> = +0.000000000000291  Grad = 9.40e-05  CPU Time =    0.00587  (0.00 / step)
- Final: E[uccd] = -76.074007112812  <S**2> = +0.000000000000291  rho = 1 
+Initial: E[uccd] = -76.073684098632  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.073997882815  <S**2> = +0.000000  Grad = 9.70e-03  CPU Time =    0.02887  (0.00 / step)
+      2: E[uccd] = -76.074007089762  <S**2> = +0.000000  Grad = 4.43e-04  CPU Time =    0.00834  (0.00 / step)
+      3: E[uccd] = -76.074007112432  <S**2> = +0.000000  Grad = 9.40e-05  CPU Time =    0.00796  (0.00 / step)
+  Final: E[uccd] = -76.074007112432  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9891 +0.0000i
 
 
-VQE Done: CPU Time =          0.0432
+VQE Done: CPU Time =          0.0530
 
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -371,15 +377,15 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Target lowest eigenvalue of augmented Hessian:  -0.0006233970247820505  (C0 = 0.8711713769053103)
+Target lowest eigenvalue of augmented Hessian:  -0.0006233978578705003  (C0 = 0.8711713176542133)
 Golden Section done in 0
 
 
 
-deltaE = -0.00041589900462213336    ||g|| = 0.00965015703992515 ---> Updated with scaling factor 0.75
+deltaE = -0.0004158986243965046    ||g|| = 0.009650134290607163 ---> Updated with scaling factor 0.75
 
 
-Next energy estimation:  -76.07431270551987
+Next energy estimation:  -76.0743127054983
 States     transformed.
 Operators  transformed.
 pauli_list transformed.
@@ -391,25 +397,24 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.074312705520  <S**2> = +0.000000000000291  rho = 1  
-     1: E[uccd] = -76.074325593052  <S**2> = +0.000000000016261  Grad = 1.81e-03  CPU Time =    0.02658  (0.00 / step)
-     2: E[uccd] = -76.074325886541  <S**2> = +0.000000000005895  Grad = 1.53e-04  CPU Time =    0.00647  (0.00 / step)
-     3: E[uccd] = -76.074325889175  <S**2> = +0.000000000001024  Grad = 4.14e-05  CPU Time =    0.00605  (0.00 / step)
- Final: E[uccd] = -76.074325889175  <S**2> = +0.000000000001024  rho = 1 
+Initial: E[uccd] = -76.074312705498  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.074325593024  <S**2> = +0.000000  Grad = 1.81e-03  CPU Time =    0.02772  (0.00 / step)
+      2: E[uccd] = -76.074325886514  <S**2> = +0.000000  Grad = 1.53e-04  CPU Time =    0.00818  (0.00 / step)
+      3: E[uccd] = -76.074325889149  <S**2> = +0.000000  Grad = 4.14e-05  CPU Time =    0.00774  (0.00 / step)
+  Final: E[uccd] = -76.074325889149  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9890 +0.0000i
 
 
-VQE Done: CPU Time =          0.0464
+VQE Done: CPU Time =          0.0520
 
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -419,15 +424,15 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Target lowest eigenvalue of augmented Hessian:  -4.507179465183701e-05  (C0 = 0.9932771413689483)
+Target lowest eigenvalue of augmented Hessian:  -4.507181748648136e-05  (C0 = 0.9932771494631436)
 Golden Section done in 0
 
 
 
-deltaE = -0.00031877636335764237    ||g|| = 0.002486784236436933 ---> Updated with scaling factor 0.75
+deltaE = -0.0003187767170516054    ||g|| = 0.0024867587354228007 ---> Updated with scaling factor 0.75
 
 
-Next energy estimation:  -76.07434715395823
+Next energy estimation:  -76.07434715394044
 States     transformed.
 Operators  transformed.
 pauli_list transformed.
@@ -439,24 +444,23 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.074347153958  <S**2> = +0.000000000001024  rho = 1  
-     1: E[uccd] = -76.074347454088  <S**2> = +0.000000000001680  Grad = 3.58e-04  CPU Time =    0.02401  (0.00 / step)
-     2: E[uccd] = -76.074347469477  <S**2> = +0.000000000001044  Grad = 8.19e-05  CPU Time =    0.00604  (0.00 / step)
- Final: E[uccd] = -76.074347469477  <S**2> = +0.000000000001044  rho = 1 
+Initial: E[uccd] = -76.074347153941  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.074347454079  <S**2> = +0.000000  Grad = 3.58e-04  CPU Time =    0.02879  (0.00 / step)
+      2: E[uccd] = -76.074347469467  <S**2> = +0.000000  Grad = 8.19e-05  CPU Time =    0.00837  (0.00 / step)
+  Final: E[uccd] = -76.074347469467  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9890 +0.0000i
 
 
-VQE Done: CPU Time =          0.0371
+VQE Done: CPU Time =          0.0454
 
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -466,15 +470,15 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Target lowest eigenvalue of augmented Hessian:  -3.5087882313543253e-06  (C0 = 0.9995330516065333)
+Target lowest eigenvalue of augmented Hessian:  -3.5088003435557814e-06  (C0 = 0.9995330525427881)
 Golden Section done in 0
 
 
 
-deltaE = -2.158030191878879e-05    ||g|| = 0.0006777146800840234 ---> Updated with scaling factor 0.75
+deltaE = -2.1580318829705902e-05    ||g|| = 0.0006777107605015522 ---> Updated with scaling factor 0.75
 
 
-Next energy estimation:  -76.07434911625185
+Next energy estimation:  -76.07434911624824
 States     transformed.
 Operators  transformed.
 pauli_list transformed.
@@ -486,23 +490,22 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.074349116252  <S**2> = +0.000000000001044  rho = 1  
-     1: E[uccd] = -76.074349156680  <S**2> = +0.000000000001730  Grad = 1.38e-04  CPU Time =    0.02341  (0.00 / step)
- Final: E[uccd] = -76.074349156680  <S**2> = +0.000000000001730  rho = 1 
+Initial: E[uccd] = -76.074349116248  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.074349156678  <S**2> = +0.000000  Grad = 1.38e-04  CPU Time =    0.02879  (0.00 / step)
+  Final: E[uccd] = -76.074349156678  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9890 +0.0000i
 
 
-VQE Done: CPU Time =          0.0302
+VQE Done: CPU Time =          0.0370
 
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -512,15 +515,15 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Target lowest eigenvalue of augmented Hessian:  -2.8077188906695474e-07  (C0 = 0.9999695893542431)
+Target lowest eigenvalue of augmented Hessian:  -2.8077474264727716e-07  (C0 = 0.9999695894013472)
 Golden Section done in 0
 
 
 
-deltaE = -1.6872026975534027e-06    ||g|| = 0.00020417471728159217 ---> Updated with scaling factor 0.75
+deltaE = -1.6872102861498206e-06    ||g|| = 0.00020417507944314465 ---> Updated with scaling factor 0.75
 
 
-Next energy estimation:  -76.07434928833092
+Next energy estimation:  -76.07434928833001
 States     transformed.
 Operators  transformed.
 pauli_list transformed.
@@ -532,23 +535,22 @@ Initial configuration: |111111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -76.074349288331  <S**2> = +0.000000000001730  rho = 1  
-     1: E[uccd] = -76.074349300043  <S**2> = +0.000000000001130  Grad = 7.25e-05  CPU Time =    0.02369  (0.00 / step)
- Final: E[uccd] = -76.074349300043  <S**2> = +0.000000000001130  rho = 1 
+Initial: E[uccd] = -76.074349288330  <S**2> = +0.000000  rho = 1  
+      1: E[uccd] = -76.074349300043  <S**2> = +0.000000  Grad = 7.25e-05  CPU Time =    0.02804  (0.00 / step)
+  Final: E[uccd] = -76.074349300043  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
    Basis           Coef
 | 000011 > : +0.9890 +0.0000i
 
 
-VQE Done: CPU Time =          0.0309
+VQE Done: CPU Time =          0.0368
 
 
 States     backtransformed.
 Operators  backtransformed.
-theta_list backtransformed.
 pauli_list backtransformed.
-Current theta_list is not tapered-off. No back-transformation done
+theta_list backtransformed.
 
 
 """"""""""""""""""""""""""""""""""""""
@@ -558,14 +560,14 @@ Current theta_list is not tapered-off. No back-transformation done
  === Computing 1RDM === 
  === Computing 2RDM === 
 Running Davidson to get update by AH
-Target lowest eigenvalue of augmented Hessian:  -3.0296710778966475e-08  (C0 = 0.9999979688703002)
+Target lowest eigenvalue of augmented Hessian:  -3.029739986989968e-08  (C0 = 0.9999979688686798)
 Golden Section done in 0
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""
      Convergence of orbital optimizer with 9 cycles
 """""""""""""""""""""""""""""""""""""""""""""""""""""""
-  Final: E[oo-uccd] = -76.0743493000432 
+  Final: E[oo-uccd] = -76.07434930004287 
 Current states are not tapered-off. No back-transformation done
 Current operators are not tapered-off. No back-transformation done
 Current pauli_list is not tapered-off. No back-transformation done
@@ -584,4 +586,4 @@ Dipole moment from relaxed 1RDM (in Debye):
 x = 1.25379     y = -0.00001    z = 1.61969
 | mu | = 2.04827
 Saved in ./h2o_oo-uccd.qkt.
-Normal termination of quket at 2022-05-25 12:45:00.966382
+Normal termination of quket at 2022-07-27 20:01:56.195073

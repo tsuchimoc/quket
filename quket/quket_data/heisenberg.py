@@ -12,10 +12,10 @@
 # limitations under the License.
 from dataclasses import dataclass, field, InitVar
 
-from openfermion.ops import QubitOperator
 
 from quket import config as cf
 from quket.fileio import error, prints
+from quket.lib import QubitOperator
 
 
 @dataclass
@@ -97,20 +97,20 @@ class Heisenberg():
             sy.append(QubitOperator(f"Y{i}"))
             sz.append(QubitOperator(f"Z{i}"))
 
-        jw_Hamiltonian = 0*QubitOperator("")
+        qubit_Hamiltonian = 0*QubitOperator("")
         if "lr" in self.basis:
             for i in range(self.nspin):
                 j = (i+1)%self.nspin
-                jw_Hamiltonian += 0.5*(sx[i]*sx[j]
+                qubit_Hamiltonian += 0.5*(sx[i]*sx[j]
                                        + sy[i]*sy[j]
                                        + sz[i]*sz[j])
             for i in range(2):
                 j = i+2
-                jw_Hamiltonian += 1./3.*(sx[i]*sx[j]
+                qubit_Hamiltonian += 1./3.*(sx[i]*sx[j]
                                          + sy[i]*sy[j]
                                          + sz[i]*sz[j])
         else:
             for i in range(self.nspin):
                 j = (i+1)%self.nspin
-                jw_Hamiltonian += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
-        return jw_Hamiltonian
+                qubit_Hamiltonian += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
+        return qubit_Hamiltonian

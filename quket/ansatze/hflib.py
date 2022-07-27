@@ -23,13 +23,13 @@ Functions related to initial qubit states (HF,UHF,etc.).
 import time
 
 import numpy as np
-from qulacs import QuantumState
 from qulacs import QuantumCircuit
 
 from quket import config as cf
 from quket.utils import orthogonal_constraint
 from quket.fileio import prints, SaveTheta, print_state
 from quket.opelib import single_ope_Pauli
+from quket.lib import QuantumState
 
 
 def set_circuit_rhf(n_qubits, n_electrons):

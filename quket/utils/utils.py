@@ -26,25 +26,29 @@ import copy
 
 import os
 import sys
-import psutil
 
 import numpy as np
 import scipy as sp
 from numpy import linalg as LA
 from scipy.linalg import expm, logm
-from qulacs import QuantumState, QuantumCircuit
+from qulacs import QuantumCircuit
 from qulacs.state import inner_product
-from openfermion import hermitian_conjugated, commutator
-from openfermion.ops import FermionOperator, QubitOperator, InteractionOperator
-from openfermion.transforms import get_fermion_operator, jordan_wigner
-try:
-    from openfermion.utils import normal_ordered
-except:
-    from openfermion.transforms import normal_ordered
+from openfermion.ops import InteractionOperator
 
 from quket import config as cf
 from quket.mpilib import mpilib as mpi
 from quket.fileio import prints, printmat, error, print_state
+from quket.lib import (
+    QuantumState, 
+    QubitOperator, 
+    FermionOperator,
+    hermitian_conjugated, 
+    commutator,
+    get_fermion_operator, 
+    jordan_wigner,
+    bravyi_kitaev,
+    normal_ordered
+    )
 
 
 def cost_mpi(cost, theta):
@@ -94,472 +98,6 @@ def jac_mpi_num(cost, theta, stepsize=1e-8):
         prints(f'Time for gradient:  {t1-t0:0.3f}')
         printmat(grad_r)
     return grad_r
-
-#def _jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, init_state=None, Hamiltonian=None):
-#    """Function
-#    ::::::::::::::::
-#    :::Deprecated:::
-#    ::::::::::::::::
-#    Given a cost function of varaibles theta,
-#    return the first derivatives (jacobian)
-#    computed with MPI.
-#
-#    This is a faster version of jac_mpi, where
-#    we first perform H U[theta]|HF>, and 
-#    in the loop we create U[theta + delta]|HF>
-#    as a vector state. We take the inner product
-#    of these state vectors to evaluate the
-#    shifted energy.
-#
-#    <HF|U[theta+ delta]! H U[theta]|HF> - E
-#    ---------------------------------------
-#                     delta
-#
-#
-#    Args:
-#        create_state (func): function to prepare a VQE state by theta
-#        Quket (QuketData): QuketData instance
-#        theta (1darray): theta list
-#        stepsize (float): Step-size for numerical derivative of wave function
-#        init_state (QuantumState): Initial state to be used in create_state()
-#        Hamiltonian (QubitOperator): Hamiltonian H for which we take the derivative of expectation, <VQE|H|VQE>
-#
-#    Author(s): Takashi Tsuchimochi
-#    """
-#    from quket.opelib import evolve  
-#    ### Just in case, broadcast theta...
-#    t0 = time.time()
-#    theta = mpi.bcast(theta, root=0)
-#
-#    ndim = theta.size
-#    theta_d = copy.copy(theta)
-#
-#    if Hamiltonian is None:
-#        Hamiltonian = Quket.operators.jw_Hamiltonian
-#    
-#    grad = np.zeros(ndim)
-#    grad_r = np.zeros(ndim)
-#    grad_test = np.zeros(ndim)
-#    if init_state is None:
-#        init_state = Quket.init_state
-#    state = create_state(theta, init_state=init_state)
-#    from quket.opelib import evolve  
-#    if Quket.projection.SpinProj:
-#        from quket.projection import S2Proj
-#        Pstate = S2Proj( Quket , state, normalize=False)
-#        norm = inner_product(Pstate, state)  ### <phi|P|phi>
-#        Hstate = evolve(Hamiltonian,  Pstate, parallel=True)  ## HP|phi>
-#        E0 = (inner_product(state, Hstate)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
-#        Pstate.multiply_coef(-E0) ## -E0 P|phi>
-#        Hstate.add_state(Pstate)  ## (H-E0) P|phi>
-#        Hstate.multiply_coef(1/norm)  ## (H-E0) P|phi> / <phi|P|phi>
-#        #Hstate.multiply_coef(1/norm)  ## H P|phi> / <phi|P|phi>
-#        #Pstate.multiply_coef(1/norm) ##  P|phi> / <phi|P|phi>
-#        ### Required to set E0 to zero 
-#        #E0 = 0
-#    else:
-#        Hstate = evolve(Hamiltonian, state, parallel=True)
-#        E0 = inner_product(state, Hstate).real
-#        Pstate = None
-#        
-#    t1 = time.time()
-#
-#    ### S4 penalty
-#    if Quket.constraint_lambda > 0:
-#        s = (Quket.spin - 1)/2
-#        S4state = evolve(Quket.operators.jw_S4, state, parallel=True)
-#        S4state.multiply_coef(Quket.constraint_lambda)
-#        S2state = evolve(Quket.operators.jw_S2, state, parallel=True)
-#        S2state.multiply_coef(- Quket.constraint_lambda * s * (s+1) )
-#        state_ = state.copy() 
-#        state_.multiply_coef(Quket.constraint_lambda * ( s * (s+1) )**2 )
-#        Hstate.add_state(S4state)
-#        Hstate.add_state(S2state)
-#        Hstate.add_state(state_)
-#        E0 = inner_product(state, Hstate).real
-#    
-#    if Quket.adapt.mode == 'pauli':
-#    ### Sz penalty
-#        if Quket.constraint_lambda_Sz > 0:
-#            #  Sz ** 2
-#            Sz2 = Quket.operators.jw_Sz * Quket.operators.jw_Sz
-#            Sz2state = evolve(Sz2, state, parallel=True) ## Sz|Phi>
-#            ## Ms2 = <Phi|Sz**2|Phi>
-#            Ms2 = inner_product(state, Sz2state).real
-#            ### lambda (Sz**2 - Ms2)|Phi>
-#            state_ = state.copy()
-#            state_.multiply_coef(-Ms2)
-#            Sz2state.add_state(state_)
-#            Sz2state.multiply_coef(Quket.constraint_lambda_Sz)
-#            Hstate.add_state(Sz2state)
-#        if Quket.constraint_lambda_S2_expectation > 0 :
-#            # penalty (<S**2> - s(s+1))
-#            S2state = evolve(Quket.operators.jw_S2, state, parallel=True) ## S2|Phi>
-#            ## S2 = <Phi|S**2|Phi>
-#            S2 = inner_product(state, S2state).real
-#
-#            state_ = state.copy()
-#            state_.multiply_coef(-S2)
-#            S2state.add_state(state_)
-#
-#            ## lambda (S2-<S**2>)|Phi>
-#            S2state.multiply_coef(Quket.constraint_lambda_S2_expectation)
-#            Hstate.add_state(S2state)
-#
-#    ### orthogonal constraints
-#    nstates = len(Quket.lower_states)
-#    for i in range(nstates):
-#        Ei = Quket.lower_states[i][0]
-#        overlap = inner_product(Quket.lower_states[i][1], state).real
-#        istate = Quket.lower_states[i][1].copy()
-#        istate.multiply_coef(-Ei*overlap)
-#        Hstate.add_state(istate)
-#        E0 += -Ei * abs(overlap)**2
-#        
-#    
-#    t_create = 0
-#    t_inner = 0
-#    ipos, my_ndim = mpi.myrange(ndim)
-#    for iloop in range(ipos, ipos+my_ndim):
-#        theta_d[iloop] += stepsize
-#        t0 = time.time()
-#        state = create_state(theta_d, init_state=init_state)
-#        t1 = time.time()
-#        t_create += t1 - t0
-#        Ep = inner_product(state, Hstate).real
-#        t2 = time.time()
-#        t_inner += t2 - t1
-#        if Quket.projection.SpinProj:
-#            if abs(Ep/E0) > 1e-15:
-#                grad[iloop] = 2*(Ep)/stepsize
-#        elif abs((Ep-E0)/E0) > 1e-15:
-#            grad[iloop] = 2*(Ep-E0)/stepsize
-#        else:
-#            # this may well be round-off error. 
-#            # w have to implement analytic gradient...
-#            pass
-#        theta_d[iloop] -= stepsize
-#    grad_r = mpi.allreduce(grad, mpi.MPI.SUM)
-#    cf.grad = np.linalg.norm(grad_r)
-#    cf.gradv = np.copy(grad_r)
-#    cf.grad_max = max(grad_r)
-#    t2 = time.time()
-#    if cf.debug:
-#        prints(f' cost = {E0:22.16f}    ||g|| = {cf.grad:4.2e}    g_max = {cf.grad_max:4.2e}')
-#        prints(f'Create state:  {t_create:0.3f}   Inner_product:  {t_inner:0.3f}')
-#        printmat(cf.gradv, 'gradients')
-#    #    prints(f'jac_mpi_deriv: evolve   {t1-t0}')
-#    #    prints(f'jac_mpi_deriv: gradient {t2-t1}')
-#    return grad_r
-#
-#def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None, init_state=None, Hamiltonian=None):
-#    """Function
-#    Given a cost function of varaibles theta,
-#    return the first derivatives (jacobian)
-#    computed with MPI.
-#
-#    This is a faster version of jac_mpi, where we perform 
-#     grad_r[i] = d/dtheta[i]   <psi(theta[:])| H |psi(theta[:])>
-#               =  <psi(theta[:])| H  d/dtheta[i] |psi(theta[:])>
-#               = 2 * Re <H| U[n-1] U[n-2] ... U[i+1] sigma[i] U[i] ... U[1] U[0] |0>
-#    
-#    Here,
-#        <H|  =  <psi(theta[:])| H
-#        U[i] = exp(theta[i] sigma[i]). 
-#    
-#    We do this in a step-by-step, sweep-like manner, because creating 
-#    the derivative state d/dtheta[i] |psi(theta[:])> is the most time-consuming part.
-#    In order to do so, it is convenient to first prepare `UHstate` as
-#    
-#       |UH> = U[0]! U[1]! ... U[i]! ... U[n-2]! U[n-1]! |H>  
-#    
-#    Then, set |0'> = |0> and |UH'> = |UH> and then do the following:
-#    (0-a)   |0'>   <--  U[0] |0'> 
-#    (0-b)   |s0'> = sigma[0] |0'>  
-#    (0-c)   |UH'>  <--  U[0] |UH'>  (= U[1]! ... U[i]! ... U[n-2]! U[n-1]! |H> ) 
-#    (0-d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[i] ... U[1] sigma[0] U[0] |0>
-#    (1-a)   |0'>   <--  U[1] |0'>  
-#    (1-b)   |s0'> = sigma[1] |0'>
-#    (1-c)   |UH'>  <--  U[1] |UH'>  (= U[2]! ... U[i]! ... U[n-2]! U[n-1]! |H> )
-#    (1-d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[i] ... U[2] sigma[1] U[1] U[0] |0>
-#    ...
-#    (i-a)   |0'>   <--  U[i] |0'>  
-#    (i-b)   |s0'> = sigma[i] |0'>
-#    (i-c)   |UH'>  <--  U[i] |UH'>  (= U[i]! ... U[n-2]! U[n-1]! |H> )
-#    (i-d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... U[i+1] sigma[i] U[i] ... U[2] U[1] U[0] |0>
-#    ...
-#
-#
-#    Args:
-#        create_state (func): function to prepare a VQE state by theta
-#        Quket (QuketData): QuketData instance
-#        theta (1darray): theta list
-#        stepsize (float): Step-size for numerical derivative of wave function
-#        init_state (QuantumState): Initial state to be used in create_state()
-#        Hamiltonian (QubitOperator): Hamiltonian H for which we take the derivative of expectation, <VQE|H|VQE>
-#
-#    Author(s): Takashi Tsuchimochi
-#    """
-#    t_initial = time.time()
-#    from quket.opelib import evolve  
-#    ### Just in case, broadcast theta...
-#    t0 = time.time()
-#    theta = mpi.bcast(theta, root=0)
-#
-#    ndim = theta.size
-#    theta_d = copy.copy(theta)
-#
-#    if Hamiltonian is None:
-#        Hamiltonian = Quket.operators.jw_Hamiltonian
-#    
-#    grad = np.zeros(ndim)
-#    grad_r = np.zeros(ndim)
-#    grad_test = np.zeros(ndim)
-#    if init_state is None:
-#        init_state = Quket.init_state
-#    if current_state is None:
-#        state = create_state(theta, init_state=init_state)
-#    else:
-#        state = current_state.copy()
-#    from quket.opelib import evolve  
-#    if Quket.projection.SpinProj:
-#        from quket.projection import S2Proj
-#        Pstate = S2Proj( Quket , state, normalize=False)
-#        norm = inner_product(Pstate, state)  ### <phi|P|phi>
-#        Hstate = evolve(Hamiltonian,  Pstate, parallel=True)  ## HP|phi>
-#        E0 = (inner_product(state, Hstate)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
-#        Pstate.multiply_coef(-E0) ## -E0 P|phi>
-#        Hstate.add_state(Pstate)  ## (H-E0) P|phi>
-#        Hstate.multiply_coef(1/norm)  ## (H-E0) P|phi> / <phi|P|phi>
-#        #Hstate.multiply_coef(1/norm)  ## H P|phi> / <phi|P|phi>
-#        #Pstate.multiply_coef(1/norm) ##  P|phi> / <phi|P|phi>
-#        ### Required to set E0 to zero 
-#        #E0 = 0
-#        del(Pstate)
-#    else:
-#        Hstate = evolve(Hamiltonian, state, parallel=True)
-#        E0 = inner_product(state, Hstate).real
-#        Pstate = None
-#
-#    ### S4 penalty
-#    if Quket.constraint_lambda > 0:
-#        s = (Quket.spin - 1)/2
-#        S4state = evolve(Quket.operators.jw_S4, state, parallel=True)
-#        S4state.multiply_coef(Quket.constraint_lambda)
-#        S2state = evolve(Quket.operators.jw_S2, state, parallel=True)
-#        S2state.multiply_coef(- Quket.constraint_lambda * s * (s+1) )
-#        state_ = state.copy() 
-#        state_.multiply_coef(Quket.constraint_lambda * ( s * (s+1) )**2 )
-#        Hstate.add_state(S4state)
-#        Hstate.add_state(S2state)
-#        Hstate.add_state(state_)
-#        E0 = inner_product(state, Hstate).real
-#        del(S4state)
-#    
-#    if Quket.adapt.mode == 'pauli':
-#    ### Sz penalty
-#        if Quket.constraint_lambda_Sz > 0:
-#            #  Sz ** 2
-#            Sz2 = Quket.operators.jw_Sz * Quket.operators.jw_Sz
-#            Sz2state = evolve(Sz2, state, parallel=True) ## Sz|Phi>
-#            ## Ms2 = <Phi|Sz**2|Phi>
-#            Ms2 = inner_product(state, Sz2state).real
-#            ### lambda (Sz**2 - Ms2)|Phi>
-#            state_ = state.copy()
-#            state_.multiply_coef(-Ms2)
-#            Sz2state.add_state(state_)
-#            Sz2state.multiply_coef(Quket.constraint_lambda_Sz)
-#            Hstate.add_state(Sz2state)
-#            del(Sz2state)
-#        if Quket.constraint_lambda_S2_expectation > 0 :
-#            # penalty (<S**2> - s(s+1))
-#            S2state = evolve(Quket.operators.jw_S2, state, parallel=True) ## S2|Phi>
-#            ## S2 = <Phi|S**2|Phi>
-#            S2 = inner_product(state, S2state).real
-#
-#            state_ = state.copy()
-#            state_.multiply_coef(-S2)
-#            S2state.add_state(state_)
-#
-#            ## lambda (S2-<S**2>)|Phi>
-#            S2state.multiply_coef(Quket.constraint_lambda_S2_expectation)
-#            Hstate.add_state(S2state)
-#            del(S2state)
-#
-#    ### orthogonal constraints
-#    nstates = len(Quket.lower_states)
-#    istate = None
-#    for i in range(nstates):
-#        Ei = Quket.lower_states[i][0]
-#        overlap = inner_product(Quket.lower_states[i][1], state).real
-#        istate = Quket.lower_states[i][1].copy()
-#        istate.multiply_coef(-Ei*overlap)
-#        Hstate.add_state(istate)
-#        E0 += -Ei * abs(overlap)**2
-#    if istate is not None:
-#        del(istate)
-#    
-#    t1 = time.time()
-#    t_hstate = t1 - t0
-#    if Quket.rho == 1:
-#        ### Exact state-vector treatment with very efficient sweep algorithm
-#        t_cu = 0
-#        t_cuH = 0
-#        t_sigma = 0
-#        t_inner = 0
-#        ipos, my_ndim = mpi.myrange(ndim)
-#
-#        #### Check available memory
-#        #mem_dict, proc_dict = mpi.mem_proc_dict()
-#        #### Check single state memory
-#        #state_size = state.get_vector().nbytes
-#        #### Check if all the intermediate states can be stored
-#        #store_vector = True
-#        #for (proc, mem_available), (_, nprocs) in zip(mem_dict.items(), proc_dict.items()):
-#        #    prints(f'For {proc}, we have {mem_available/nprocs} memory per processor.'
-#        #           f'Each QuantumState has the size of {state_size}, so we estimate'
-#        #           f'we can store {(mem_available/nprocs)//state_size} states.')
-#        #    nstates_per_proc = (mem_available/nprocs)//state_size
-#        #    if nstates_per_proc < my_ndim:
-#        #        store_vector = False
-#
-#        ### Overwrite
-#        state = init_state
-#        ### Set the size of pauli_list to that of theta_list
-#        pauli_list = Quket.pauli_list[:ndim]
-#        from quket.opelib import create_exp_state
-#        for iloop in range(ipos, ipos+my_ndim):
-#            t0 = time.time()
-#            if iloop == ipos:
-#                ### Create intermediate state 
-#                #    prod_i^ipos exp(theta[i] * pauli[i]) |0> 
-#                #    prod'_{i=n-1}^{ipos+1} exp(theta[i] * pauli[i]) H|psi>   (backward) 
-#                t0 = time.time()
-#                for k in range(ipos):
-#                    if type(pauli_list[k]) is list:
-#                        for pauli in pauli_list[k]:
-#                            state = create_exp_state(Quket, init_state=state, \
-#                                                      pauli_list=[pauli], \
-#                                                      theta_list=[theta[k]])
-#                    else:
-#                        state = create_exp_state(Quket, init_state=state, \
-#                                                pauli_list=[pauli_list[k]], \
-#                                                theta_list=[theta[k]])
-#                for k in range(1,ndim-ipos+1):
-#                    if type(pauli_list[-k]) is list:
-#                        for pauli in reversed(pauli_list[-k]):
-#                            Hstate = create_exp_state(Quket, init_state=Hstate, \
-#                                              pauli_list=[hermitian_conjugated(pauli)], \
-#                                              theta_list=[theta[-k]])
-#                    else: 
-#                        Hstate = create_exp_state(Quket, init_state=Hstate, \
-#                                                  pauli_list=[hermitian_conjugated(pauli_list[-k])], \
-#                                                  theta_list=[theta[-k]])
-#                t1 = time.time()
-#                t_init = t1-t0
-#            ###  Now we take one step forward and compute the derivative of the intermediate state 
-#            ###
-#            if type(pauli_list[iloop]) is list: 
-#                ###
-#                ### Non-commutatitive because of 'spin-free' operator
-#                ### 
-#                ### We have to decompose pauli
-#                for k, pauli in enumerate(pauli_list[iloop]):
-#                    t0 = time.time()
-#                    #  (a)   |0'>   <--  U[iloop][k] |0'> 
-#                    state = create_exp_state(Quket, init_state=state,\
-#                                             pauli_list=[pauli],\
-#                                             theta_list=[theta[iloop]])
-#                    t1 = time.time()
-#                    t_cu += t1-t0
-#                    t0 = time.time()
-#                    #  (b)   sigma[iloop][k] |0'>  
-#                    sigma_state = evolve(pauli, state, parallel=False)
-#                    #  (c)   |UH'>  <--  U[iloop][k] |UH'>  (= U[i]! ... U[n-2]! U[n-1]! |H> ) 
-#                    t1 = time.time()
-#                    t_sigma += t1-t0
-#                    t0 = time.time()
-#                    #if iloop != ipos:
-#                    Hstate = create_exp_state(Quket, init_state=Hstate,\
-#                                         pauli_list=[pauli],\
-#                                         theta_list=[theta[iloop]])
-#                    t1 = time.time()
-#                    t_cuH += t1 - t0
-#                    grad[iloop] += 2 * inner_product(sigma_state, Hstate).real
-#                    t2 = time.time()
-#                    t_inner += t2 - t1
-#
-#
-#            else:  ### Commutative
-#                #  (a)   |0'>   <--  U[iloop] |0'> 
-#                t0 = time.time()
-#                state = create_exp_state(Quket, init_state=state,\
-#                                         pauli_list=[pauli_list[iloop]],\
-#                                         theta_list=[theta[iloop]])
-#
-#                t1 = time.time()
-#                t_cu += t1 - t0
-#                t0 = time.time()
-#                #  (b)   sigma[iloop] |0'>  
-#                sigma_state = evolve(pauli_list[iloop], state, parallel=False)
-#                t1 = time.time()
-#                t_sigma += t1 - t0
-#                t0 = time.time()
-#                #  (c)   |UH'>  <--  U[iloop] |UH'>  (= U[i]! ... U[n-2]! U[n-1]! |H> ) 
-#                #if iloop != ipos:
-#                Hstate = create_exp_state(Quket, init_state=Hstate,\
-#                                     pauli_list=[pauli_list[iloop]],\
-#                                     theta_list=[theta[iloop]])
-#
-#
-#                #  (d)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... sigma[iloop] U[iloop] ... U[1] U[0] |0>
-#                t1 = time.time()
-#                t_cuH += t1 - t0
-#                grad[iloop] = 2 * inner_product(sigma_state, Hstate).real
-#                t2 = time.time()
-#                t_inner += t2 - t1
-#    else:
-#        ### For rho > 1, currently only numerical derivatives are available
-#        t_create = 0
-#        t_inner = 0
-#        ipos, my_ndim = mpi.myrange(ndim)
-#        for iloop in range(ipos, ipos+my_ndim):
-#            theta_d[iloop] += stepsize
-#            t0 = time.time()
-#            state = create_state(theta_d, init_state=init_state)
-#            t1 = time.time()
-#            t_create += t1 - t0
-#            Ep = inner_product(state, Hstate).real
-#            t2 = time.time()
-#            t_inner += t2 - t1
-#            if Quket.projection.SpinProj:
-#                if abs(Ep/E0) > 1e-15:
-#                    grad[iloop] = 2*(Ep)/stepsize
-#            elif abs((Ep-E0)/E0) > 1e-15:
-#                grad[iloop] = 2*(Ep-E0)/stepsize
-#            else:
-#                # this may well be round-off error. 
-#                # w have to implement analytic gradient...
-#                pass
-#            theta_d[iloop] -= stepsize
-#    grad_r = mpi.allreduce(grad, mpi.MPI.SUM)
-#    cf.grad = np.linalg.norm(grad_r)
-#    cf.gradv = np.copy(grad_r)
-#    cf.grad_max = max(grad_r)
-#    if cf.debug:
-#        prints(f' cost = {E0:22.16f}    ||g|| = {cf.grad:4.2e}    g_max = {cf.grad_max:4.2e}')
-#    #    for irank in range(mpi.nprocs):
-#    #        if irank == mpi.rank:
-#    #            #prints(f'{mpi.rank=}   Initial |H>:  {t_hstate:0.3f}   U!|0>:  {t_cu:0.3f}    U!|H>: {t_cuH:0.3f}    sigma|0>:  {t_sigma:0.3f}   Inner_product:  {t_inner:0.3f}', root=mpi.rank, flush=True)
-#    #            prints(f'{mpi.rank=}    Initial |H>:  {t_hstate:0.3f}   Initial U!|H>: {t_init:0.3f}    U!|0>:  {t_cu:0.3f}    U!|H>: {t_cuH:0.3f}    sigma|0>:  {t_sigma:0.3f}   Inner_product:  {t_inner:0.3f}',root=mpi.rank)
-#    #        mpi.barrier()
-#    #    prints(f'jac_mpi_deriv: evolve   {t1-t0}')
-#    #    prints(f'jac_mpi_deriv: gradient {t2-t1}')
-#    t_final = time.time()
-#    #printmat(grad_r)
-#    #prints('T_grad = ',t_final- t_initial)
-#    return grad_r
-#
 
 def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None, init_state=None, Hamiltonian=None):
     """Function
@@ -616,7 +154,7 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
     theta_d = copy.copy(theta)
 
     if Hamiltonian is None:
-        Hamiltonian = Quket.operators.jw_Hamiltonian
+        Hamiltonian = Quket.operators.qubit_Hamiltonian
     
     grad = np.zeros(ndim)
     grad_r = np.zeros(ndim)
@@ -650,9 +188,9 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
     ### S4 penalty
     if Quket.constraint_lambda > 0:
         s = (Quket.spin - 1)/2
-        S4state = evolve(Quket.operators.jw_S4, state, parallel=True)
+        S4state = evolve(Quket.operators.qubit_S4, state, parallel=True)
         S4state.multiply_coef(Quket.constraint_lambda)
-        S2state = evolve(Quket.operators.jw_S2, state, parallel=True)
+        S2state = evolve(Quket.operators.qubit_S2, state, parallel=True)
         S2state.multiply_coef(- Quket.constraint_lambda * s * (s+1) )
         state_ = state.copy() 
         state_.multiply_coef(Quket.constraint_lambda * ( s * (s+1) )**2 )
@@ -666,7 +204,7 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
     ### Sz penalty
         if Quket.constraint_lambda_Sz > 0:
             #  Sz ** 2
-            Sz2 = Quket.operators.jw_Sz * Quket.operators.jw_Sz
+            Sz2 = Quket.operators.qubit_Sz * Quket.operators.qubit_Sz
             Sz2state = evolve(Sz2, state, parallel=True) ## Sz|Phi>
             ## Ms2 = <Phi|Sz**2|Phi>
             Ms2 = inner_product(state, Sz2state).real
@@ -679,7 +217,7 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
             del(Sz2state)
         if Quket.constraint_lambda_S2_expectation > 0 :
             # penalty (<S**2> - s(s+1))
-            S2state = evolve(Quket.operators.jw_S2, state, parallel=True) ## S2|Phi>
+            S2state = evolve(Quket.operators.qubit_S2, state, parallel=True) ## S2|Phi>
             ## S2 = <Phi|S**2|Phi>
             S2 = inner_product(state, S2state).real
 
@@ -693,12 +231,14 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
             del(S2state)
 
     ### orthogonal constraints
+    if not hasattr(Quket, 'lower_states'):
+        Quket.lower_states = []
     nstates = len(Quket.lower_states)
     istate = None
     for i in range(nstates):
-        Ei = Quket.lower_states[i][0]
-        overlap = inner_product(Quket.lower_states[i][1], state).real
-        istate = Quket.lower_states[i][1].copy()
+        Ei = Quket.lower_states[i]['energy']
+        overlap = inner_product(Quket.lower_states[i]['state'], state).real
+        istate = Quket.lower_states[i]['state'].copy()
         istate.multiply_coef(-Ei*overlap)
         Hstate.add_state(istate)
         E0 += -Ei * abs(overlap)**2
@@ -707,7 +247,7 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
     
     t1 = time.time()
     t_hstate = t1 - t0
-    if Quket.rho == 1:
+    if Quket.rho == 1 and "fci2qubit" not in str(create_state):
         ### Exponential ansatz with one Trotter-slice.
         ### Exact state-vector treatment with very efficient sweep algorithm
         t_cu = 0
@@ -751,36 +291,44 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
                         # state <---  U[n-ipos] ... U[0] |init_state>
                         state = create_exp_state(Quket, init_state=state,\
                                                  pauli_list=[pauli_list[ifor]],\
-                                                     theta_list=[theta[ifor]])
+                                                 theta_list=[theta[ifor]],
+                                                 overwrite=True)
 
                 for irev in range(ndim-1, ndim-ipos-1, -1):
                     if type(pauli_list[irev]) is list: 
                         for k in reversed(range(len(pauli_list[irev]))):
+                            phase = 1
+                            if list(pauli_list[irev][k].terms.values())[0].real:
+                                # It is assumed the pauli is real & theta is imaginary
+                                phase = -1  ### pauli is real and theta is imaginary (treated as real), so flip the sign of pauli for h.c. below
+
                             if backward: 
-                            #if True:
                                 # state <---  U[n-ipos-1]! ... U[n-1]! |state>  =  U[n-ipos-2] ... U[0] |state>
                                 state = create_exp_state(Quket, init_state=state,\
-                                                         pauli_list=[hermitian_conjugated(pauli_list[irev][k])],\
-                                                         theta_list=[theta[irev]])
+                                                         pauli_list=[phase * hermitian_conjugated(pauli_list[irev][k])],\
+                                                         theta_list=[theta[irev]],
+                                                         overwrite=True)
                             # Hstate <---  U[n-ipos-1]! ... U[n-1]! H|state>
                             Hstate = create_exp_state(Quket, init_state=Hstate,\
-                                                 pauli_list=[hermitian_conjugated(pauli_list[irev][k])],\
-                                                 theta_list=[theta[irev]])
+                                                 pauli_list=[phase * hermitian_conjugated(pauli_list[irev][k])],\
+                                                 theta_list=[theta[irev]],
+                                                 overwrite=True)
                     else:
+                        phase = 1
+                        if list(pauli_list[irev].terms.values())[0].real:
+                            # It is assumed the pauli is real & theta is imaginary
+                            phase = -1  ### pauli is real and theta is imaginary (treated as real), so flip the sign of pauli for h.c. below
                         if backward: 
-                        #if True:
                             # state <---  U[n-ipos-1]! ... U[n-1]! |state>
                             state = create_exp_state(Quket, init_state=state,\
-                                                     pauli_list=[hermitian_conjugated(pauli_list[irev])],\
-                                                     theta_list=[theta[irev]])
+                                                     pauli_list=[phase * hermitian_conjugated(pauli_list[irev])],\
+                                                     theta_list=[theta[irev]],
+                                                     overwrite=True)
                         # Hstate <---  U[n-ipos-1]! ... U[n-1]! H|state>
                         Hstate = create_exp_state(Quket, init_state=Hstate,\
-                                         pauli_list=[hermitian_conjugated(pauli_list[irev])],\
-                                         theta_list=[theta[irev]])
-                #for irank in range(mpi.nprocs):
-                #    if irank == mpi.rank:
-                #        print_state(state, f'{mpi.rank=}', root=mpi.rank)
-                #    mpi.barrier()
+                                         pauli_list=[phase * hermitian_conjugated(pauli_list[irev])],\
+                                         theta_list=[theta[irev]],
+                                         overwrite=True)
                 t1 = time.time()
                 t_init = t1-t0
 
@@ -791,6 +339,7 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
                 ### Non-commutatitive because of 'spin-free' operator
                 ### 
                 ### We have to decompose pauli
+                    
                 for k in reversed(range(len(pauli_list[iloop]))):
                     #  (a)   sigma[iloop][k] |psi'>  
                     t0 = time.time()
@@ -799,7 +348,17 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
                     t_sigma += t1-t0
 
                     #  (b)  Evaluate <H'|s|psi'> = <H| U[n-1] U[n-2] ... sigma[iloop] U[iloop] ... U[1] U[0] |0>
-                    grad[iloop] += 2 * inner_product(sigma_state, Hstate).real
+                    #grad[iloop] += 2 * inner_product(sigma_state, Hstate).real
+                    if list(pauli_list[iloop][k].terms.values())[0].real:
+                        if list(pauli_list[iloop][k].terms.values())[0].imag:
+                            error(f"Incorrect pauli for pauli_list[{iloop}]: {pauli_list[iloop]}")
+                        # It is assumed the pauli is real & theta is imaginary
+                        grad[iloop] += 2 * inner_product(sigma_state, Hstate).imag
+                        phase = -1  ### pauli is real and theta is imaginary (treated as real), so flip the sign of pauli for h.c. below
+                    else:
+                        # It is assumed the pauli is imaginary & theta is real
+                        grad[iloop] += 2 * inner_product(sigma_state, Hstate).real
+                        phase = 1
                     t2 = time.time()
                     t_inner += t2 - t1
 
@@ -808,16 +367,18 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
                     #  (c)   |psi'>   <--  U[iloop][k]! |psi'> 
                     t0 = time.time()
                     state = create_exp_state(Quket, init_state=state,\
-                                             pauli_list=[hermitian_conjugated(pauli_list[iloop][k])],\
-                                             theta_list=[theta[iloop]])
+                                             pauli_list=[phase * hermitian_conjugated(pauli_list[iloop][k])],\
+                                             theta_list=[theta[iloop]],
+                                             overwrite=True)
 
                     t1 = time.time()
                     t_cu += t1-t0
                     t0 = time.time()
                     #  (d)   |H'>  <--  U[iloop][k]! |H'>  (= U[iloop]! ... U[n-2]! U[n-1]! |H> ) 
                     Hstate = create_exp_state(Quket, init_state=Hstate,\
-                                         pauli_list=[hermitian_conjugated(pauli_list[iloop][k])],\
-                                         theta_list=[theta[iloop]])
+                                         pauli_list=[phase * hermitian_conjugated(pauli_list[iloop][k])],\
+                                         theta_list=[theta[iloop]],
+                                         overwrite=True)
                     t1 = time.time()
                     t_cuH += t1-t0
                     
@@ -829,7 +390,16 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
                 t1 = time.time()
                 t_sigma += t1-t0
                 #  (b)  Evaluate <UH'|s0'> = <H| U[n-1] U[n-2] ... sigma[iloop] U[iloop] ... U[1] U[0] |0>
-                grad[iloop] = 2 * inner_product(sigma_state, Hstate).real
+                if list(pauli_list[iloop].terms.values())[0].real:
+                    if list(pauli_list[iloop].terms.values())[0].imag:
+                        error(f"Incorrect pauli for pauli_list[{iloop}]: {pauli_list[iloop]}")
+                    # It is assumed the pauli is real & theta is imaginary
+                    grad[iloop] = 2 * inner_product(sigma_state, Hstate).imag
+                    phase = -1  ### pauli is real and theta is imaginary (treated as real), so flip the sign of pauli for h.c. below
+                else:
+                    # It is assumed the pauli is imaginary & theta is real
+                    grad[iloop] = 2 * inner_product(sigma_state, Hstate).real
+                    phase = 1
                 t2 = time.time()
                 t_inner += t2 - t1
 
@@ -838,15 +408,17 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
                 t0 = time.time()
                 #  (c)   |psi'>   <--  U[iloop]! |psi'> 
                 state = create_exp_state(Quket, init_state=state,\
-                                         pauli_list=[hermitian_conjugated(pauli_list[iloop])],\
-                                         theta_list=[theta[iloop]])
+                                         pauli_list=[phase*hermitian_conjugated(pauli_list[iloop])],\
+                                         theta_list=[theta[iloop]],
+                                         overwrite=True)
                 t1 = time.time()
                 t_cu += t1-t0
                 t0 = time.time()
                 #  (d)   |H'>  <--  U[iloop]! |H'>  (= U[iloop]! ... U[n-2]! U[n-1]! |H> ) 
                 Hstate = create_exp_state(Quket, init_state=Hstate,\
-                                     pauli_list=[hermitian_conjugated(pauli_list[iloop])],\
-                                     theta_list=[theta[iloop]])
+                                     pauli_list=[phase*hermitian_conjugated(pauli_list[iloop])],\
+                                     theta_list=[theta[iloop]],
+                                     overwrite=True)
                 t1 = time.time()
                 t_cuH += t1-t0
 
@@ -879,14 +451,14 @@ def jac_mpi_deriv(create_state, Quket, theta, stepsize=1e-8, current_state=None,
     cf.grad = np.linalg.norm(grad_r)
     cf.gradv = np.copy(grad_r)
     cf.grad_max = max(grad_r)
-    if cf.debug:
-        prints(f' cost = {E0:22.16f}    ||g|| = {cf.grad:4.2e}    g_max = {cf.grad_max:4.2e}')
-        #for irank in range(mpi.nprocs):
-        #    if irank == mpi.rank:
-        #        prints(f'{mpi.rank=}    Initial |H>:  {t_hstate:0.3f}   Initial U!|H>: {t_init:0.3f}    U!|0>:  {t_cu:0.3f}    U!|H>: {t_cuH:0.3f}    sigma|0>:  {t_sigma:0.3f}   Inner_product:  {t_inner:0.3f}',root=mpi.rank)
-        #    mpi.barrier()
-
     t_final = time.time()
+    if cf.debug:
+        prints(f' cost = {E0:22.16f}    ||g|| = {cf.grad:4.2e}    g_max = {cf.grad_max:4.2e}   grad time = {t_final-t_initial:0.3f}')
+        for irank in range(mpi.nprocs):
+            if irank == mpi.rank:
+                prints(f'{mpi.rank=}    Initial |H>:  {t_hstate:0.3f}   Initial U!|H>: {t_init:0.3f}    U!|0>:  {t_cu:0.3f}    U!|H>: {t_cuH:0.3f}    sigma|0>:  {t_sigma:0.3f}   Inner_product:  {t_inner:0.3f}',root=mpi.rank)
+            mpi.barrier()
+
     return grad_r
 
 
@@ -916,13 +488,13 @@ def jac_mpi_deriv_SA(create_state, Quket, theta, stepsize=1e-8):
             from quket.projection import S2Proj
             Pstate = S2Proj( Quket , state, normalize=False)
             norm = inner_product(Pstate, state)  ### <phi|P|phi>
-            Hstate = evolve(Quket.operators.jw_Hamiltonian,  Pstate, parallel=True)  ## HP|phi>
+            Hstate = evolve(Quket.operators.qubit_Hamiltonian,  Pstate, parallel=True)  ## HP|phi>
             E0 = (inner_product(state, Hstate)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
             Pstate.multiply_coef(-E0) ## -E0 P|phi>
             Hstate.add_state(Pstate)  ## (H-E0) P|phi>
             Hstate.multiply_coef(1/norm)  ## (H-E0) P|phi> / <phi|P|phi>
         else:
-            Hstate = evolve(Quket.operators.jw_Hamiltonian, state, parallel=True)
+            Hstate = evolve(Quket.operators.qubit_Hamiltonian, state, parallel=True)
             E0 = inner_product(state, Hstate).real
             Pstate = None
             
@@ -931,9 +503,9 @@ def jac_mpi_deriv_SA(create_state, Quket, theta, stepsize=1e-8):
         ### S4 penalty
         if Quket.constraint_lambda > 0:
             s = (Quket.spin - 1)/2
-            S4state = evolve(Quket.operators.jw_S4, state, parallel=True)
+            S4state = evolve(Quket.operators.qubit_S4, state, parallel=True)
             S4state.multiply_coef(Quket.constraint_lambda)
-            S2state = evolve(Quket.operators.jw_S2, state, parallel=True)
+            S2state = evolve(Quket.operators.qubit_S2, state, parallel=True)
             S2state.multiply_coef(- Quket.constraint_lambda * s * (s+1) )
             state_ = state.copy() 
             state_.multiply_coef(Quket.constraint_lambda * ( s * (s+1) )**2 )
@@ -947,9 +519,9 @@ def jac_mpi_deriv_SA(create_state, Quket, theta, stepsize=1e-8):
         ### orthogonal constraints
         nstates = len(Quket.lower_states)
         for i in range(nstates):
-            Ei = Quket.lower_states[i][0]
-            overlap = inner_product(Quket.lower_states[i][1], state).real
-            istate = Quket.lower_states[i][1].copy()
+            Ei = Quket.lower_states[i]['energy']
+            overlap = inner_product(Quket.lower_states[i]['state'], state).real
+            istate = Quket.lower_states[i]['state'].copy()
             istate.multiply_coef(-Ei*overlap)
             Hstate.add_state(istate)
             E0 += -Ei * abs(overlap)**2
@@ -1057,12 +629,25 @@ def chknaturalnum(string):
     else:
         return False
 
-def chknum(string):
-    """Function:
-    Check if string is number.
-    """
+def isint(s): 
     try:
-        float(string)
+        int(s)  
+    except ValueError:
+        return False
+    else:
+        return True
+
+def isfloat(s):
+    try:
+        float(s)
+    except ValueError:
+        return False
+    else:
+        return True
+
+def iscomplex(s):
+    try:
+        complex(s)
     except ValueError:
         return False
     else:
@@ -1109,17 +694,18 @@ def chk_energy(QuketData):
         return False
 
 def is_commute(op1, op2):
-    if type(op1) == QubitOperator: 
+    if isinstance(op1, QubitOperator): 
         return commutator(op1, op2) == QubitOperator('',0)
-    if type(op1) == FermionOperator: 
+    if isinstance(op1, FermionOperator): 
         return normal_ordered(commutator(op1, op2)) == FermionOperator('',0)
+    
     raise TypeError(f'commutator is not applicable to {type(op1)} in is_commute().')
 
 def fermi_to_str(fermion_operator):
     """
     Convert FermionOperator to string list.
     """
-    if isinstance(fermion_operator, FermionOperator):
+    if isinstance(fermion_operator, (openfermion.FermionOperator, FermionOperator)):
         string = str(normal_ordered(fermion_operator))
     else:
         string = str(normal_ordered(get_fermion_operator(fermion_operator)))
@@ -1165,12 +751,13 @@ def orthogonal_constraint(Quket, state):
     """Function
     Compute the penalty term for excited states based on 'orthogonally-constrained VQE' scheme.
     """
-
+    if not hasattr(Quket, 'lower_states'):
+        Quket.lower_states = []
     nstates = len(Quket.lower_states)
     extra_cost = 0
     for i in range(nstates):
-        Ei = Quket.lower_states[i][0]
-        overlap = inner_product(Quket.lower_states[i][1], state)
+        Ei = Quket.lower_states[i]['energy']
+        overlap = inner_product(Quket.lower_states[i]['state'], state)
         extra_cost += -Ei * abs(overlap)**2
     return extra_cost
 
@@ -1431,7 +1018,7 @@ def get_OpenFermion_integrals(Hamiltonian, n_orbitals):
     #sys.stdout.flush()
     Hamiltonian = normal_ordered(Hamiltonian)
     if type(Hamiltonian) is InteractionOperator:
-        from openfermion.transforms import get_fermion_operator
+        from quket.lib import get_fermion_operator
         Hamiltonian = get_fermion_operator(Hamiltonian)
     for op, c in Hamiltonian.terms.items():
         if len(op) == 0:
@@ -1492,56 +1079,6 @@ def generate_general_openfermion_operator(h0, h1, h2):
                     h2_op += FermionOperator(((2*p, 1), (2*r+1, 1), (2*s+1, 0), (2*q, 0)), j)
     normal_ordered(h2_op)
     return normal_ordered(h0_op + h1_op + h2_op)
-
-def make_gate(n, index, pauli_id):
-    """Function
-    Make a gate for Pauli string like X0Y1Z2...
-
-    Args:
-        n (int): Number of qubits
-        index (list): Index of Qubits to be operated.
-        pauli_id (list): Index of 0,1,2,3 or I,X,Y,Z.
-
-    Returns:
-        circuit (QuantumCircuit)
-
-    Example:
-        If the target gate is X0 Y1 Z3 Y5 Z6 and the
-        total number of qubits is 8, then set
-
-        n = 8
-        index = [0, 1, 3, 5, 6]
-        pauli_id = ['X', 'Y', 'Z', 'Y', 'Z']
-        or
-        pauli_id = [1, 2, 3, 2, 3]
-    """
-    circuit = QuantumCircuit(n)
-    for i in range(len(index)):
-        gate_number = index[i]
-        if pauli_id[i] == 1 or pauli_id[i] == 'X':
-            circuit.add_X_gate(gate_number)
-        elif pauli_id[i] == 2 or pauli_id[i] == 'Y':
-            circuit.add_Y_gate(gate_number)
-        elif pauli_id[i] == 3 or pauli_id[i] == 'Z':
-            circuit.add_Z_gate(gate_number)
-    return circuit
-
-def Pauli2Circuit(n, Pauli, circuit=None):
-    """Function
-    Given a list of Pauli operators in the format of OpenFermion,
-    for example, ((0, 'X'), (1, 'X'), (2, 'X'), (3, 'X'), (6, 'X'), (8, 'X')),
-    create a gate circuit using qulacs.
-    """
-    if circuit is None:
-        circuit = QuantumCircuit(n)
-    for ibit, xyz in Pauli:
-        if xyz == 'X':
-            circuit.add_X_gate(ibit)
-        elif xyz == 'Y':
-            circuit.add_Y_gate(ibit)
-        elif xyz == 'Z':
-            circuit.add_Z_gate(ibit)
-    return circuit
 
 def to_pyscf_geom(geometry, pyscf_geom):
     geom = [] 
@@ -1658,56 +1195,6 @@ def get_unique_list(old, sign=False):
         return [x for x in oldset if x not in new and not new.append(x)]
 
 
-#def get_unique_list(old, sign=False):
-#    """Function
-#    Remove redundant elements from old.
-#    """
-#    from openfermion import QubitOperator, FermionOperator
-#    if type(old) is not list:
-#        raise TypeError('Argument 1 has to be list')
-#
-#    ### Check the type of list 
-#    type_ = type(old[0])
-#
-#    # Form dictionary
-#    keywords = []
-#    if type_ in (QubitOperator, FermionOperator):
-#            ### Set coefficients to 1 or 1j 
-#            for key in old:
-#                if len(list(key.terms.values())) == 0:
-#                    continue
-#                elif list(key.terms.keys())[0] == ():
-#                    continue
-#                else:
-#                    if sign:
-#                        key *= np.sign(list(key.terms.values())[0])
-#                    keywords.append(str(key))
-#    else:
-#        for key in old:
-#            keywords.append(str(key))
-#
-#    new = list(dict.fromkeys(keywords))
-#
-#    new_list = []
-#    if type_ == int:
-#        for key in new:
-#            new_list.append(int(key))
-#    elif type_ == float:
-#        for key in new:
-#            new_list.append(float(key))
-#    elif type_ == complex:
-#        for key in new:
-#            new_list.append(complex(key))
-#    elif type_ == str:
-#        new_list = new
-#    elif type_ == QubitOperator:
-#        for key in new:
-#            new_list.append(QubitOperator(key))
-#    elif type_ == FermionOperator:
-#        for key in new:
-#            new_list.append(FermionOperator(key))
-#    return new_list
-
 def prepare_state(state_info, n_qubits):
     """
     Generate a quantum state using state_info.
@@ -1761,4 +1248,138 @@ def append_01qubits(state, nc, ns):
     vec[indices] = state_vec
     state_appended.load(vec)
     return state_appended
+
+def jw2bk(intjw, n_qubits):
+    """Function
+    Convert a bit string from jordan-wigner to bravyi-kitaev.
+    The bit string may be given by base-10 integer.
+    """
+    intbk = 0
+    parity = 1
+    parity_sub = 1
+    for i in range(n_qubits):
+        k = intjw//2**(i) % 2
+        parity *= (-1)**k
+        parity_sub *= (-1)**k        
+        if i % 2 == 0:
+            #Where i is even, qubit i stores the occupation number of orbital i, as in the Jordan−Wigner mapping.
+            intbk += k * 2**i    
+        elif  (np.log2(i+1)).is_integer():
+            #When log2 (i+1) is an integer, the qubit stores the parity of the occupation numbers of all orbitals with indices less than or equal to i. 
+            intbk += (1-parity)/2 * 2**i
+            parity_sub = 1 ### Reset            
+        else:
+            # For other cases, the qubit stores the parity of the occupation numbers of orbitals in subdividing binary sets.
+            intbk += (1-parity_sub)/2 * 2**i
+    return int(intbk)
+
+def bk2jw(intbk, n_qubits):
+    """Function
+    Convert a bit string from bravyi-kitaev to jordan-wigner.
+    The bit string may be given by base-10 integer.
+    """
+    intjw = 0
+    occ = 0
+    sub_occ = 0
+    for i in range(n_qubits):
+        k = intbk//2**(i) % 2      
+        if i % 2 == 0:
+            #Where i is even, qubit i stores the occupation number of orbital i, as in the Jordan−Wigner mapping.
+            intjw += k * 2**i    
+            occ += k
+            sub_occ += k
+        elif  (np.log2(i+1)).is_integer():
+            kk = (k + occ) % 2
+            #When log2 (i+1) is an integer, the qubit stores the parity of the occupation numbers of all orbitals with indices less than or equal to i. 
+            intjw +=  kk * 2**i         
+            occ += kk
+            sub_occ = 0  ### Reset                 
+        else:
+            # For other cases, the qubit stores the parity of the occupation numbers of orbitals in subdividing binary sets.
+            kk = (k + sub_occ) % 2
+            intjw += kk * 2**i   
+            sub_occ += kk
+            occ += kk
+    return int(intjw)
+
+def transform_state_jw2bk(state):
+    """Function
+    Convert a QuantumState from jordan-wigner to bravyi-kitaev mapping.
+    
+    Args:
+        state (QuantumState): QuantumState in Jordan-Wigner mapping to be transformed.
+    Returns:
+        state (QuantumState): QuantumState in Bravyi-Kitaev mapping.
+    """
+    n_qubits = state.get_qubit_count()
+    v = state.get_vector()
+    vec = np.zeros(2**n_qubits, dtype=complex)
+    for i in range(2**n_qubits):
+        vec[jw2bk(i, n_qubits)] = v[i]
+    state_ = QuantumState(n_qubits)
+    state_.load(vec)
+    return state_
+
+def transform_state_bk2jw(state):
+    """Function
+    Convert a QuantumState from bravyi-kitaev to jordan-wigner mapping.
+    
+    Args:
+        state (QuantumState): QuantumState in Bravyi-Kitaev mapping to be transformed.
+    Returns:
+        state (QuantumState): QuantumState in Jordan-Wigner mapping.
+    """
+    n_qubits = state.get_qubit_count()
+    v = state.get_vector()
+    vec = np.zeros(2**n_qubits, dtype=complex)
+    for i in range(2**n_qubits):
+        vec[bk2jw(i, n_qubits)] = v[i]
+    state_ = QuantumState(n_qubits)
+    state_.load(vec)
+    return state_
+
+
+def get_tau(E, mapping='jordan_wigner', hc=True, n_qubits=None):
+    """
+    From orbital list [p,q], [p,q,r,s], ...,
+    generate pauli operators of its anti-hermitiian form
+    The first half of the list means creation operators,
+    the last half of the list means annihilation operators,
+    e.g., E=[p,q,r,s] gives tau=p^ q^ r s - s r q^ p^
+    in QubitOperator basis.
+
+    Args:
+        E (list): integer list of p,q,...,r,s to represent the excitation p^ q^ ... r s
+        hc (bool): Whether or not hermitian_conjugated is taken for E (E-E! or E).
+        mapping : jordan_wigner or bravyi_kitaev.
+                         For bravyi_kitaev, n_qubits is required.
+    Returns:
+        sigma (QubitOperator): Pauli string in QubitOperator class
+    """
+    rank = len(E)
+    irank = 0
+    excitation_string = ''
+    if rank%2 != 0:
+        raise ValueError('get_tau needs excitation string, i.e., even creation and annihilation')
+    for p in E:
+        if irank < rank//2: # creation
+            excitation_string = excitation_string + str(p)+'^ '
+        else: # annihilation
+            excitation_string = excitation_string + str(p)+' '
+        irank += 1
+    #prints(excitation_string)
+    fermi_op = FermionOperator(excitation_string)
+    if hc:
+        tau = fermi_op - hermitian_conjugated(fermi_op)
+    else:
+        tau = fermi_op
+    if mapping == 'jordan_wigner':
+        sigma = jordan_wigner(tau)
+    elif mapping == 'bravyi_kitaev':
+        if n_qubits is None:
+            raise ValueError('n_qubits is necessary for bravyi_kitaev')
+        sigma = bravyi_kitaev(tau, n_qubits)
+    elif mapping is None:
+        sigma = tau
+    return sigma
 

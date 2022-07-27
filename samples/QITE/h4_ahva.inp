@@ -9,7 +9,7 @@ H  0  0  1.2
 H  1.  0  0
 H  1.  0  1.2
 method       = qite
-ansatz       = hamiltonian
+ansatz       = anti-hamiltonian
 nterm        = 1
 db           = 0.1
 maxiter      = 1000

@@ -9,15 +9,15 @@
 ///             Q   Q       U    U      K   K       E    E       T              ///
 ///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
 ///                                                                             ///
-///                      Quantum Computing Simulator Ver 0.8.1                  ///
+///                      Quantum Computing Simulator Ver 0.9                    ///
 ///                                                                             ///
 ///        Copyright 2019-2022                                                  ///
 ///        The Quket Developers                                                 ///
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 12:40:57.036090: 
-16 processes x 2 = Total 32 cores
+2022-07-27 19:56:47.573560: 
+8 processes x 4 = Total 32 cores
 
 ##################### INPUT ########################
 basis        = sto-3G
@@ -45,8 +45,9 @@ Basis set = sto-3G
 *******************************************
 
 Symmetry Coov : C2v(Abelian)
-E[FCI]    = -7.8824019322888494     (Spin = 1   Ms = 0)
-E[HF]     = -7.862023860127121    (Spin = 1   Ms = 0)
+E[FCI]    = -7.882401932289     (Spin = 1   Ms = 0)
+E[HF]     = -7.862023860127     (Spin = 1   Ms = 0)
+TODO: Pauli_list is not supported for ansatz = 2-upccgsd.
 TODO: Pauli_list is not supported for ansatz = 2-upccgsd.
 NBasis = 6
 
@@ -70,8 +71,8 @@ Initial configuration: |000000001111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-    1: E[2-UpCCGSD] = -7.882395917011  <S**2> = -0.000000000000002  Grad = 1.31e-04  CPU Time =  0.66  (0.03 / step)
-Final: E[2-UpCCGSD] = -7.882395917011  <S**2> = -0.000000000000002
+    1: E[2-UpCCGSD] = -7.882395917018  <S**2> = -0.000000000000001  Grad = 1.36e-04  CPU Time =  0.88  (0.02 / step)
+Final: E[2-UpCCGSD] = -7.882395917018  <S**2> = -0.000000000000001
 
 (2-UpCCGSD state)
       Basis              Coef
@@ -79,7 +80,7 @@ Final: E[2-UpCCGSD] = -7.882395917011  <S**2> = -0.000000000000002
 | 110000000011 > : -0.1136 +0.0000i
 
 
-VQE Done: CPU Time =          0.7004
+VQE Done: CPU Time =          0.9106
 
 2-upccgsd (vqe) 
       Basis              Coef
@@ -97,4 +98,4 @@ Dipole moment from relaxed 1RDM (in Debye):
 x = -0.00004     y = -0.00020    z = -4.62084
 | mu | = 4.62084
 Saved in ./2-upccgsd_LiH.qkt.
-Normal termination of quket at 2022-05-25 12:40:58.689351
+Normal termination of quket at 2022-07-27 19:56:49.628405

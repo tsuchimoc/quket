@@ -194,7 +194,7 @@ def nuclear_grad(Quket):
 def geomopt(Quket,init_dict,kwds):
     from pyscf.geomopt.berny_solver import to_berny_geom, _geom_to_atom
     from pyscf.geomopt.addons import symmetrize
-    from quket.vqe import VQE_driver
+    from quket.vqe import VQE_driver, vqe
     from quket.quket_data import QuketData
     try:
         from berny import Berny, geomlib
@@ -225,27 +225,29 @@ def geomopt(Quket,init_dict,kwds):
             pyscf_geom = kwds['geometry']
             kwds['geometry'] = to_pyscf_geom(geometry, pyscf_geom)
             Quket.initialize(**kwds)
-            Quket.jw_to_qulacs()
+            Quket.openfermion_to_qulacs()
             Quket.set_projection()
             Quket.get_pauli_list()
             ## initialize theta_list so that it is wrongly read as initial guess in VQE
             Quket.theta_list = None
 
-            if Quket.cf.taper_off:
-                Quket.tapering.run()
+            if Quket.cf.do_taper_off:
+                Quket.tapering.run(mapping=Quket.cf.mapping)
                 ### Create excitation-pauli list, and transform relevant stuff by unitary
                 Quket.transform_all(reduce=True)
-
-            VQE_driver(Quket,
-               Quket.cf.kappa_guess,
-               Quket.cf.theta_guess,
-               Quket.cf.mix_level,
-               Quket.cf.opt_method,
-               Quket.cf.opt_options,
-               Quket.cf.print_level,
-               Quket.maxiter,
-               Quket.cf.Kappa_to_T1)
-            if Quket.cf.taper_off:
+            if Quket.pauli_list is not None:
+                Quket.vqe()
+            else:
+                VQE_driver(Quket,
+                   Quket.cf.kappa_guess,
+                   Quket.cf.theta_guess,
+                   Quket.cf.mix_level,
+                   Quket.cf.opt_method,
+                   Quket.cf.opt_options,
+                   Quket.cf.print_level,
+                   Quket.maxiter,
+                   Quket.cf.Kappa_to_T1)
+            if Quket.cf.do_taper_off:
                 Quket.transform_all(backtransform=True, reduce=True)
             Quket.nuclear_grad = nuclear_grad(Quket)
             optimizer.send((Quket.energy, Quket.nuclear_grad))

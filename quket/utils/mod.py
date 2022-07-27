@@ -152,6 +152,10 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
         pyscf_scf.conv_tol_grad = 1e-5
         pyscf_scf.verbose = 0
         pyscf_scf.kernel()
+        if not pyscf_scf.converged:
+            prints(f'WARNING: pyscf did not converge.')
+            prints(f'         This may be an issue with initial guess {_guess}.')
+            prints(f'         You may use different guess (minao, huckel, read)')
         #pyscf_scf.kernel(IntPQ=cf.IntPQ)
 
     elif system == 'hubbard':
@@ -187,7 +191,18 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     if n_active_orbitals is None:
         n_active_orbitals = molecule.n_orbitals
 
-        
+    # Check
+    nvir = pyscf_scf.mo_coeff.shape[1] - ncore - n_active_orbitals
+    if nvir < 0 or ncore < 0:
+        error(f'Inconsistent n_orbitals and n_electrons.\n'
+              f'  Number of MOs = {pyscf_scf.mo_coeff.shape[1]}\n'
+              f'  Number of electrons = {molecule.n_electrons}\n'
+              f'  Number of active electrons = {n_active_electrons}\n'
+              f'  Number of active orbitals = {n_active_orbitals}\n'
+              f'  Number of frozen-core orbitals = {ncore}\n'
+              f'  Number of frozen-vir orbitals = {nvir}\n')
+
+
     # Hold pyscf data in molecule. They are required to compute density
     # matrices and other quantities.
     molecule._pyscf_data = {}

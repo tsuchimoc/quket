@@ -24,12 +24,13 @@ import time
 import math
 
 import numpy as np
-from qulacs import QuantumCircuit, QuantumState
+from qulacs import QuantumCircuit
 
 from quket import config as cf
 from quket.utils import int2occ
 from quket.opelib import set_exp_circuit 
 from quket.fileio import SaveTheta, print_state, print_amplitudes, prints, error
+from quket.lib import QuantumState
 
 
 def trapezoidal(x0, x1, n):

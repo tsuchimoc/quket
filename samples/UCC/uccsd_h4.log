@@ -9,15 +9,15 @@
 ///             Q   Q       U    U      K   K       E    E       T              ///
 ///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
 ///                                                                             ///
-///                      Quantum Computing Simulator Ver 0.8.1                  ///
+///                      Quantum Computing Simulator Ver 0.9                    ///
 ///                                                                             ///
 ///        Copyright 2019-2022                                                  ///
 ///        The Quket Developers                                                 ///
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 12:38:26.100725: 
-16 processes x 2 = Total 32 cores
+2022-07-27 19:52:55.904324: 
+8 processes x 4 = Total 32 cores
 
 ##################### INPUT ########################
 basis        = sto-3G
@@ -37,6 +37,8 @@ rho          = 1
 det          = 1111
 ####################################################
 
+1111
+['1111']
 +-------------+
 |  Job #   1  |
 +-------------+
@@ -50,8 +52,8 @@ Basis set = sto-3G
 *******************************************
 
 Symmetry C1 : C1(Abelian)
-E[FCI]    = -1.9695137026413692     (Spin = 1   Ms = 0)
-E[HF]     = -1.7792752192944157    (Spin = 1   Ms = 0)
+E[FCI]    = -1.969513702645     (Spin = 1   Ms = 0)
+E[HF]     = -1.779275219294     (Spin = 1   Ms = 0)
 NBasis = 4
 
 [Molecular Orbitals]
@@ -71,21 +73,21 @@ Initial configuration: |00001111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccsd] = -1.779275219294  <S**2> = +0.000000000000000  rho = 1  
-     1: E[uccsd] = -1.899039857957  <S**2> = +0.000001751128063  Grad = 2.36e-01  CPU Time =    0.06266  (0.00 / step)
-     2: E[uccsd] = -1.919103430614  <S**2> = +0.000024469093169  Grad = 1.55e-01  CPU Time =    0.00946  (0.00 / step)
-     3: E[uccsd] = -1.938067614435  <S**2> = +0.000047478996258  Grad = 1.56e-01  CPU Time =    0.00965  (0.00 / step)
-     4: E[uccsd] = -1.952398920146  <S**2> = +0.000372528445575  Grad = 2.05e-01  CPU Time =    0.00955  (0.00 / step)
-     5: E[uccsd] = -1.964360277310  <S**2> = +0.001197713863971  Grad = 8.23e-02  CPU Time =    0.00947  (0.00 / step)
-     6: E[uccsd] = -1.967112273207  <S**2> = +0.001322619058979  Grad = 3.61e-02  CPU Time =    0.00948  (0.00 / step)
-     7: E[uccsd] = -1.967457067796  <S**2> = +0.000459065286246  Grad = 1.41e-02  CPU Time =    0.00945  (0.00 / step)
-     8: E[uccsd] = -1.967512893318  <S**2> = +0.000117347403792  Grad = 5.02e-03  CPU Time =    0.00946  (0.00 / step)
-     9: E[uccsd] = -1.967525010613  <S**2> = +0.000009207539942  Grad = 2.02e-03  CPU Time =    0.00968  (0.00 / step)
-    10: E[uccsd] = -1.967526396766  <S**2> = +0.000000042473614  Grad = 7.75e-04  CPU Time =    0.00963  (0.00 / step)
-    11: E[uccsd] = -1.967526521580  <S**2> = +0.000000022520385  Grad = 1.61e-04  CPU Time =    0.00967  (0.00 / step)
-    12: E[uccsd] = -1.967526531499  <S**2> = +0.000000001839713  Grad = 5.16e-05  CPU Time =    0.00928  (0.00 / step)
-    13: E[uccsd] = -1.967526532440  <S**2> = +0.000000000032535  Grad = 8.14e-06  CPU Time =    0.00960  (0.00 / step)
- Final: E[uccsd] = -1.967526532440  <S**2> = +0.000000000032535  rho = 1 
+Initial: E[uccsd] = -1.779275219294  <S**2> = +0.000000  rho = 1  
+      1: E[uccsd] = -1.899039857957  <S**2> = +0.000002  Grad = 2.36e-01  CPU Time =    0.07542  (0.00 / step)
+      2: E[uccsd] = -1.919103430614  <S**2> = +0.000024  Grad = 1.55e-01  CPU Time =    0.01356  (0.00 / step)
+      3: E[uccsd] = -1.938067614435  <S**2> = +0.000047  Grad = 1.56e-01  CPU Time =    0.01364  (0.00 / step)
+      4: E[uccsd] = -1.952398920146  <S**2> = +0.000373  Grad = 2.05e-01  CPU Time =    0.01344  (0.00 / step)
+      5: E[uccsd] = -1.964360277310  <S**2> = +0.001198  Grad = 8.23e-02  CPU Time =    0.01341  (0.00 / step)
+      6: E[uccsd] = -1.967112273207  <S**2> = +0.001323  Grad = 3.61e-02  CPU Time =    0.01368  (0.00 / step)
+      7: E[uccsd] = -1.967457067796  <S**2> = +0.000459  Grad = 1.41e-02  CPU Time =    0.01366  (0.00 / step)
+      8: E[uccsd] = -1.967512893318  <S**2> = +0.000117  Grad = 5.02e-03  CPU Time =    0.01373  (0.00 / step)
+      9: E[uccsd] = -1.967525010613  <S**2> = +0.000009  Grad = 2.02e-03  CPU Time =    0.01375  (0.00 / step)
+     10: E[uccsd] = -1.967526396766  <S**2> = +0.000000  Grad = 7.75e-04  CPU Time =    0.01359  (0.00 / step)
+     11: E[uccsd] = -1.967526521580  <S**2> = +0.000000  Grad = 1.61e-04  CPU Time =    0.01373  (0.00 / step)
+     12: E[uccsd] = -1.967526531499  <S**2> = +0.000000  Grad = 5.16e-05  CPU Time =    0.01320  (0.00 / step)
+     13: E[uccsd] = -1.967526532440  <S**2> = +0.000000  Grad = 8.14e-06  CPU Time =    0.01366  (0.00 / step)
+  Final: E[uccsd] = -1.967526532440  <S**2> = +0.000000  rho = 1 
 
 (uccsd state)
     Basis            Coef
@@ -95,7 +97,7 @@ Initial E[uccsd] = -1.779275219294  <S**2> = +0.000000000000000  rho = 1
 | 10010110 > : -0.1491 +0.0000i
 
 
-VQE Done: CPU Time =          0.1867
+VQE Done: CPU Time =          0.2491
 
 uccsd (vqe) 
     Basis            Coef
@@ -115,4 +117,4 @@ Dipole moment from relaxed 1RDM (in Debye):
 x = 0.00001     y = -0.00000    z = 0.00000
 | mu | = 0.00001
 Saved in ./uccsd_h4.qkt.
-Normal termination of quket at 2022-05-25 12:38:26.859580
+Normal termination of quket at 2022-07-27 19:52:56.786813

@@ -21,7 +21,6 @@ Properties.
 
 """
 import numpy as np
-from openfermion.ops import FermionOperator
 
 from quket import config as cf
 from quket.mpilib import mpilib as mpi

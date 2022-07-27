@@ -27,7 +27,6 @@ from dataclasses import dataclass, field, InitVar, make_dataclass
 import numpy as np
 from scipy.special import comb
 import time
-from openfermion.ops import FermionOperator
 from qulacs.state import inner_product
 
 from quket import config as cf
@@ -35,30 +34,31 @@ from quket.mpilib import mpilib as mpi
 from quket.linalg import symm, skew, skew3, skew4
 from quket.fileio import error, prints, printmat, print_state
 from quket.opelib import evolve
+from quket.lib import FermionOperator
 
-def calc_RDM(state, n_qubits, string):
+def calc_RDM(state, n_qubits, string, mapping='jordan_wigner'):
     """Function
     Calculate elements of each RDM in order to compute RDM rapidly.
     Author(s) : Taisei Nishimaki
     """
     from quket.opelib import OpenFermionOperator2QulacsGeneralOperator
     E = FermionOperator(string)
-    E_qu = OpenFermionOperator2QulacsGeneralOperator(E, n_qubits)
+    E_qu = OpenFermionOperator2QulacsGeneralOperator(E, n_qubits, mapping=mapping)
     E_expect = E_qu.get_expectation_value(state).real
     return E_expect
 
 def get_1RDM(Quket, state=None):
     """Function
     Compute 1RDM of QuantmState in QuketData (whole orbital space).
-    No symmetry is enforced. They are tensors of the dimensions 
+    No symmetry is enforced. They are tensors of the dimensions
     [n_orbitals, n_orbitals]
 
-    Args: 
-        Quket (QuketData): QuketData instance 
+    Args:
+        Quket (QuketData): QuketData instance
         state (QuantumState, optional): Target state for which RDM is computed
     Returns:
         DA (2darray): Alpha 1-particle density matrix
-        DB (2darray): Beta 1-particle density matrix 
+        DB (2darray): Beta 1-particle density matrix
 
     Author(s): Taisei Nishimaki, Takashi Tsuchimochi
     """
@@ -70,26 +70,26 @@ def get_1RDM(Quket, state=None):
     norbs = Quket.n_active_orbitals
     if state is None:
         state = Quket.state
-
+    mapping = Quket.cf.mapping
 
     # set for frozen_core #
     ncore = Quket.n_frozen_orbitals + Quket.n_core_orbitals
     n_orbitals =Quket.n_orbitals
-    nsec  = n_orbitals - ncore - norbs 
+    nsec  = n_orbitals - ncore - norbs
 
     my_DA = np.zeros((norbs, norbs))
     my_DB = np.zeros((norbs, norbs))
 
     # MPI parallel
     ipos, my_n_qubits = mpi.myrange(n_qubits)
-        
+
     for i in range(ipos, ipos+my_n_qubits):
         for j in range(n_qubits):
             ii = i//2
             jj = j//2
 
             string = f"{i}^ {j}"
-            Dpq = calc_RDM(state, n_qubits, string) 
+            Dpq = calc_RDM(state, n_qubits, string, mapping=mapping)
 
             if i%2 == 0 and j%2 == 0:
                 my_DA[jj, ii] = Dpq
@@ -118,754 +118,9 @@ def get_1RDM(Quket, state=None):
 
     return DA, DB
 
-def get_2RDM_old(Quket, state=None):
-    """Function
-    Compute 2RDM of QuantmState in QuketData (active space only).
-    To be explicit,
-    Daaaa[p,q,r,s] = < pA^ qA^ rA sA >
-    Dbbbb[p,q,r,s] = < pB^ qB^ rB sB >
-    Dbaab[p,q,r,s] = < pB^ qA^ rA sB >
-    No symmetry is enforced. They are tensors of the dimensions 
-    [n_active_orbitals, n_active_orbitals, n_active_orbitals, n_active_orbitals]
-
-    Args: 
-        Quket (QuketData): QuketData instance 
-        state (QuantumState, optional): Target state for which RDM is computed
-    Returns:
-        Daaaa (4darray): Alpha 2-particle density matrix in the active space
-        Dbbbb (4darray): Beta 2-particle density matrix in the active space
-        Dbaab (4darray): Beta-Alpha 2-particle density matrix in the active space
-
-    Author(s): Taisei Nishimaki
-    """
-    prints(" === Computing 2RDM === ")
-    n_qubits = Quket.n_qubits
-    if state is None:
-        state = Quket.state
-
-    norbs = Quket.n_active_orbitals
-    n_frozen_orbitals = Quket.n_frozen_orbitals
-
-    Daaaa = np.zeros((norbs, norbs, norbs, norbs))
-    Dbbbb = np.zeros((norbs, norbs, norbs, norbs))
-    Dbaab = np.zeros((norbs, norbs, norbs, norbs))
-    myDaaaa = np.zeros((norbs, norbs, norbs, norbs))
-    myDbbbb = np.zeros((norbs, norbs, norbs, norbs))
-    myDbaab = np.zeros((norbs, norbs, norbs, norbs))
-    Dhfa = np.zeros((norbs, norbs, norbs, norbs))
-    Dhfb = np.zeros((norbs, norbs, norbs, norbs))
-    Dhfba = np.zeros((norbs, norbs, norbs, norbs))
-
-
-    Daaaa_old = np.zeros((norbs, norbs, norbs, norbs))
-    Dbbbb_old = np.zeros((norbs, norbs, norbs, norbs))
-    Dbaab_old = np.zeros((norbs, norbs, norbs, norbs))
-
-    
-    t1 = time.time()
-    cyc = 0
-    pq = -1
-    for p in range(norbs):
-        for q in range(norbs):
-            pq += 1
-            sr = -1
-            for s in range(norbs):
-                for r in range(norbs):
-                    sr += 1
-                    if pq < sr:
-                        continue
-                    pa = p * 2 
-                    qa = q * 2 
-                    ra = r * 2 
-                    sa = s * 2 
-                    pb = pa + 1
-                    qb = qa + 1
-                    rb = ra + 1
-                    sb = sa + 1
-                    ### AAAA
-                    if (p > q) and (s > r):
-                        cyc += 1
-                        if cyc % mpi.nprocs == mpi.rank:
-                            string = f"{pa}^ {qa}^ {ra} {sa}"
-                            val = calc_RDM(state, n_qubits, string) 
-                            myDaaaa[p, q, r, s] = +val
-                            myDaaaa[q, p, r, s] = -val
-                            myDaaaa[p, q, s, r] = -val
-                            myDaaaa[q, p, s, r] = +val
-                            myDaaaa[r, s, p, q] = +val
-                            myDaaaa[s, r, p, q] = -val
-                            myDaaaa[r, s, q, p] = -val
-                            myDaaaa[s, r, q, p] = +val
-                        cyc += 1
-                        if cyc % mpi.nprocs == mpi.rank:
-                            string = f"{pb}^ {qb}^ {rb} {sb}"
-                            val = calc_RDM(state, n_qubits, string) 
-                            Dabba = Dbaab.transpose(1,0,3,2)
-                            myDbbbb[p, q, r, s] = +val
-                            myDbbbb[q, p, r, s] = -val
-                            myDbbbb[p, q, s, r] = -val
-                            myDbbbb[q, p, s, r] = +val
-                            myDbbbb[r, s, p, q] = +val
-                            myDbbbb[s, r, p, q] = -val
-                            myDbbbb[r, s, q, p] = -val
-                            myDbbbb[s, r, q, p] = +val
-                    cyc += 1                        
-                    ## Always p >= q and s>=r 
-                    if cyc % mpi.nprocs == mpi.rank:
-                        string = f"{pb}^ {qa}^ {ra} {sb}"
-                        val = calc_RDM(state, n_qubits, string) 
-                        ### Debugging...
-                        if myDbaab[p,q,r,s] != 0:
-                            print(f"Warning : p={p}, q={q}, r={r}, s={s}")
-                        myDbaab[p, q, r, s] = +val
-                        if (pq != sr): # Only off-diagonal (its ok to skip this if)
-                            if myDbaab[s,r,q,p] != 0:
-                                print(f"Warning : p={p}, q={q}, r={r}, s={s}")
-                            myDbaab[s, r, q, p] = +val
-    Daaaa = mpi.allreduce(myDaaaa, mpi.MPI.SUM)
-    Dbbbb = mpi.allreduce(myDbbbb, mpi.MPI.SUM)
-    Dbaab = mpi.allreduce(myDbaab, mpi.MPI.SUM)
-
-    #return Daaaa, Dbbbb, Dbaab
-    return Daaaa, Dbaab, Dbbbb
-
-def get_3RDM_old(Quket, state=None, print_level=0):
-    """Function
-    Compute 3RDM of QuantmState `state` in QuketData.
-    Author(s): Taisei Nishimaki
-    """
-    prints("\n === Computing 3RDM === ")
-    n_qubits = Quket.n_qubits
-    if state is None:
-        state = Quket.state
-    norbs = Quket.n_active_orbitals
-    Daaaaaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs))
-    Dbbbbbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs))
-    Dbaaaab = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs))
-    Dbbaabb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs))
-    myDaaaaaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs))
-    myDbbbbbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs))
-    myDbaaaab = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs))
-    myDbbaabb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs))
-
-    t1 = time.time()
-    cyc = 0
-    pqr = -1
-    count1=0
-    count2=0
-    for p in range(norbs):
-        for q in range(norbs):
-            for r in range(norbs):
-                pqr += 1
-                stu = -1
-                for s in range(norbs):
-                    for t in range(norbs):
-                        for u in range(norbs):
-                            stu += 1
-                            pa = p * 2
-                            qa = q * 2
-                            ra = r * 2
-                            sa = s * 2
-                            ta = t * 2
-                            ua = u * 2
-                            pb = pa + 1
-                            qb = qa + 1
-                            rb = ra + 1
-                            sb = sa + 1
-                            tb = ta + 1
-                            ub = ua + 1
-                            count2+=1
-                            ### AAAAAA
-                            cyc += 1
-                            if (p > q > r) and (s > t > u):
-                                if cyc % mpi.nprocs == mpi.rank:
-                                    string = f"{pa}^ {qa}^ {ra}^ {sa} {ta} {ua}"
-                                    val = calc_RDM(state, n_qubits, string)
-                                    myDaaaaaa[p, q, r, s, t, u] = +val
-                                    myDaaaaaa[p, q, r, s, u, t] = -val
-                                    myDaaaaaa[p, q, r, t, s, u] = -val
-                                    myDaaaaaa[p, q, r, t, u, s] = +val
-                                    myDaaaaaa[p, q, r, u, s, t] = +val
-                                    myDaaaaaa[p, q, r, u, t, s] = -val
-
-                                    myDaaaaaa[p, r, q, s, t, u] = -val
-                                    myDaaaaaa[p, r, q, s, u, t] = +val
-                                    myDaaaaaa[p, r, q, t, s, u] = +val
-                                    myDaaaaaa[p, r, q, t, u, s] = -val
-                                    myDaaaaaa[p, r, q, u, s, t] = -val
-                                    myDaaaaaa[p, r, q, u, t, s] = +val
-
-                                    myDaaaaaa[q, p, r, s, t, u] = -val
-                                    myDaaaaaa[q, p, r, s, u, t] = +val
-                                    myDaaaaaa[q, p, r, t, s, u] = +val
-                                    myDaaaaaa[q, p, r, t, u, s] = -val
-                                    myDaaaaaa[q, p, r, u, s, t] = -val
-                                    myDaaaaaa[q, p, r, u, t, s] = +val
-
-                                    myDaaaaaa[q, r, p, s, t, u] = +val
-                                    myDaaaaaa[q, r, p, s, u, t] = -val
-                                    myDaaaaaa[q, r, p, t, s, u] = -val
-                                    myDaaaaaa[q, r, p, t, u, s] = +val
-                                    myDaaaaaa[q, r, p, u, s, t] = +val
-                                    myDaaaaaa[q, r, p, u, t, s] = -val
-
-                                    myDaaaaaa[r, p, q, s, t, u] = +val
-                                    myDaaaaaa[r, p, q, s, u, t] = -val
-                                    myDaaaaaa[r, p, q, t, s, u] = -val
-                                    myDaaaaaa[r, p, q, t, u, s] = +val
-                                    myDaaaaaa[r, p, q, u, s, t] = +val
-                                    myDaaaaaa[r, p, q, u, t, s] = -val
-
-                                    myDaaaaaa[r, q, p, s, t, u] = -val
-                                    myDaaaaaa[r, q, p, s, u, t] = +val
-                                    myDaaaaaa[r, q, p, t, s, u] = +val
-                                    myDaaaaaa[r, q, p, t, u, s] = -val
-                                    myDaaaaaa[r, q, p, u, s, t] = -val
-                                    myDaaaaaa[r, q, p, u, t, s] = +val
-                                    # prints(string,": ",val)
-                                cyc += 1
-                                ### BBBBBB
-                                if cyc % mpi.nprocs == mpi.rank:
-                                    string = f"{pb}^ {qb}^ {rb}^ {sb} {tb} {ub}"
-                                    val = calc_RDM(state, n_qubits, string)
-                                    myDbbbbbb[p, q, r, s, t, u] = +val
-                                    myDbbbbbb[p, q, r, s, u, t] = -val
-                                    myDbbbbbb[p, q, r, t, s, u] = -val
-                                    myDbbbbbb[p, q, r, t, u, s] = +val
-                                    myDbbbbbb[p, q, r, u, s, t] = +val
-                                    myDbbbbbb[p, q, r, u, t, s] = -val
-
-                                    myDbbbbbb[p, r, q, s, t, u] = -val
-                                    myDbbbbbb[p, r, q, s, u, t] = +val
-                                    myDbbbbbb[p, r, q, t, s, u] = +val
-                                    myDbbbbbb[p, r, q, t, u, s] = -val
-                                    myDbbbbbb[p, r, q, u, s, t] = -val
-                                    myDbbbbbb[p, r, q, u, t, s] = +val
-
-                                    myDbbbbbb[q, p, r, s, t, u] = -val
-                                    myDbbbbbb[q, p, r, s, u, t] = +val
-                                    myDbbbbbb[q, p, r, t, s, u] = +val
-                                    myDbbbbbb[q, p, r, t, u, s] = -val
-                                    myDbbbbbb[q, p, r, u, s, t] = -val
-                                    myDbbbbbb[q, p, r, u, t, s] = +val
-
-                                    myDbbbbbb[q, r, p, s, t, u] = +val
-                                    myDbbbbbb[q, r, p, s, u, t] = -val
-                                    myDbbbbbb[q, r, p, t, s, u] = -val
-                                    myDbbbbbb[q, r, p, t, u, s] = +val
-                                    myDbbbbbb[q, r, p, u, s, t] = +val
-                                    myDbbbbbb[q, r, p, u, t, s] = -val
-
-                                    myDbbbbbb[r, p, q, s, t, u] = +val
-                                    myDbbbbbb[r, p, q, s, u, t] = -val
-                                    myDbbbbbb[r, p, q, t, s, u] = -val
-                                    myDbbbbbb[r, p, q, t, u, s] = +val
-                                    myDbbbbbb[r, p, q, u, s, t] = +val
-                                    myDbbbbbb[r, p, q, u, t, s] = -val
-
-                                    myDbbbbbb[r, q, p, s, t, u] = -val
-                                    myDbbbbbb[r, q, p, s, u, t] = +val
-                                    myDbbbbbb[r, q, p, t, s, u] = +val
-                                    myDbbbbbb[r, q, p, t, u, s] = -val
-                                    myDbbbbbb[r, q, p, u, s, t] = -val
-                                    myDbbbbbb[r, q, p, u, t, s] = +val
-                                    # prints(string,": ",val)
-                            cyc += 1
-                            ### BAAAAB
-                            if (p >= u) and (q > r) and (s > t):
-                                if cyc % mpi.nprocs == mpi.rank:
-                                    string = f"{pb}^ {qa}^ {ra}^ {sa} {ta} {ub}"
-                                    val = calc_RDM(state, n_qubits, string)
-                                    myDbaaaab[p, q, r, s, t, u] = +val
-                                    myDbaaaab[p, r, q, s, t, u] = -val
-                                    myDbaaaab[p, q, r, t, s, u] = -val
-                                    myDbaaaab[p, r, q, t, s, u] = +val
-
-                                    myDbaaaab[u, t, s, r, q, p] = +val
-                                    myDbaaaab[u, t, s, q, r, p] = -val
-                                    myDbaaaab[u, s, t, r, q, p] = -val
-                                    myDbaaaab[u, s, t, q, r, p] = +val
-                                cyc += 1
-                            ### BBAABB
-                            if (p > q) and (r >= s) and (t > u):
-                                if cyc % mpi.nprocs == mpi.rank:
-                                    string = f"{pb}^ {qb}^ {ra}^ {sa} {tb} {ub}"
-                                    val = calc_RDM(state, n_qubits, string)
-                                    myDbbaabb[p, q, r, s, t, u] = +val
-                                    myDbbaabb[p, q, r, s, u, t] = -val
-                                    myDbbaabb[q, p, r, s, t, u] = -val
-                                    myDbbaabb[q, p, r, s, u, t] = +val
-                                    
-                                    myDbbaabb[t, u, s, r, p, q] = +val
-                                    myDbbaabb[t, u, s, r, q, p] = -val
-                                    myDbbaabb[u, t, s, r, p, q] = -val
-                                    myDbbaabb[u, t, s, r, q, p] = +val
-
-                                    # prints(string,": ",val)
-                                cyc += 1
-    #print(pqr,stu)
-    #print(count1,count2)
-    mpi.comm.Allreduce(myDaaaaaa, Daaaaaa, mpi.MPI.SUM)
-    mpi.comm.Allreduce(myDbbbbbb, Dbbbbbb, mpi.MPI.SUM)
-    mpi.comm.Allreduce(myDbaaaab, Dbaaaab, mpi.MPI.SUM)
-    mpi.comm.Allreduce(myDbbaabb, Dbbaabb, mpi.MPI.SUM)
-    #prints("Dbbaabb: \n",Dbbaabb)
-    t2 = time.time()
-    if mpi.main_rank:
-        print("time for parallel 3RDM execution: ", t2-t1)
-    #
-    #Quket.Daaaaaa = Daaaaaa
-    #Quket.Dbbbbbb = Dbbbbbb
-    #Quket.Dbaaaab = Dbaaaab
-    #Quket.Dbbaabb = Dbbaabb
-    #rdm3_to_rdm2(Quket)
-    return Daaaaaa, Dbbbbbb, Dbaaaab, Dbbaabb
-
 def has_duplicates(seq):
     return len(seq) != len(set(seq))
 
-def get_4RDM_old(Quket, state= None, print_level=0):
-    """Function
-    Compute 4RDM of QuantmState `state` in QuketData.
-    Author(s): Taisei Nishimaki
-    """
-    prints("\n === Computing 4RDM === ")
-    n_qubits = Quket.n_qubits
-    if state is None:
-        state = Quket.state
-    norbs = Quket.n_active_orbitals
-    Daaaaaaaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    Dbbbbbbbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    Dbaaaaaab = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    Dbbaaaabb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    Dbbbaabbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-
-    myDaaaaaaaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    myDbbbbbbbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    myDbaaaaaab = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    myDbbaaaabb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    myDbbbaabbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-
-    t1 = time.time()
-    cyc = 0
-    pqrs = -1
-    count = 0 
-    for p in range(norbs):
-        for q in range(norbs):
-            for r in range(norbs):
-                for s in range(norbs):
-                    pqrs += 1
-                    tuvw = -1 
-                    for t in range(norbs):
-                        for u in range(norbs):
-                            for v in range(norbs):
-                                for w in range(norbs):
-                                    tuvw += 1
-                                    pa = p * 2
-                                    qa = q * 2
-                                    ra = r * 2
-                                    sa = s * 2
-                                    ta = t * 2
-                                    ua = u * 2
-                                    va = v * 2
-                                    wa = w * 2
-                                    pb = pa + 1
-                                    qb = qa + 1
-                                    rb = ra + 1
-                                    sb = sa + 1
-                                    tb = ta + 1
-                                    ub = ua + 1
-                                    vb = va + 1
-                                    wb = wa + 1
-                                    cyc += 1
-                                    list_a = [pa, qa, ra, sa]
-                                    list_b = [pb, qb, rb, sb]
-                                    if (t > u > v > w):
-                                        if (has_duplicates(list_a) == False):
-                                            if cyc % mpi.nprocs == mpi.rank:
-                                                #aaaaaaaa
-                                                string = f"{pa}^ {qa}^ {ra}^ {sa}^ {ta} {ua} {va} {wa}"
-                                                val = calc_RDM(state, n_qubits, string)
-                                                if abs(val) > 1e-12:
-                                                    myDbbbbbbbb[p, q, r, s, t, u, v, w] = +val
-                                                    myDaaaaaaaa[p, q, r, s, t, u, w, v] = -val
-                                                    myDaaaaaaaa[p, q, r, s, t, v, u, w] = -val
-                                                    myDaaaaaaaa[p, q, r, s, t, v, w, u] = +val
-                                                    myDaaaaaaaa[p, q, r, s, t, w, u, v] = +val
-                                                    myDaaaaaaaa[p, q, r, s, t, w, v, u] = -val
-
-                                                    myDaaaaaaaa[p, q, r, s, u, t, v, w] = -val
-                                                    myDaaaaaaaa[p, q, r, s, u, t, w, v] = +val
-                                                    myDaaaaaaaa[p, q, r, s, u, v, t, w] = +val
-                                                    myDaaaaaaaa[p, q, r, s, u, v, w, t] = -val
-                                                    myDaaaaaaaa[p, q, r, s, u, w, t, v] = -val
-                                                    myDaaaaaaaa[p, q, r, s, u, w, v, t] = +val
-
-                                                    myDaaaaaaaa[p, q, r, s, v, t, u, w] = +val
-                                                    myDaaaaaaaa[p, q, r, s, v, t, w, u] = -val
-                                                    myDaaaaaaaa[p, q, r, s, v, u, t, w] = -val
-                                                    myDaaaaaaaa[p, q, r, s, v, u, w, t] = +val
-                                                    myDaaaaaaaa[p, q, r, s, v, w, t, u] = +val
-                                                    myDaaaaaaaa[p, q, r, s, v, w, u, t] = -val
-
-                                                    myDaaaaaaaa[p, q, r, s, w, t, u, v] = -val
-                                                    myDaaaaaaaa[p, q, r, s, w, t, v, u] = +val
-                                                    myDaaaaaaaa[p, q, r, s, w, u, t, v] = +val
-                                                    myDaaaaaaaa[p, q, r, s, w, u, v, t] = -val
-                                                    myDaaaaaaaa[p, q, r, s, w, v, t, u] = -val
-                                                    myDaaaaaaaa[p, q, r, s, w, v, u, t] = +val
-
-                                                #count += 1
-                                                #prints(pa,qa,ra,sa)
-                                            cyc += 1
-                                        if (has_duplicates(list_b) == False):
-                                            if cyc % mpi.nprocs == mpi.rank:
-                                                #bbbbbbbb
-                                                string = f"{pb}^ {qb}^ {rb}^ {sb}^ {tb} {ub} {vb} {wb}"
-                                                yyval = calc_RDM(state, n_qubits, string)
-                                                if abs(val) > 1e-12:
-                                                    myDbbbbbbbb[p, q, r, s, t, u, v, w] = +val
-                                                    myDbbbbbbbb[p, q, r, s, t, u, w, v] = -val
-                                                    myDbbbbbbbb[p, q, r, s, t, v, u, w] = -val
-                                                    myDbbbbbbbb[p, q, r, s, t, v, w, u] = +val
-                                                    myDbbbbbbbb[p, q, r, s, t, w, u, v] = +val
-                                                    myDbbbbbbbb[p, q, r, s, t, w, v, u] = -val
-
-                                                    myDbbbbbbbb[p, q, r, s, u, t, v, w] = -val
-                                                    myDbbbbbbbb[p, q, r, s, u, t, w, v] = +val
-                                                    myDbbbbbbbb[p, q, r, s, u, v, t, w] = +val
-                                                    myDbbbbbbbb[p, q, r, s, u, v, w, t] = -val
-                                                    myDbbbbbbbb[p, q, r, s, u, w, t, v] = -val
-                                                    myDbbbbbbbb[p, q, r, s, u, w, v, t] = +val
-
-                                                    myDbbbbbbbb[p, q, r, s, v, t, u, w] = +val
-                                                    myDbbbbbbbb[p, q, r, s, v, t, w, u] = -val
-                                                    myDbbbbbbbb[p, q, r, s, v, u, t, w] = -val
-                                                    myDbbbbbbbb[p, q, r, s, v, u, w, t] = +val
-                                                    myDbbbbbbbb[p, q, r, s, v, w, t, u] = +val
-                                                    myDbbbbbbbb[p, q, r, s, v, w, u, t] = -val
-
-                                                    myDbbbbbbbb[p, q, r, s, w, t, u, v] = -val
-                                                    myDbbbbbbbb[p, q, r, s, w, t, v, u] = +val
-                                                    myDbbbbbbbb[p, q, r, s, w, u, t, v] = +val
-                                                    myDbbbbbbbb[p, q, r, s, w, u, v, t] = -val
-                                                    myDbbbbbbbb[p, q, r, s, w, v, t, u] = -val
-                                                    myDbbbbbbbb[p, q, r, s, w, v, u, t] = +val
-                                    cyc += 1
-                                    # baaaaaab #
-                                    if ((p >= w) and (q > r > s) and (t > u > v)):
-                                        if cyc % mpi.nprocs == mpi.rank:
-                                            string = f"{pb}^ {qa}^ {ra}^ {sa}^ {ta} {ua} {va} {wb}"
-                                            val = calc_RDM(state, n_qubits, string)
-                                            if abs(val) > 1e-12:
-                                                myDbaaaaaab[p, q, r, s, t, u, v, w] = +val
-                                                myDbaaaaaab[p, q, r, s, t, v, u, w] = -val
-                                                myDbaaaaaab[p, q, r, s, u, t, v, w] = -val
-                                                myDbaaaaaab[p, q, r, s, u, v, t, w] = +val
-                                                myDbaaaaaab[p, q, r, s, v, t, u, w] = +val
-                                                myDbaaaaaab[p, q, r, s, v, u, t, w] = -val
-
-                                                myDbaaaaaab[p, q, s, r, t, u, v, w] = -val
-                                                myDbaaaaaab[p, q, s, r, t, v, u, w] = +val
-                                                myDbaaaaaab[p, q, s, r, u, t, v, w] = +val
-                                                myDbaaaaaab[p, q, s, r, u, v, t, w] = -val
-                                                myDbaaaaaab[p, q, s, r, v, t, u, w] = -val
-                                                myDbaaaaaab[p, q, s, r, v, u, t, w] = +val
-
-                                                myDbaaaaaab[p, r, q, s, t, u, v, w] = -val
-                                                myDbaaaaaab[p, r, q, s, t, v, u, w] = +val
-                                                myDbaaaaaab[p, r, q, s, u, t, v, w] = +val
-                                                myDbaaaaaab[p, r, q, s, u, v, t, w] = -val
-                                                myDbaaaaaab[p, r, q, s, v, t, u, w] = -val
-                                                myDbaaaaaab[p, r, q, s, v, u, t, w] = +val
-
-                                                myDbaaaaaab[p, r, s, q, t, u, v, w] = +val
-                                                myDbaaaaaab[p, r, s, q, t, v, u, w] = -val
-                                                myDbaaaaaab[p, r, s, q, u, t, v, w] = -val
-                                                myDbaaaaaab[p, r, s, q, u, v, t, w] = +val
-                                                myDbaaaaaab[p, r, s, q, v, t, u, w] = +val
-                                                myDbaaaaaab[p, r, s, q, v, u, t, w] = -val
-
-                                                myDbaaaaaab[p, s, q, r, t, u, v, w] = +val
-                                                myDbaaaaaab[p, s, q, r, t, v, u, w] = -val
-                                                myDbaaaaaab[p, s, q, r, u, t, v, w] = -val
-                                                myDbaaaaaab[p, s, q, r, u, v, t, w] = +val
-                                                myDbaaaaaab[p, s, q, r, v, t, u, w] = +val
-                                                myDbaaaaaab[p, s, q, r, v, u, t, w] = -val
-
-                                                myDbaaaaaab[p, s, r, q, t, u, v, w] = -val
-                                                myDbaaaaaab[p, s, r, q, t, v, u, w] = +val
-                                                myDbaaaaaab[p, s, r, q, u, t, v, w] = +val
-                                                myDbaaaaaab[p, s, r, q, u, v, t, w] = -val
-                                                myDbaaaaaab[p, s, r, q, v, t, u, w] = -val
-                                                myDbaaaaaab[p, s, r, q, v, u, t, w] = +val
-
-                                                # swap beta spin #
-                                                myDbaaaaaab[w, q, r, s, t, u, v, p] = -val
-                                                myDbaaaaaab[w, q, r, s, t, v, u, p] = +val
-                                                myDbaaaaaab[w, q, r, s, u, t, v, p] = +val
-                                                myDbaaaaaab[w, q, r, s, u, v, t, p] = -val
-                                                myDbaaaaaab[w, q, r, s, v, t, u, p] = -val
-                                                myDbaaaaaab[w, q, r, s, v, u, t, p] = +val
-
-                                                myDbaaaaaab[w, q, s, r, t, u, v, p] = +val
-                                                myDbaaaaaab[w, q, s, r, t, v, u, p] = -val
-                                                myDbaaaaaab[w, q, s, r, u, t, v, p] = -val
-                                                myDbaaaaaab[w, q, s, r, u, v, t, p] = +val
-                                                myDbaaaaaab[w, q, s, r, v, t, u, p] = +val
-                                                myDbaaaaaab[w, q, s, r, v, u, t, p] = -val
-
-                                                myDbaaaaaab[w, r, q, s, t, u, v, p] = +val
-                                                myDbaaaaaab[w, r, q, s, t, v, u, p] = -val
-                                                myDbaaaaaab[w, r, q, s, u, t, v, p] = -val
-                                                myDbaaaaaab[w, r, q, s, u, v, t, p] = +val
-                                                myDbaaaaaab[w, r, q, s, v, t, u, p] = +val
-                                                myDbaaaaaab[w, r, q, s, v, u, t, p] = -val
-
-                                                myDbaaaaaab[w, r, s, q, t, u, v, p] = -val
-                                                myDbaaaaaab[w, r, s, q, t, v, u, p] = +val
-                                                myDbaaaaaab[w, r, s, q, u, t, v, p] = +val
-                                                myDbaaaaaab[w, r, s, q, u, v, t, p] = -val
-                                                myDbaaaaaab[w, r, s, q, v, t, u, p] = -val
-                                                myDbaaaaaab[w, r, s, q, v, u, t, p] = +val
-
-                                                myDbaaaaaab[w, s, q, r, t, u, v, p] = -val
-                                                myDbaaaaaab[w, s, q, r, t, v, u, p] = +val
-                                                myDbaaaaaab[w, s, q, r, u, t, v, p] = +val
-                                                myDbaaaaaab[w, s, q, r, u, v, t, p] = -val
-                                                myDbaaaaaab[w, s, q, r, v, t, u, p] = -val
-                                                myDbaaaaaab[w, s, q, r, v, u, t, p] = +val
-
-                                                myDbaaaaaab[w, s, r, q, t, u, v, p] = +val
-                                                myDbaaaaaab[w, s, r, q, t, v, u, p] = -val
-                                                myDbaaaaaab[w, s, r, q, u, t, v, p] = -val
-                                                myDbaaaaaab[w, s, r, q, u, v, t, p] = +val
-                                                myDbaaaaaab[w, s, r, q, v, t, u, p] = +val
-                                                myDbaaaaaab[w, s, r, q, v, u, t, p] = -val
-                                    cyc += 1
-                                    # bbbaabbb #
-                                    if ((p > q > r) and (u > v > w) and ( s >= t )):
-                                        if cyc % mpi.nprocs == mpi.rank:
-                                            string = f"{pb}^ {qb}^ {rb}^ {sa}^ {ta} {ub} {vb} {wb}"
-                                            val = calc_RDM(state, n_qubits, string)
-                                            if abs(val) > 1e-12:
-                                                myDbbbaabbb[p, q, r, s, t, u, v, w] = +val
-                                                myDbbbaabbb[p, q, r, s, t, u, w, v] = -val
-                                                myDbbbaabbb[p, q, r, s, t, v, u, w] = -val
-                                                myDbbbaabbb[p, q, r, s, t, v, w, u] = +val
-                                                myDbbbaabbb[p, q, r, s, t, w, u, v] = +val
-                                                myDbbbaabbb[p, q, r, s, t, w, v, u] = -val
-
-                                                myDbbbaabbb[p, r, q, s, t, u, v, w] = -val
-                                                myDbbbaabbb[p, r, q, s, t, u, w, v] = +val
-                                                myDbbbaabbb[p, r, q, s, t, v, u, w] = +val
-                                                myDbbbaabbb[p, r, q, s, t, v, w, u] = -val
-                                                myDbbbaabbb[p, r, q, s, t, w, u, v] = -val
-                                                myDbbbaabbb[p, r, q, s, t, w, v, u] = +val
-
-                                                myDbbbaabbb[q, p, r, s, t, u, v, w] = -val
-                                                myDbbbaabbb[q, p, r, s, t, u, w, v] = +val
-                                                myDbbbaabbb[q, p, r, s, t, v, u, w] = +val
-                                                myDbbbaabbb[q, p, r, s, t, v, w, u] = -val
-                                                myDbbbaabbb[q, p, r, s, t, w, u, v] = -val
-                                                myDbbbaabbb[q, p, r, s, t, w, v, u] = +val
-
-                                                myDbbbaabbb[q, r, p, s, t, u, v, w] = +val
-                                                myDbbbaabbb[q, r, p, s, t, u, w, v] = -val
-                                                myDbbbaabbb[q, r, p, s, t, v, u, w] = -val
-                                                myDbbbaabbb[q, r, p, s, t, v, w, u] = +val
-                                                myDbbbaabbb[q, r, p, s, t, w, u, v] = +val
-                                                myDbbbaabbb[q, r, p, s, t, w, v, u] = -val
-
-                                                myDbbbaabbb[r, p, q, s, t, u, v, w] = +val
-                                                myDbbbaabbb[r, p, q, s, t, u, w, v] = -val
-                                                myDbbbaabbb[r, p, q, s, t, v, u, w] = -val
-                                                myDbbbaabbb[r, p, q, s, t, v, w, u] = +val
-                                                myDbbbaabbb[r, p, q, s, t, w, u, v] = +val
-                                                myDbbbaabbb[r, p, q, s, t, w, v, u] = -val
-
-                                                myDbbbaabbb[r, q, p, s, t, u, v, w] = -val
-                                                myDbbbaabbb[r, q, p, s, t, u, w, v] = +val
-                                                myDbbbaabbb[r, q, p, s, t, v, u, w] = +val
-                                                myDbbbaabbb[r, q, p, s, t, v, w, u] = -val
-                                                myDbbbaabbb[r, q, p, s, t, w, u, v] = -val
-                                                myDbbbaabbb[r, q, p, s, t, w, v, u] = +val
-
-                                                # swap alpha spin
-                                                myDbbbaabbb[p, q, r, t, s, u, v, w] = -val
-                                                myDbbbaabbb[p, q, r, t, s, u, w, v] = +val
-                                                myDbbbaabbb[p, q, r, t, s, v, u, w] = +val
-                                                myDbbbaabbb[p, q, r, t, s, v, w, u] = -val
-                                                myDbbbaabbb[p, q, r, t, s, w, u, v] = -val
-                                                myDbbbaabbb[p, q, r, t, s, w, v, u] = +val
-
-                                                myDbbbaabbb[p, r, q, t, s, u, v, w] = +val
-                                                myDbbbaabbb[p, r, q, t, s, u, w, v] = -val
-                                                myDbbbaabbb[p, r, q, t, s, v, u, w] = -val
-                                                myDbbbaabbb[p, r, q, t, s, v, w, u] = +val
-                                                myDbbbaabbb[p, r, q, t, s, w, u, v] = +val
-                                                myDbbbaabbb[p, r, q, t, s, w, v, u] = -val
-
-                                                myDbbbaabbb[q, p, r, t, s, u, v, w] = +val
-                                                myDbbbaabbb[q, p, r, t, s, u, w, v] = -val
-                                                myDbbbaabbb[q, p, r, t, s, v, u, w] = -val
-                                                myDbbbaabbb[q, p, r, t, s, v, w, u] = +val
-                                                myDbbbaabbb[q, p, r, t, s, w, u, v] = +val
-                                                myDbbbaabbb[q, p, r, t, s, w, v, u] = -val
-
-                                                myDbbbaabbb[q, r, p, t, s, u, v, w] = -val
-                                                myDbbbaabbb[q, r, p, t, s, u, w, v] = +val
-                                                myDbbbaabbb[q, r, p, t, s, v, u, w] = +val
-                                                myDbbbaabbb[q, r, p, t, s, v, w, u] = -val
-                                                myDbbbaabbb[q, r, p, t, s, w, u, v] = -val
-                                                myDbbbaabbb[q, r, p, t, s, w, v, u] = +val
-
-                                                myDbbbaabbb[r, p, q, t, s, u, v, w] = -val
-                                                myDbbbaabbb[r, p, q, t, s, u, w, v] = +val
-                                                myDbbbaabbb[r, p, q, t, s, v, u, w] = +val
-                                                myDbbbaabbb[r, p, q, t, s, v, w, u] = -val
-                                                myDbbbaabbb[r, p, q, t, s, w, u, v] = -val
-                                                myDbbbaabbb[r, p, q, t, s, w, v, u] = +val
-
-                                                myDbbbaabbb[r, q, p, t, s, u, v, w] = +val
-                                                myDbbbaabbb[r, q, p, t, s, u, w, v] = -val
-                                                myDbbbaabbb[r, q, p, t, s, v, u, w] = -val
-                                                myDbbbaabbb[r, q, p, t, s, v, w, u] = +val
-                                                myDbbbaabbb[r, q, p, t, s, w, u, v] = +val
-                                                myDbbbaabbb[r, q, p, t, s, w, v, u] = -val
-                                    cyc += 1
-                                    # bbaaaabb #
-                                    if ( (p > q) and (r > s) and (t > u) and (v > w) ):
-                                        if cyc % mpi.nprocs == mpi.rank:
-                                            string = f"{pb}^ {qb}^ {ra}^ {sa}^ {ta} {ua} {vb} {wb}"
-                                            val = calc_RDM(state, n_qubits, string)
-                                            if abs(val) > 1e-12:
-                                                myDbbaaaabb[p, q, r, s, t, u, v, w] = +val
-                                                myDbbaaaabb[p, q, r, s, t, u, w, v] = -val
-                                                myDbbaaaabb[p, q, r, s, u, t, v, w] = -val
-                                                myDbbaaaabb[p, q, r, s, u, t, w, v] = +val
-
-                                                myDbbaaaabb[p, q, s, r, t, u, v, w] = -val
-                                                myDbbaaaabb[p, q, s, r, t, u, w, v] = +val
-                                                myDbbaaaabb[p, q, s, r, u, t, v, w] = +val
-                                                myDbbaaaabb[p, q, s, r, u, t, w, v] = -val
-
-                                                myDbbaaaabb[q, p, r, s, t, u, v, w] = -val
-                                                myDbbaaaabb[q, p, r, s, t, u, w, v] = +val
-                                                myDbbaaaabb[q, p, r, s, u, t, v, w] = +val
-                                                myDbbaaaabb[q, p, r, s, u, t, w, v] = -val
-
-                                                myDbbaaaabb[q, p, s, r, t, u, v, w] = +val
-                                                myDbbaaaabb[q, p, s, r, t, u, w, v] = -val
-                                                myDbbaaaabb[q, p, s, r, u, t, v, w] = -val
-                                                myDbbaaaabb[q, p, s, r, u, t, w, v] = +val
-                                    cyc += 1
-    t2 = time.time()
-    # print(count)
-    mpi.comm.Allreduce(myDaaaaaaaa, Daaaaaaaa, mpi.MPI.SUM)
-    mpi.comm.Allreduce(myDbbbbbbbb, Dbbbbbbbb, mpi.MPI.SUM)
-    mpi.comm.Allreduce(myDbaaaaaab, Dbaaaaaab, mpi.MPI.SUM)
-    mpi.comm.Allreduce(myDbbbaabbb, Dbbbaabbb, mpi.MPI.SUM)
-    mpi.comm.Allreduce(myDbbaaaabb, Dbbaaaabb, mpi.MPI.SUM)
-
-    if mpi.main_rank:
-        print("time for parallel 4RDM execution: ", t2-t1)
-    Quket.Daaaaaaaa = Daaaaaaaa
-    Quket.Dbbbbbbbb = Dbbbbbbbb
-    Quket.Dbaaaaaab = Dbaaaaaab
-    Quket.Dbbaaaabb = Dbbaaaabb
-    Quket.Dbbbaabbb = Dbbbaabbb
-    return Daaaaaaaa, Dbbbbbbbb, Dbaaaaaab, Dbbaaaabb, Dbbbaabbb
-
-    ### inner product version (brute-force) ###
-    # from .excitation import evolve
-    # from qulacs.state import inner_product
-
-    # iDaaaaaaaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    # iDbbbbbbbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    # iDbaaaaaab = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    # iDbbaaaabb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-    # iDbbbaabbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs))
-
-    # pqrs_list = []
-    # tuvw_list = []
-    # t3 = time.time()
-    # for p in range(n_qubit):
-    #     for q in range(n_qubit):
-    #         for r in range(n_qubit):
-    #             for s in range(n_qubit):
-    #                 op = FermionOperator(f"{p} {q} {r} {s}")
-    #                 op2 = FermionOperator(f"{s} {r} {q} {p}")
-    #                 tuvw_list.append(evolve(op, Quket.state))
-    #                 pqrs_list.append(evolve(op2, Quket.state))
-    
-    # pqrs = -1
-    # for p in range(n_qubit):
-    #     for q in range(n_qubit):
-    #         for r in range(n_qubit):
-    #             for s in range(n_qubit):
-    #                 pqrs += 1
-    #                 tuvw = -1
-    #                 for t in range(n_qubit):
-    #                     for u in range(n_qubit):
-    #                         for v in range(n_qubit):
-    #                             for w in range(n_qubit):
-    #                                 pp = p//2
-    #                                 qq = q//2
-    #                                 rr = r//2
-    #                                 ss = s//2
-    #                                 tt = t//2
-    #                                 uu = u//2
-    #                                 vv = v//2
-    #                                 ww = w//2
-    #                                 tuvw += 1
-    #                                 pqrs_state = pqrs_list[pqrs]
-    #                                 tuvw_state = tuvw_list[tuvw]
-    #                                 D = inner_product(pqrs_state, tuvw_state).real
-    #                                 if (p%2 == 0 and q%2 == 0
-    #                                 and r%2 == 0 and s%2 == 0
-    #                                 and t%2 == 0 and u%2 == 0
-    #                                 and v%2 == 0 and w%2 == 0):
-    #                                     #aaaaaaaa
-    #                                     iDaaaaaaaa[pp, qq, rr, ss, tt, uu, vv, ww] = D
-    #                                 elif (p%2 == 1 and q%2 == 1
-    #                                   and r%2 == 1 and s%2 == 1
-    #                                   and t%2 == 1 and u%2 == 1
-    #                                   and v%2 == 1 and w%2 == 1):
-    #                                     #bbbbbbbb
-    #                                     iDbbbbbbbb[pp, qq, rr, ss, tt, uu, vv, ww] = D
-    #                                 elif (p%2 == 1 and q%2 == 0
-    #                                   and r%2 == 0 and s%2 == 0
-    #                                   and t%2 == 0 and u%2 == 0
-    #                                   and v%2 == 0 and w%2 == 1):
-    #                                     #baaaaaab
-    #                                     iDbaaaaaab[pp, qq, rr, ss, tt, uu, vv, ww] = D
-    #                                 elif (p%2 == 1 and q%2 == 1
-    #                                   and r%2 == 0 and s%2 == 0
-    #                                   and t%2 == 0 and u%2 == 0
-    #                                   and v%2 == 1 and w%2 == 1):
-    #                                     #bbaaaabb
-    #                                     iDbbaaaabb[pp, qq, rr, ss, tt, uu, vv, ww] = D
-    #                                 elif (p%2 == 1 and q%2 == 1
-    #                                   and r%2 == 1 and s%2 == 0
-    #                                   and t%2 == 0 and u%2 == 1
-    #                                   and v%2 == 1 and w%2 == 1):
-    #                                     #bbbaabbb
-    #                                     iDbbbaabbb[pp, qq, rr, ss, tt, uu, vv, ww] = D
-    #                                 else:
-    #                                     continue
-    # t4 = time.time()
-    # print("time for inner product 4RDM execution: ", t4-t3)
-
-    # #test
-    # Quket.Daaaaaaaa = iDaaaaaaaa
-    # Quket.Dbbbbbbbb = iDbbbbbbbb
-    # Quket.Dbaaaaaab = iDbaaaaaab
-    # Quket.Dbbaaaabb = iDbbaaaabb
-    # Quket.Dbbbaabbb = iDbbbaabbb
-
-    # #check
-    # rdm4_to_rdm3(Quket)
 
 def rdm2_to_rdm1(Quket):
     ### check ###
@@ -950,8 +205,8 @@ def rdm4_to_rdm3(Quket):
                     for u in range(norbs):
                         for v in range(norbs):
                             for s in range(norbs):
-                                Daaaaaa2[p,q,r,t,u,v] += (Daaaaaaaa[p,q,r,s,s,t,u,v] + Daaabbaaa[p,q,r,s,s,t,u,v]) 
-                                Dbbbbbb2[p,q,r,t,u,v] += (Dbbbbbbbb[p,q,r,s,s,t,u,v] + Dbbbaabbb[p,q,r,s,s,t,u,v]) 
+                                Daaaaaa2[p,q,r,t,u,v] += (Daaaaaaaa[p,q,r,s,s,t,u,v] + Daaabbaaa[p,q,r,s,s,t,u,v])
+                                Dbbbbbb2[p,q,r,t,u,v] += (Dbbbbbbbb[p,q,r,s,s,t,u,v] + Dbbbaabbb[p,q,r,s,s,t,u,v])
                                 Dbaaaab2[p,q,r,t,u,v] += (Dbaaaaaab[p,q,r,s,s,t,u,v] + Dbaabbaab[p,q,r,s,s,t,u,v])
                                 Dbbaabb2[p,q,r,t,u,v] += (Dbbaaaabb[p,q,r,s,s,t,u,v] + Dbbabbabb[p,q,r,s,s,t,u,v])
     Daaaaaa2 = Daaaaaa2/(N-3)
@@ -990,7 +245,7 @@ def get_Generalized_Fock_Matrix(Quket):
                     for p in range(norbs):
                         f_ut_a[u,t] += hpqrs[p,q,r,t]*Daaaa[p,r,u,q] + hpqrs[p,q,r,t]*Dbaab[p,r,u,q]
                         f_ut_b[u,t] += hpqrs[p,q,r,t]*Dbbbb[p,r,u,q] + hpqrs[p,q,r,t]*Dabba[p,r,u,q]
-    
+
     return f_ut_a.T, f_ut_b.T
 
 def get_Generalized_Fock_Matrix_one_body(Quket, act=True):
@@ -1007,7 +262,7 @@ def get_Generalized_Fock_Matrix_one_body(Quket, act=True):
     hpqrs = Quket.two_body_integrals
     fa = copy.deepcopy(hpq)
     fb = copy.deepcopy(hpq)
-    
+
     for p in range(norbs):
         for q in range(norbs):
             for r in range(norbs):
@@ -1019,7 +274,7 @@ def get_Generalized_Fock_Matrix_one_body(Quket, act=True):
         fb = fb[n_frozen_orbs:n_frozen_orbs+n_active_orbs, n_frozen_orbs:n_frozen_orbs+n_active_orbs]
     return fa, fb
 
-def get_1RDM_full(state):
+def get_1RDM_full(state, mapping='jordan_wigner'):
     """Function
     Compute full-spin 1RDM of QuantmState `state` in QuketData.
     Indices correspond to qubit number.
@@ -1034,7 +289,7 @@ def get_1RDM_full(state):
     for p in range(n_qubits):
         string = f"{p}"
         op = FermionOperator(string)
-        state_list.append(evolve(op, state))
+        state_list.append(evolve(op, state, mapping=mapping))
         for q in range(n_qubits):
             if p < q or (p%2!=q%2):
                 continue
@@ -1043,7 +298,7 @@ def get_1RDM_full(state):
             D1[q, p] = val
     return D1
 
-def get_2RDM_full(state):
+def get_2RDM_full(state, mapping='jordan_wigner'):
     """Function
     Compute full-spin 2RDM of QuantmState `state` in QuketData.
     Indices correspond to qubit number.
@@ -1070,15 +325,15 @@ def get_2RDM_full(state):
             pq += 1
             string = f"{p} {q}"
             op = FermionOperator(string)
-            state_list.append(evolve(op, state))
-            
+            state_list.append(evolve(op, state, mapping=mapping))
+
             rs = -1
             for r in range(n_qubits):
                 for s in range(r):
                     rs += 1
                     if pq < rs or (p%2+q%2!=r%2+s%2):
                         continue
-                    pqrs += 1 
+                    pqrs += 1
                     if pqrs % mpi.nprocs == mpi.rank:
                         # Here we take the inner-product between
                         # p q|phi>  and  r s|phi>
@@ -1095,7 +350,7 @@ def get_2RDM_full(state):
     D2 = mpi.allreduce(my_D2, mpi.MPI.SUM)
     return D2
 
-def get_3RDM_full(state):
+def get_3RDM_full(state, mapping='jordan_wigner'):
     """Function
     Compute 3RDM of QuantmState `state` in QuketData.
     Indices correspond to qubit number.
@@ -1125,7 +380,7 @@ def get_3RDM_full(state):
                 pqr += 1
                 string = f"{p} {q} {r}"
                 op = FermionOperator(string)
-                state_list.append(evolve(op, state))
+                state_list.append(evolve(op, state, mapping=mapping))
                 stu = -1
                 for s in range(n_qubits):
                     for t in range(s):
@@ -1166,7 +421,7 @@ def get_3RDM_full(state):
                                 my_D3[r, q, p, u, s, t] = -val
                                 my_D3[r, q, p, t, s, u] = val
                                 my_D3[r, q, p, t, u, s] = -val
-                            
+
                                 my_D3[q, r, p, s, t, u] = val
                                 my_D3[q, r, p, s, u, t] = -val
                                 my_D3[q, r, p, u, t, s] = -val
@@ -1222,1505 +477,13 @@ def get_3RDM_full(state):
                                 my_D3[u, s, t, q, p, r] = -val
                                 my_D3[t, s, u, q, p, r] = val
                                 my_D3[t, u, s, q, p, r] = -val
-                            
+
     D3 = mpi.allreduce(my_D3, mpi.MPI.SUM)
     t2 = time.time()
     prints(t2-t1)
     return D3
 
-def get_4RDM_test(state):
-    """Function
-    Compute 4RDM of QuantmState `state` in QuketData.
-    Indices correspond to qubit number.
-
-    Author(s): Takashi Tsuchimochi
-    """
-    n_qubits = state.get_qubit_count()
-    nact = n_qubits//2 
-    if nact <4:
-        return None
-    #### ndim
-    ndim_aaaa = nact*(nact-1)*(nact-2)*(nact-3)//(4*3*2*1)
-    ndim_aaaa = ndim_aaaa*(ndim_aaaa+1)//2
-    ndim_baaa = nact*nact*(nact-1)*(nact-2)//(3*2*1)
-    ndim_baaa = ndim_baaa*(ndim_baaa+1)//2
-    ndim_bbaa = nact*nact*(nact-1)*(nact-1)//(2*1*2*1)
-    ndim_bbaa = ndim_bbaa*(ndim_bbaa+1)//2
-    my_Daaaa = np.zeros((ndim_aaaa), dtype=float)
-    my_Dbaaa = np.zeros((ndim_baaa), dtype=float)
-    my_Dbbaa = np.zeros((ndim_bbaa), dtype=float)
-    my_Dbbba = np.zeros((ndim_baaa), dtype=float)
-    my_Dbbbb = np.zeros((ndim_aaaa), dtype=float)
-
-    #### aaaa and bbbb
-    ipos, my_ndim_aaaa = mpi.myrange(ndim_aaaa) 
-    state_list_aaaa = []
-    state_list_bbbb = []
-    pqrstuvw = -1
-    pqrs = -1
-    for p in range(nact):
-        for q in range(p):
-            for r in range(q):
-                for s in range(r):
-                    pqrs += 1
-                    faaaa = f"{2*p} {2*q} {2*r} {2*s}"
-                    fbbbb = f"{2*p+1} {2*q+1} {2*r+1} {2*s+1}"
-                    op_aaaa = FermionOperator(faaaa)
-                    op_bbbb = FermionOperator(fbbbb)
-                    state_list_aaaa.append(evolve(op_aaaa, state))
-                    state_list_bbbb.append(evolve(op_bbbb, state))
-                    tuvw = -1
-                    for t in range(nact):
-                        for u in range(t):
-                            for v in range(u):
-                                for w in range(v):
-                                    tuvw += 1
-                                    if pqrs < tuvw:
-                                        continue
-                                    pqrstuvw += 1
-                                    if ipos <= pqrstuvw < ipos + my_ndim_aaaa:
-                                        val_aaaa = inner_product(state_list_aaaa[pqrs], state_list_aaaa[tuvw]).real
-                                        val_bbbb = inner_product(state_list_bbbb[pqrs], state_list_bbbb[tuvw]).real
-                                        my_Daaaa[pqrstuvw-ipos] = val_aaaa
-                                        my_Dbbbb[pqrstuvw-ipos] = val_aaaa
-    del(state_list_aaaa)
-    del(state_list_bbbb)
-    #### baaa 
-    ipos, my_ndim_baaa = mpi.myrange(ndim_baaa) 
-    state_list_baaa = []
-    pqrstuvw = -1
-    pqrs = -1
-    for p in range(nact):
-        for q in range(nact):
-            for r in range(q):
-                for s in range(r):
-                    pqrs += 1
-                    fbaaa = f"{2*p+1} {2*q} {2*r} {2*s}"
-                    op_baaa = FermionOperator(fbaaa)
-                    state_list_baaa.append(evolve(op_baaa, state))
-                    tuvw = -1
-                    for t in range(nact):
-                        for u in range(nact):
-                            for v in range(u):
-                                for w in range(v):
-                                    tuvw += 1
-                                    if pqrs < tuvw:
-                                        continue
-                                    pqrstuvw += 1
-                                    if ipos <= pqrstuvw < ipos + my_ndim_baaa:
-                                        val_baaa = inner_product(state_list_baaa[pqrs], state_list_baaa[tuvw]).real
-                                        my_Dbaaa[pqrstuvw-ipos] = val_baaa
-    del(state_list_baaa)
- 
-    ipos, my_ndim_bbba = mpi.myrange(ndim_bbba) 
-    state_list_bbba = []
-    pqrstuvw = -1
-    pqrs = -1
-    for p in range(nact):
-        for q in range(p):
-            for r in range(q):
-                for s in range(nact):
-                    pqrs += 1
-                    fbbba = f"{2*p+1} {2*q+1} {2*r+1} {2*s}"
-                    op_bbba = FermionOperator(fbbba)
-                    state_list_bbba.append(evolve(op_bbba, state))
-                    tuvw = -1
-                    for t in range(nact):
-                        for u in range(t):
-                            for v in range(u):
-                                for w in range(nact):
-                                    tuvw += 1
-                                    if pqrs < tuvw:
-                                        continue
-                                    pqrstuvw += 1
-                                    if ipos <= pqrstuvw < ipos + my_ndim_bbba:
-                                        val_bbba = inner_product(state_list_bbba[pqrs], state_list_bbba[tuvw]).real
-                                        my_Dbbba[pqrstuvw-ipos] = val_bbba
-    del(state_list_bbba)
-    
-    ipos, my_ndim_bbaa = mpi.myrange(ndim_bbaa) 
-    state_list_bbaa = []
-    pqrstuvw = -1
-    pqrs = -1
-    for p in range(nact):
-        for q in range(p):
-            for r in range(nact):
-                for s in range(r):
-                    pqrs += 1
-                    fbbaa = f"{2*p+1} {2*q+1} {2*r} {2*s}"
-                    op_bbaa = FermionOperator(fbbaa)
-                    state_list_bbaa.append(evolve(op_bbaa, state))
-                    tuvw = -1
-                    for t in range(nact):
-                        for u in range(t):
-                            for v in range(nact):
-                                for w in range(v):
-                                    tuvw += 1
-                                    if pqrs < tuvw:
-                                        continue
-                                    pqrstuvw += 1
-                                    if ipos <= pqrstuvw < ipos + my_ndim_bbaa:
-                                        val_bbaa = inner_product(state_list_bbaa[pqrs], state_list_bbaa[tuvw]).real
-                                        my_Dbbaa[pqrstuvw-ipos] = val_bbaa
-    del(state_list_bbaa)
-    Daaaa = mpi.allgather(my_Daaaa) 
-    Dbaaa = mpi.allgather(my_Dbaaa) 
-    Dbbaa = mpi.allgather(my_Dbbaa) 
-    Dbbba = mpi.allgather(my_Dbbba) 
-    Dbbbb = mpi.allgather(my_Dbbbb) 
-
-    #### aaaa and bbbb
-    pqrstuvw = -1
-    pqrs = -1
-    for p in range(nact):
-        for q in range(p):
-            for r in range(q):
-                for s in range(r):
-                    pqrs += 1
-                    tuvw = -1
-                    for t in range(nact):
-                        for u in range(t):
-                            for v in range(u):
-                                for w in range(v):
-                                    tuvw += 1
-                                    if pqrs < tuvw:
-                                        continue
-                                    pqrstuvw += 1
-    #### baaa 
-    pqrstuvw = -1
-    pqrs = -1
-    for p in range(nact):
-        for q in range(nact):
-            for r in range(q):
-                for s in range(r):
-                    pqrs += 1
-                    tuvw = -1
-                    for t in range(nact):
-                        for u in range(nact):
-                            for v in range(u):
-                                for w in range(v):
-                                    tuvw += 1
-                                    if pqrs < tuvw:
-                                        continue
-                                    pqrstuvw += 1
-    pqrstuvw = -1
-    pqrs = -1
-    for p in range(nact):
-        for q in range(p):
-            for r in range(q):
-                for s in range(nact):
-                    pqrs += 1
-                    tuvw = -1
-                    for t in range(nact):
-                        for u in range(t):
-                            for v in range(u):
-                                for w in range(nact):
-                                    tuvw += 1
-                                    if pqrs < tuvw:
-                                        continue
-                                    pqrstuvw += 1
-    
-    pqrstuvw = -1
-    pqrs = -1
-    for p in range(nact):
-        for q in range(p):
-            for r in range(nact):
-                for s in range(r):
-                    pqrs += 1
-                    fbbaa = f"{2*p+1} {2*q+1} {2*r} {2*s}"
-                    op_bbaa = FermionOperator(fbbaa)
-                    state_list_bbaa.append(evolve(op_bbaa, state))
-                    tuvw = -1
-                    for t in range(nact):
-                        for u in range(t):
-                            for v in range(nact):
-                                for w in range(v):
-                                    tuvw += 1
-                                    if pqrs < tuvw:
-                                        continue
-                                    pqrstuvw += 1
-
-
-
-
-
-
-    D4 = np.zeros((n_qubits, n_qubits, n_qubits, n_qubits, n_qubits, n_qubits, n_qubits, n_qubits), dtype=float)
-#    for p in range(n_qubits):
-#        for q in range(p):
-#            for r in range(q):
-#                for s in range(r):
-#                    pqrs += 1
-#                    spin_p = p%2
-#                    spin_q = q%2
-#                    spin_r = r%2
-#                    spin_s = s%2
-#                    tuvw = -1
-#                    for t in range(n_qubits):
-#                        for u in range(t):
-#                            for v in range(u):
-#                                for w in range(v):
-#                                    tuvw += 1
-#                                    if pqrs < tuvw or (p%2+q%2+r%2+s%2!=t%2+u%2+v%2+w%2):
-#                                        continue
-#                                    spin_t = t%2
-#                                    spin_u = u%2
-#                                    spin_v = v%2
-#                                    spin_w = w%2
-#
-## p,q,r,s
-#                                    par = 1
-#                                    D4[p, q, r, s, t, u, v, w] = val*par
-#                                    D4[p, q, r, s, t, u, w, v] =-val*par
-#                                    D4[p, q, r, s, t, v, u, w] =-val*par
-#                                    D4[p, q, r, s, t, v, w, u] = val*par
-#                                    D4[p, q, r, s, t, w, v, u] =-val*par
-#                                    D4[p, q, r, s, t, w, u, v] = val*par
-#                                    D4[p, q, r, s, u, t, v, w] =-val*par
-#                                    D4[p, q, r, s, u, t, w, v] =+val*par
-#                                    D4[p, q, r, s, u, v, t, w] =+val*par
-#                                    D4[p, q, r, s, u, v, w, t] =-val*par
-#                                    D4[p, q, r, s, u, w, v, t] =+val*par
-#                                    D4[p, q, r, s, u, w, t, v] =-val*par
-#                                    D4[p, q, r, s, v, u, t, w] =-val*par
-#                                    D4[p, q, r, s, v, u, w, t] = val*par
-#                                    D4[p, q, r, s, v, t, u, w] = val*par
-#                                    D4[p, q, r, s, v, t, w, u] =-val*par
-#                                    D4[p, q, r, s, v, w, t, u] = val*par
-#                                    D4[p, q, r, s, v, w, u, t] =-val*par
-#                                    D4[p, q, r, s, w, u, v, t] =-val*par
-#                                    D4[p, q, r, s, w, u, t, v] = val*par
-#                                    D4[p, q, r, s, w, v, u, t] = val*par
-#                                    D4[p, q, r, s, w, v, t, u] =-val*par
-#                                    D4[p, q, r, s, w, t, v, u] = val*par
-#                                    D4[p, q, r, s, w, t, u, v] =-val*par
-#                                    
-#                                    par = -1
-#                                    D4[p, q, s, r, t, u, v, w] = val*par
-#                                    D4[p, q, s, r, t, u, w, v] =-val*par
-#                                    D4[p, q, s, r, t, v, u, w] =-val*par
-#                                    D4[p, q, s, r, t, v, w, u] = val*par
-#                                    D4[p, q, s, r, t, w, v, u] =-val*par
-#                                    D4[p, q, s, r, t, w, u, v] = val*par
-#                                    D4[p, q, s, r, u, t, v, w] =-val*par
-#                                    D4[p, q, s, r, u, t, w, v] =+val*par
-#                                    D4[p, q, s, r, u, v, t, w] =+val*par
-#                                    D4[p, q, s, r, u, v, w, t] =-val*par
-#                                    D4[p, q, s, r, u, w, v, t] =+val*par
-#                                    D4[p, q, s, r, u, w, t, v] =-val*par
-#                                    D4[p, q, s, r, v, u, t, w] =-val*par
-#                                    D4[p, q, s, r, v, u, w, t] = val*par
-#                                    D4[p, q, s, r, v, t, u, w] = val*par
-#                                    D4[p, q, s, r, v, t, w, u] =-val*par
-#                                    D4[p, q, s, r, v, w, t, u] = val*par
-#                                    D4[p, q, s, r, v, w, u, t] =-val*par
-#                                    D4[p, q, s, r, w, u, v, t] =-val*par
-#                                    D4[p, q, s, r, w, u, t, v] = val*par
-#                                    D4[p, q, s, r, w, v, u, t] = val*par
-#                                    D4[p, q, s, r, w, v, t, u] =-val*par
-#                                    D4[p, q, s, r, w, t, v, u] = val*par
-#                                    D4[p, q, s, r, w, t, u, v] =-val*par
-#
-#                                    par = -1
-#                                    D4[p, r, q, s, t, u, v, w] = val*par
-#                                    D4[p, r, q, s, t, u, w, v] =-val*par
-#                                    D4[p, r, q, s, t, v, u, w] =-val*par
-#                                    D4[p, r, q, s, t, v, w, u] = val*par
-#                                    D4[p, r, q, s, t, w, v, u] =-val*par
-#                                    D4[p, r, q, s, t, w, u, v] = val*par
-#                                    D4[p, r, q, s, u, t, v, w] =-val*par
-#                                    D4[p, r, q, s, u, t, w, v] =+val*par
-#                                    D4[p, r, q, s, u, v, t, w] =+val*par
-#                                    D4[p, r, q, s, u, v, w, t] =-val*par
-#                                    D4[p, r, q, s, u, w, v, t] =+val*par
-#                                    D4[p, r, q, s, u, w, t, v] =-val*par
-#                                    D4[p, r, q, s, v, u, t, w] =-val*par
-#                                    D4[p, r, q, s, v, u, w, t] = val*par
-#                                    D4[p, r, q, s, v, t, u, w] = val*par
-#                                    D4[p, r, q, s, v, t, w, u] =-val*par
-#                                    D4[p, r, q, s, v, w, t, u] = val*par
-#                                    D4[p, r, q, s, v, w, u, t] =-val*par
-#                                    D4[p, r, q, s, w, u, v, t] =-val*par
-#                                    D4[p, r, q, s, w, u, t, v] = val*par
-#                                    D4[p, r, q, s, w, v, u, t] = val*par
-#                                    D4[p, r, q, s, w, v, t, u] =-val*par
-#                                    D4[p, r, q, s, w, t, v, u] = val*par
-#                                    D4[p, r, q, s, w, t, u, v] =-val*par
-#
-#                                    par = 1
-#                                    D4[p, r, s, q, t, u, v, w] = val*par
-#                                    D4[p, r, s, q, t, u, w, v] =-val*par
-#                                    D4[p, r, s, q, t, v, u, w] =-val*par
-#                                    D4[p, r, s, q, t, v, w, u] = val*par
-#                                    D4[p, r, s, q, t, w, v, u] =-val*par
-#                                    D4[p, r, s, q, t, w, u, v] = val*par
-#                                    D4[p, r, s, q, u, t, v, w] =-val*par
-#                                    D4[p, r, s, q, u, t, w, v] =+val*par
-#                                    D4[p, r, s, q, u, v, t, w] =+val*par
-#                                    D4[p, r, s, q, u, v, w, t] =-val*par
-#                                    D4[p, r, s, q, u, w, v, t] =+val*par
-#                                    D4[p, r, s, q, u, w, t, v] =-val*par
-#                                    D4[p, r, s, q, v, u, t, w] =-val*par
-#                                    D4[p, r, s, q, v, u, w, t] = val*par
-#                                    D4[p, r, s, q, v, t, u, w] = val*par
-#                                    D4[p, r, s, q, v, t, w, u] =-val*par
-#                                    D4[p, r, s, q, v, w, t, u] = val*par
-#                                    D4[p, r, s, q, v, w, u, t] =-val*par
-#                                    D4[p, r, s, q, w, u, v, t] =-val*par
-#                                    D4[p, r, s, q, w, u, t, v] = val*par
-#                                    D4[p, r, s, q, w, v, u, t] = val*par
-#                                    D4[p, r, s, q, w, v, t, u] =-val*par
-#                                    D4[p, r, s, q, w, t, v, u] = val*par
-#                                    D4[p, r, s, q, w, t, u, v] =-val*par
-#
-#                                    par = -1
-#                                    D4[p, s, r, q, t, u, v, w] = val*par
-#                                    D4[p, s, r, q, t, u, w, v] =-val*par
-#                                    D4[p, s, r, q, t, v, u, w] =-val*par
-#                                    D4[p, s, r, q, t, v, w, u] = val*par
-#                                    D4[p, s, r, q, t, w, v, u] =-val*par
-#                                    D4[p, s, r, q, t, w, u, v] = val*par
-#                                    D4[p, s, r, q, u, t, v, w] =-val*par
-#                                    D4[p, s, r, q, u, t, w, v] =+val*par
-#                                    D4[p, s, r, q, u, v, t, w] =+val*par
-#                                    D4[p, s, r, q, u, v, w, t] =-val*par
-#                                    D4[p, s, r, q, u, w, v, t] =+val*par
-#                                    D4[p, s, r, q, u, w, t, v] =-val*par
-#                                    D4[p, s, r, q, v, u, t, w] =-val*par
-#                                    D4[p, s, r, q, v, u, w, t] = val*par
-#                                    D4[p, s, r, q, v, t, u, w] = val*par
-#                                    D4[p, s, r, q, v, t, w, u] =-val*par
-#                                    D4[p, s, r, q, v, w, t, u] = val*par
-#                                    D4[p, s, r, q, v, w, u, t] =-val*par
-#                                    D4[p, s, r, q, w, u, v, t] =-val*par
-#                                    D4[p, s, r, q, w, u, t, v] = val*par
-#                                    D4[p, s, r, q, w, v, u, t] = val*par
-#                                    D4[p, s, r, q, w, v, t, u] =-val*par
-#                                    D4[p, s, r, q, w, t, v, u] = val*par
-#                                    D4[p, s, r, q, w, t, u, v] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[p, s, q, r, t, u, v, w] = val*par
-#                                    D4[p, s, q, r, t, u, w, v] =-val*par
-#                                    D4[p, s, q, r, t, v, u, w] =-val*par
-#                                    D4[p, s, q, r, t, v, w, u] = val*par
-#                                    D4[p, s, q, r, t, w, v, u] =-val*par
-#                                    D4[p, s, q, r, t, w, u, v] = val*par
-#                                    D4[p, s, q, r, u, t, v, w] =-val*par
-#                                    D4[p, s, q, r, u, t, w, v] =+val*par
-#                                    D4[p, s, q, r, u, v, t, w] =+val*par
-#                                    D4[p, s, q, r, u, v, w, t] =-val*par
-#                                    D4[p, s, q, r, u, w, v, t] =+val*par
-#                                    D4[p, s, q, r, u, w, t, v] =-val*par
-#                                    D4[p, s, q, r, v, u, t, w] =-val*par
-#                                    D4[p, s, q, r, v, u, w, t] = val*par
-#                                    D4[p, s, q, r, v, t, u, w] = val*par
-#                                    D4[p, s, q, r, v, t, w, u] =-val*par
-#                                    D4[p, s, q, r, v, w, t, u] = val*par
-#                                    D4[p, s, q, r, v, w, u, t] =-val*par
-#                                    D4[p, s, q, r, w, u, v, t] =-val*par
-#                                    D4[p, s, q, r, w, u, t, v] = val*par
-#                                    D4[p, s, q, r, w, v, u, t] = val*par
-#                                    D4[p, s, q, r, w, v, t, u] =-val*par
-#                                    D4[p, s, q, r, w, t, v, u] = val*par
-#                                    D4[p, s, q, r, w, t, u, v] =-val*par
-#                                    
-#### q, [p, r, s] ...                               
-#                                    par = -1
-#                                    D4[q, p, r, s, t, u, v, w] = val*par
-#                                    D4[q, p, r, s, t, u, w, v] =-val*par
-#                                    D4[q, p, r, s, t, v, u, w] =-val*par
-#                                    D4[q, p, r, s, t, v, w, u] = val*par
-#                                    D4[q, p, r, s, t, w, v, u] =-val*par
-#                                    D4[q, p, r, s, t, w, u, v] = val*par
-#                                    D4[q, p, r, s, u, t, v, w] =-val*par
-#                                    D4[q, p, r, s, u, t, w, v] =+val*par
-#                                    D4[q, p, r, s, u, v, t, w] =+val*par
-#                                    D4[q, p, r, s, u, v, w, t] =-val*par
-#                                    D4[q, p, r, s, u, w, v, t] =+val*par
-#                                    D4[q, p, r, s, u, w, t, v] =-val*par
-#                                    D4[q, p, r, s, v, u, t, w] =-val*par
-#                                    D4[q, p, r, s, v, u, w, t] = val*par
-#                                    D4[q, p, r, s, v, t, u, w] = val*par
-#                                    D4[q, p, r, s, v, t, w, u] =-val*par
-#                                    D4[q, p, r, s, v, w, t, u] = val*par
-#                                    D4[q, p, r, s, v, w, u, t] =-val*par
-#                                    D4[q, p, r, s, w, u, v, t] =-val*par
-#                                    D4[q, p, r, s, w, u, t, v] = val*par
-#                                    D4[q, p, r, s, w, v, u, t] = val*par
-#                                    D4[q, p, r, s, w, v, t, u] =-val*par
-#                                    D4[q, p, r, s, w, t, v, u] = val*par
-#                                    D4[q, p, r, s, w, t, u, v] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[q, p, s, r, t, u, v, w] = val*par
-#                                    D4[q, p, s, r, t, u, w, v] =-val*par
-#                                    D4[q, p, s, r, t, v, u, w] =-val*par
-#                                    D4[q, p, s, r, t, v, w, u] = val*par
-#                                    D4[q, p, s, r, t, w, v, u] =-val*par
-#                                    D4[q, p, s, r, t, w, u, v] = val*par
-#                                    D4[q, p, s, r, u, t, v, w] =-val*par
-#                                    D4[q, p, s, r, u, t, w, v] =+val*par
-#                                    D4[q, p, s, r, u, v, t, w] =+val*par
-#                                    D4[q, p, s, r, u, v, w, t] =-val*par
-#                                    D4[q, p, s, r, u, w, v, t] =+val*par
-#                                    D4[q, p, s, r, u, w, t, v] =-val*par
-#                                    D4[q, p, s, r, v, u, t, w] =-val*par
-#                                    D4[q, p, s, r, v, u, w, t] = val*par
-#                                    D4[q, p, s, r, v, t, u, w] = val*par
-#                                    D4[q, p, s, r, v, t, w, u] =-val*par
-#                                    D4[q, p, s, r, v, w, t, u] = val*par
-#                                    D4[q, p, s, r, v, w, u, t] =-val*par
-#                                    D4[q, p, s, r, w, u, v, t] =-val*par
-#                                    D4[q, p, s, r, w, u, t, v] = val*par
-#                                    D4[q, p, s, r, w, v, u, t] = val*par
-#                                    D4[q, p, s, r, w, v, t, u] =-val*par
-#                                    D4[q, p, s, r, w, t, v, u] = val*par
-#                                    D4[q, p, s, r, w, t, u, v] =-val*par
-#
-#                                    par = 1
-#                                    D4[q, r, p, s, t, u, v, w] = val*par
-#                                    D4[q, r, p, s, t, u, w, v] =-val*par
-#                                    D4[q, r, p, s, t, v, u, w] =-val*par
-#                                    D4[q, r, p, s, t, v, w, u] = val*par
-#                                    D4[q, r, p, s, t, w, v, u] =-val*par
-#                                    D4[q, r, p, s, t, w, u, v] = val*par
-#                                    D4[q, r, p, s, u, t, v, w] =-val*par
-#                                    D4[q, r, p, s, u, t, w, v] =+val*par
-#                                    D4[q, r, p, s, u, v, t, w] =+val*par
-#                                    D4[q, r, p, s, u, v, w, t] =-val*par
-#                                    D4[q, r, p, s, u, w, v, t] =+val*par
-#                                    D4[q, r, p, s, u, w, t, v] =-val*par
-#                                    D4[q, r, p, s, v, u, t, w] =-val*par
-#                                    D4[q, r, p, s, v, u, w, t] = val*par
-#                                    D4[q, r, p, s, v, t, u, w] = val*par
-#                                    D4[q, r, p, s, v, t, w, u] =-val*par
-#                                    D4[q, r, p, s, v, w, t, u] = val*par
-#                                    D4[q, r, p, s, v, w, u, t] =-val*par
-#                                    D4[q, r, p, s, w, u, v, t] =-val*par
-#                                    D4[q, r, p, s, w, u, t, v] = val*par
-#                                    D4[q, r, p, s, w, v, u, t] = val*par
-#                                    D4[q, r, p, s, w, v, t, u] =-val*par
-#                                    D4[q, r, p, s, w, t, v, u] = val*par
-#                                    D4[q, r, p, s, w, t, u, v] =-val*par
-#
-#                                    par = -1
-#                                    D4[q, r, s, p, t, u, v, w] = val*par
-#                                    D4[q, r, s, p, t, u, w, v] =-val*par
-#                                    D4[q, r, s, p, t, v, u, w] =-val*par
-#                                    D4[q, r, s, p, t, v, w, u] = val*par
-#                                    D4[q, r, s, p, t, w, v, u] =-val*par
-#                                    D4[q, r, s, p, t, w, u, v] = val*par
-#                                    D4[q, r, s, p, u, t, v, w] =-val*par
-#                                    D4[q, r, s, p, u, t, w, v] =+val*par
-#                                    D4[q, r, s, p, u, v, t, w] =+val*par
-#                                    D4[q, r, s, p, u, v, w, t] =-val*par
-#                                    D4[q, r, s, p, u, w, v, t] =+val*par
-#                                    D4[q, r, s, p, u, w, t, v] =-val*par
-#                                    D4[q, r, s, p, v, u, t, w] =-val*par
-#                                    D4[q, r, s, p, v, u, w, t] = val*par
-#                                    D4[q, r, s, p, v, t, u, w] = val*par
-#                                    D4[q, r, s, p, v, t, w, u] =-val*par
-#                                    D4[q, r, s, p, v, w, t, u] = val*par
-#                                    D4[q, r, s, p, v, w, u, t] =-val*par
-#                                    D4[q, r, s, p, w, u, v, t] =-val*par
-#                                    D4[q, r, s, p, w, u, t, v] = val*par
-#                                    D4[q, r, s, p, w, v, u, t] = val*par
-#                                    D4[q, r, s, p, w, v, t, u] =-val*par
-#                                    D4[q, r, s, p, w, t, v, u] = val*par
-#                                    D4[q, r, s, p, w, t, u, v] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[q, s, r, p, t, u, v, w] = val*par
-#                                    D4[q, s, r, p, t, u, w, v] =-val*par
-#                                    D4[q, s, r, p, t, v, u, w] =-val*par
-#                                    D4[q, s, r, p, t, v, w, u] = val*par
-#                                    D4[q, s, r, p, t, w, v, u] =-val*par
-#                                    D4[q, s, r, p, t, w, u, v] = val*par
-#                                    D4[q, s, r, p, u, t, v, w] =-val*par
-#                                    D4[q, s, r, p, u, t, w, v] =+val*par
-#                                    D4[q, s, r, p, u, v, t, w] =+val*par
-#                                    D4[q, s, r, p, u, v, w, t] =-val*par
-#                                    D4[q, s, r, p, u, w, v, t] =+val*par
-#                                    D4[q, s, r, p, u, w, t, v] =-val*par
-#                                    D4[q, s, r, p, v, u, t, w] =-val*par
-#                                    D4[q, s, r, p, v, u, w, t] = val*par
-#                                    D4[q, s, r, p, v, t, u, w] = val*par
-#                                    D4[q, s, r, p, v, t, w, u] =-val*par
-#                                    D4[q, s, r, p, v, w, t, u] = val*par
-#                                    D4[q, s, r, p, v, w, u, t] =-val*par
-#                                    D4[q, s, r, p, w, u, v, t] =-val*par
-#                                    D4[q, s, r, p, w, u, t, v] = val*par
-#                                    D4[q, s, r, p, w, v, u, t] = val*par
-#                                    D4[q, s, r, p, w, v, t, u] =-val*par
-#                                    D4[q, s, r, p, w, t, v, u] = val*par
-#                                    D4[q, s, r, p, w, t, u, v] =-val*par
-#                                    
-#                                    par = -1
-#                                    D4[q, s, p, r, t, u, v, w] = val*par
-#                                    D4[q, s, p, r, t, u, w, v] =-val*par
-#                                    D4[q, s, p, r, t, v, u, w] =-val*par
-#                                    D4[q, s, p, r, t, v, w, u] = val*par
-#                                    D4[q, s, p, r, t, w, v, u] =-val*par
-#                                    D4[q, s, p, r, t, w, u, v] = val*par
-#                                    D4[q, s, p, r, u, t, v, w] =-val*par
-#                                    D4[q, s, p, r, u, t, w, v] =+val*par
-#                                    D4[q, s, p, r, u, v, t, w] =+val*par
-#                                    D4[q, s, p, r, u, v, w, t] =-val*par
-#                                    D4[q, s, p, r, u, w, v, t] =+val*par
-#                                    D4[q, s, p, r, u, w, t, v] =-val*par
-#                                    D4[q, s, p, r, v, u, t, w] =-val*par
-#                                    D4[q, s, p, r, v, u, w, t] = val*par
-#                                    D4[q, s, p, r, v, t, u, w] = val*par
-#                                    D4[q, s, p, r, v, t, w, u] =-val*par
-#                                    D4[q, s, p, r, v, w, t, u] = val*par
-#                                    D4[q, s, p, r, v, w, u, t] =-val*par
-#                                    D4[q, s, p, r, w, u, v, t] =-val*par
-#                                    D4[q, s, p, r, w, u, t, v] = val*par
-#                                    D4[q, s, p, r, w, v, u, t] = val*par
-#                                    D4[q, s, p, r, w, v, t, u] =-val*par
-#                                    D4[q, s, p, r, w, t, v, u] = val*par
-#                                    D4[q, s, p, r, w, t, u, v] =-val*par
-## r, [p,q,s]
-#                                    par = -1
-#                                    D4[r, q, p, s, t, u, v, w] = val*par
-#                                    D4[r, q, p, s, t, u, w, v] =-val*par
-#                                    D4[r, q, p, s, t, v, u, w] =-val*par
-#                                    D4[r, q, p, s, t, v, w, u] = val*par
-#                                    D4[r, q, p, s, t, w, v, u] =-val*par
-#                                    D4[r, q, p, s, t, w, u, v] = val*par
-#                                    D4[r, q, p, s, u, t, v, w] =-val*par
-#                                    D4[r, q, p, s, u, t, w, v] =+val*par
-#                                    D4[r, q, p, s, u, v, t, w] =+val*par
-#                                    D4[r, q, p, s, u, v, w, t] =-val*par
-#                                    D4[r, q, p, s, u, w, v, t] =+val*par
-#                                    D4[r, q, p, s, u, w, t, v] =-val*par
-#                                    D4[r, q, p, s, v, u, t, w] =-val*par
-#                                    D4[r, q, p, s, v, u, w, t] = val*par
-#                                    D4[r, q, p, s, v, t, u, w] = val*par
-#                                    D4[r, q, p, s, v, t, w, u] =-val*par
-#                                    D4[r, q, p, s, v, w, t, u] = val*par
-#                                    D4[r, q, p, s, v, w, u, t] =-val*par
-#                                    D4[r, q, p, s, w, u, v, t] =-val*par
-#                                    D4[r, q, p, s, w, u, t, v] = val*par
-#                                    D4[r, q, p, s, w, v, u, t] = val*par
-#                                    D4[r, q, p, s, w, v, t, u] =-val*par
-#                                    D4[r, q, p, s, w, t, v, u] = val*par
-#                                    D4[r, q, p, s, w, t, u, v] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[r, q, s, p, t, u, v, w] = val*par
-#                                    D4[r, q, s, p, t, u, w, v] =-val*par
-#                                    D4[r, q, s, p, t, v, u, w] =-val*par
-#                                    D4[r, q, s, p, t, v, w, u] = val*par
-#                                    D4[r, q, s, p, t, w, v, u] =-val*par
-#                                    D4[r, q, s, p, t, w, u, v] = val*par
-#                                    D4[r, q, s, p, u, t, v, w] =-val*par
-#                                    D4[r, q, s, p, u, t, w, v] =+val*par
-#                                    D4[r, q, s, p, u, v, t, w] =+val*par
-#                                    D4[r, q, s, p, u, v, w, t] =-val*par
-#                                    D4[r, q, s, p, u, w, v, t] =+val*par
-#                                    D4[r, q, s, p, u, w, t, v] =-val*par
-#                                    D4[r, q, s, p, v, u, t, w] =-val*par
-#                                    D4[r, q, s, p, v, u, w, t] = val*par
-#                                    D4[r, q, s, p, v, t, u, w] = val*par
-#                                    D4[r, q, s, p, v, t, w, u] =-val*par
-#                                    D4[r, q, s, p, v, w, t, u] = val*par
-#                                    D4[r, q, s, p, v, w, u, t] =-val*par
-#                                    D4[r, q, s, p, w, u, v, t] =-val*par
-#                                    D4[r, q, s, p, w, u, t, v] = val*par
-#                                    D4[r, q, s, p, w, v, u, t] = val*par
-#                                    D4[r, q, s, p, w, v, t, u] =-val*par
-#                                    D4[r, q, s, p, w, t, v, u] = val*par
-#                                    D4[r, q, s, p, w, t, u, v] =-val*par
-#
-#                                    par = 1
-#                                    D4[r, p, q, s, t, u, v, w] = val*par
-#                                    D4[r, p, q, s, t, u, w, v] =-val*par
-#                                    D4[r, p, q, s, t, v, u, w] =-val*par
-#                                    D4[r, p, q, s, t, v, w, u] = val*par
-#                                    D4[r, p, q, s, t, w, v, u] =-val*par
-#                                    D4[r, p, q, s, t, w, u, v] = val*par
-#                                    D4[r, p, q, s, u, t, v, w] =-val*par
-#                                    D4[r, p, q, s, u, t, w, v] =+val*par
-#                                    D4[r, p, q, s, u, v, t, w] =+val*par
-#                                    D4[r, p, q, s, u, v, w, t] =-val*par
-#                                    D4[r, p, q, s, u, w, v, t] =+val*par
-#                                    D4[r, p, q, s, u, w, t, v] =-val*par
-#                                    D4[r, p, q, s, v, u, t, w] =-val*par
-#                                    D4[r, p, q, s, v, u, w, t] = val*par
-#                                    D4[r, p, q, s, v, t, u, w] = val*par
-#                                    D4[r, p, q, s, v, t, w, u] =-val*par
-#                                    D4[r, p, q, s, v, w, t, u] = val*par
-#                                    D4[r, p, q, s, v, w, u, t] =-val*par
-#                                    D4[r, p, q, s, w, u, v, t] =-val*par
-#                                    D4[r, p, q, s, w, u, t, v] = val*par
-#                                    D4[r, p, q, s, w, v, u, t] = val*par
-#                                    D4[r, p, q, s, w, v, t, u] =-val*par
-#                                    D4[r, p, q, s, w, t, v, u] = val*par
-#                                    D4[r, p, q, s, w, t, u, v] =-val*par
-#
-#                                    par = -1
-#                                    D4[r, p, s, q, t, u, v, w] = val*par
-#                                    D4[r, p, s, q, t, u, w, v] =-val*par
-#                                    D4[r, p, s, q, t, v, u, w] =-val*par
-#                                    D4[r, p, s, q, t, v, w, u] = val*par
-#                                    D4[r, p, s, q, t, w, v, u] =-val*par
-#                                    D4[r, p, s, q, t, w, u, v] = val*par
-#                                    D4[r, p, s, q, u, t, v, w] =-val*par
-#                                    D4[r, p, s, q, u, t, w, v] =+val*par
-#                                    D4[r, p, s, q, u, v, t, w] =+val*par
-#                                    D4[r, p, s, q, u, v, w, t] =-val*par
-#                                    D4[r, p, s, q, u, w, v, t] =+val*par
-#                                    D4[r, p, s, q, u, w, t, v] =-val*par
-#                                    D4[r, p, s, q, v, u, t, w] =-val*par
-#                                    D4[r, p, s, q, v, u, w, t] = val*par
-#                                    D4[r, p, s, q, v, t, u, w] = val*par
-#                                    D4[r, p, s, q, v, t, w, u] =-val*par
-#                                    D4[r, p, s, q, v, w, t, u] = val*par
-#                                    D4[r, p, s, q, v, w, u, t] =-val*par
-#                                    D4[r, p, s, q, w, u, v, t] =-val*par
-#                                    D4[r, p, s, q, w, u, t, v] = val*par
-#                                    D4[r, p, s, q, w, v, u, t] = val*par
-#                                    D4[r, p, s, q, w, v, t, u] =-val*par
-#                                    D4[r, p, s, q, w, t, v, u] = val*par
-#                                    D4[r, p, s, q, w, t, u, v] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[r, s, p, q, t, u, v, w] = val*par
-#                                    D4[r, s, p, q, t, u, w, v] =-val*par
-#                                    D4[r, s, p, q, t, v, u, w] =-val*par
-#                                    D4[r, s, p, q, t, v, w, u] = val*par
-#                                    D4[r, s, p, q, t, w, v, u] =-val*par
-#                                    D4[r, s, p, q, t, w, u, v] = val*par
-#                                    D4[r, s, p, q, u, t, v, w] =-val*par
-#                                    D4[r, s, p, q, u, t, w, v] =+val*par
-#                                    D4[r, s, p, q, u, v, t, w] =+val*par
-#                                    D4[r, s, p, q, u, v, w, t] =-val*par
-#                                    D4[r, s, p, q, u, w, v, t] =+val*par
-#                                    D4[r, s, p, q, u, w, t, v] =-val*par
-#                                    D4[r, s, p, q, v, u, t, w] =-val*par
-#                                    D4[r, s, p, q, v, u, w, t] = val*par
-#                                    D4[r, s, p, q, v, t, u, w] = val*par
-#                                    D4[r, s, p, q, v, t, w, u] =-val*par
-#                                    D4[r, s, p, q, v, w, t, u] = val*par
-#                                    D4[r, s, p, q, v, w, u, t] =-val*par
-#                                    D4[r, s, p, q, w, u, v, t] =-val*par
-#                                    D4[r, s, p, q, w, u, t, v] = val*par
-#                                    D4[r, s, p, q, w, v, u, t] = val*par
-#                                    D4[r, s, p, q, w, v, t, u] =-val*par
-#                                    D4[r, s, p, q, w, t, v, u] = val*par
-#                                    D4[r, s, p, q, w, t, u, v] =-val*par
-#                                    
-#                                    par = -1
-#                                    D4[r, s, q, p, t, u, v, w] = val*par
-#                                    D4[r, s, q, p, t, u, w, v] =-val*par
-#                                    D4[r, s, q, p, t, v, u, w] =-val*par
-#                                    D4[r, s, q, p, t, v, w, u] = val*par
-#                                    D4[r, s, q, p, t, w, v, u] =-val*par
-#                                    D4[r, s, q, p, t, w, u, v] = val*par
-#                                    D4[r, s, q, p, u, t, v, w] =-val*par
-#                                    D4[r, s, q, p, u, t, w, v] =+val*par
-#                                    D4[r, s, q, p, u, v, t, w] =+val*par
-#                                    D4[r, s, q, p, u, v, w, t] =-val*par
-#                                    D4[r, s, q, p, u, w, v, t] =+val*par
-#                                    D4[r, s, q, p, u, w, t, v] =-val*par
-#                                    D4[r, s, q, p, v, u, t, w] =-val*par
-#                                    D4[r, s, q, p, v, u, w, t] = val*par
-#                                    D4[r, s, q, p, v, t, u, w] = val*par
-#                                    D4[r, s, q, p, v, t, w, u] =-val*par
-#                                    D4[r, s, q, p, v, w, t, u] = val*par
-#                                    D4[r, s, q, p, v, w, u, t] =-val*par
-#                                    D4[r, s, q, p, w, u, v, t] =-val*par
-#                                    D4[r, s, q, p, w, u, t, v] = val*par
-#                                    D4[r, s, q, p, w, v, u, t] = val*par
-#                                    D4[r, s, q, p, w, v, t, u] =-val*par
-#                                    D4[r, s, q, p, w, t, v, u] = val*par
-#                                    D4[r, s, q, p, w, t, u, v] =-val*par
-## s, [p,q,r]
-#                                    par = -1
-#                                    D4[s, q, r, p, t, u, v, w] = val*par
-#                                    D4[s, q, r, p, t, u, w, v] =-val*par
-#                                    D4[s, q, r, p, t, v, u, w] =-val*par
-#                                    D4[s, q, r, p, t, v, w, u] = val*par
-#                                    D4[s, q, r, p, t, w, v, u] =-val*par
-#                                    D4[s, q, r, p, t, w, u, v] = val*par
-#                                    D4[s, q, r, p, u, t, v, w] =-val*par
-#                                    D4[s, q, r, p, u, t, w, v] =+val*par
-#                                    D4[s, q, r, p, u, v, t, w] =+val*par
-#                                    D4[s, q, r, p, u, v, w, t] =-val*par
-#                                    D4[s, q, r, p, u, w, v, t] =+val*par
-#                                    D4[s, q, r, p, u, w, t, v] =-val*par
-#                                    D4[s, q, r, p, v, u, t, w] =-val*par
-#                                    D4[s, q, r, p, v, u, w, t] = val*par
-#                                    D4[s, q, r, p, v, t, u, w] = val*par
-#                                    D4[s, q, r, p, v, t, w, u] =-val*par
-#                                    D4[s, q, r, p, v, w, t, u] = val*par
-#                                    D4[s, q, r, p, v, w, u, t] =-val*par
-#                                    D4[s, q, r, p, w, u, v, t] =-val*par
-#                                    D4[s, q, r, p, w, u, t, v] = val*par
-#                                    D4[s, q, r, p, w, v, u, t] = val*par
-#                                    D4[s, q, r, p, w, v, t, u] =-val*par
-#                                    D4[s, q, r, p, w, t, v, u] = val*par
-#                                    D4[s, q, r, p, w, t, u, v] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[s, q, p, r, t, u, v, w] = val*par
-#                                    D4[s, q, p, r, t, u, w, v] =-val*par
-#                                    D4[s, q, p, r, t, v, u, w] =-val*par
-#                                    D4[s, q, p, r, t, v, w, u] = val*par
-#                                    D4[s, q, p, r, t, w, v, u] =-val*par
-#                                    D4[s, q, p, r, t, w, u, v] = val*par
-#                                    D4[s, q, p, r, u, t, v, w] =-val*par
-#                                    D4[s, q, p, r, u, t, w, v] =+val*par
-#                                    D4[s, q, p, r, u, v, t, w] =+val*par
-#                                    D4[s, q, p, r, u, v, w, t] =-val*par
-#                                    D4[s, q, p, r, u, w, v, t] =+val*par
-#                                    D4[s, q, p, r, u, w, t, v] =-val*par
-#                                    D4[s, q, p, r, v, u, t, w] =-val*par
-#                                    D4[s, q, p, r, v, u, w, t] = val*par
-#                                    D4[s, q, p, r, v, t, u, w] = val*par
-#                                    D4[s, q, p, r, v, t, w, u] =-val*par
-#                                    D4[s, q, p, r, v, w, t, u] = val*par
-#                                    D4[s, q, p, r, v, w, u, t] =-val*par
-#                                    D4[s, q, p, r, w, u, v, t] =-val*par
-#                                    D4[s, q, p, r, w, u, t, v] = val*par
-#                                    D4[s, q, p, r, w, v, u, t] = val*par
-#                                    D4[s, q, p, r, w, v, t, u] =-val*par
-#                                    D4[s, q, p, r, w, t, v, u] = val*par
-#                                    D4[s, q, p, r, w, t, u, v] =-val*par
-#
-#                                    par = 1
-#                                    D4[s, r, q, p, t, u, v, w] = val*par
-#                                    D4[s, r, q, p, t, u, w, v] =-val*par
-#                                    D4[s, r, q, p, t, v, u, w] =-val*par
-#                                    D4[s, r, q, p, t, v, w, u] = val*par
-#                                    D4[s, r, q, p, t, w, v, u] =-val*par
-#                                    D4[s, r, q, p, t, w, u, v] = val*par
-#                                    D4[s, r, q, p, u, t, v, w] =-val*par
-#                                    D4[s, r, q, p, u, t, w, v] =+val*par
-#                                    D4[s, r, q, p, u, v, t, w] =+val*par
-#                                    D4[s, r, q, p, u, v, w, t] =-val*par
-#                                    D4[s, r, q, p, u, w, v, t] =+val*par
-#                                    D4[s, r, q, p, u, w, t, v] =-val*par
-#                                    D4[s, r, q, p, v, u, t, w] =-val*par
-#                                    D4[s, r, q, p, v, u, w, t] = val*par
-#                                    D4[s, r, q, p, v, t, u, w] = val*par
-#                                    D4[s, r, q, p, v, t, w, u] =-val*par
-#                                    D4[s, r, q, p, v, w, t, u] = val*par
-#                                    D4[s, r, q, p, v, w, u, t] =-val*par
-#                                    D4[s, r, q, p, w, u, v, t] =-val*par
-#                                    D4[s, r, q, p, w, u, t, v] = val*par
-#                                    D4[s, r, q, p, w, v, u, t] = val*par
-#                                    D4[s, r, q, p, w, v, t, u] =-val*par
-#                                    D4[s, r, q, p, w, t, v, u] = val*par
-#                                    D4[s, r, q, p, w, t, u, v] =-val*par
-#
-#                                    par = -1
-#                                    D4[s, r, p, q, t, u, v, w] = val*par
-#                                    D4[s, r, p, q, t, u, w, v] =-val*par
-#                                    D4[s, r, p, q, t, v, u, w] =-val*par
-#                                    D4[s, r, p, q, t, v, w, u] = val*par
-#                                    D4[s, r, p, q, t, w, v, u] =-val*par
-#                                    D4[s, r, p, q, t, w, u, v] = val*par
-#                                    D4[s, r, p, q, u, t, v, w] =-val*par
-#                                    D4[s, r, p, q, u, t, w, v] =+val*par
-#                                    D4[s, r, p, q, u, v, t, w] =+val*par
-#                                    D4[s, r, p, q, u, v, w, t] =-val*par
-#                                    D4[s, r, p, q, u, w, v, t] =+val*par
-#                                    D4[s, r, p, q, u, w, t, v] =-val*par
-#                                    D4[s, r, p, q, v, u, t, w] =-val*par
-#                                    D4[s, r, p, q, v, u, w, t] = val*par
-#                                    D4[s, r, p, q, v, t, u, w] = val*par
-#                                    D4[s, r, p, q, v, t, w, u] =-val*par
-#                                    D4[s, r, p, q, v, w, t, u] = val*par
-#                                    D4[s, r, p, q, v, w, u, t] =-val*par
-#                                    D4[s, r, p, q, w, u, v, t] =-val*par
-#                                    D4[s, r, p, q, w, u, t, v] = val*par
-#                                    D4[s, r, p, q, w, v, u, t] = val*par
-#                                    D4[s, r, p, q, w, v, t, u] =-val*par
-#                                    D4[s, r, p, q, w, t, v, u] = val*par
-#                                    D4[s, r, p, q, w, t, u, v] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[s, p, r, q, t, u, v, w] = val*par
-#                                    D4[s, p, r, q, t, u, w, v] =-val*par
-#                                    D4[s, p, r, q, t, v, u, w] =-val*par
-#                                    D4[s, p, r, q, t, v, w, u] = val*par
-#                                    D4[s, p, r, q, t, w, v, u] =-val*par
-#                                    D4[s, p, r, q, t, w, u, v] = val*par
-#                                    D4[s, p, r, q, u, t, v, w] =-val*par
-#                                    D4[s, p, r, q, u, t, w, v] =+val*par
-#                                    D4[s, p, r, q, u, v, t, w] =+val*par
-#                                    D4[s, p, r, q, u, v, w, t] =-val*par
-#                                    D4[s, p, r, q, u, w, v, t] =+val*par
-#                                    D4[s, p, r, q, u, w, t, v] =-val*par
-#                                    D4[s, p, r, q, v, u, t, w] =-val*par
-#                                    D4[s, p, r, q, v, u, w, t] = val*par
-#                                    D4[s, p, r, q, v, t, u, w] = val*par
-#                                    D4[s, p, r, q, v, t, w, u] =-val*par
-#                                    D4[s, p, r, q, v, w, t, u] = val*par
-#                                    D4[s, p, r, q, v, w, u, t] =-val*par
-#                                    D4[s, p, r, q, w, u, v, t] =-val*par
-#                                    D4[s, p, r, q, w, u, t, v] = val*par
-#                                    D4[s, p, r, q, w, v, u, t] = val*par
-#                                    D4[s, p, r, q, w, v, t, u] =-val*par
-#                                    D4[s, p, r, q, w, t, v, u] = val*par
-#                                    D4[s, p, r, q, w, t, u, v] =-val*par
-#                                    
-#                                    par = -1
-#                                    D4[s, p, q, r, t, u, v, w] = val*par
-#                                    D4[s, p, q, r, t, u, w, v] =-val*par
-#                                    D4[s, p, q, r, t, v, u, w] =-val*par
-#                                    D4[s, p, q, r, t, v, w, u] = val*par
-#                                    D4[s, p, q, r, t, w, v, u] =-val*par
-#                                    D4[s, p, q, r, t, w, u, v] = val*par
-#                                    D4[s, p, q, r, u, t, v, w] =-val*par
-#                                    D4[s, p, q, r, u, t, w, v] =+val*par
-#                                    D4[s, p, q, r, u, v, t, w] =+val*par
-#                                    D4[s, p, q, r, u, v, w, t] =-val*par
-#                                    D4[s, p, q, r, u, w, v, t] =+val*par
-#                                    D4[s, p, q, r, u, w, t, v] =-val*par
-#                                    D4[s, p, q, r, v, u, t, w] =-val*par
-#                                    D4[s, p, q, r, v, u, w, t] = val*par
-#                                    D4[s, p, q, r, v, t, u, w] = val*par
-#                                    D4[s, p, q, r, v, t, w, u] =-val*par
-#                                    D4[s, p, q, r, v, w, t, u] = val*par
-#                                    D4[s, p, q, r, v, w, u, t] =-val*par
-#                                    D4[s, p, q, r, w, u, v, t] =-val*par
-#                                    D4[s, p, q, r, w, u, t, v] = val*par
-#                                    D4[s, p, q, r, w, v, u, t] = val*par
-#                                    D4[s, p, q, r, w, v, t, u] =-val*par
-#                                    D4[s, p, q, r, w, t, v, u] = val*par
-#                                    D4[s, p, q, r, w, t, u, v] =-val*par
-#### pqrs <-> tuvw
-## p,q,r,s
-#                                    par = 1
-#                                    D4[t, u, v, w, p, q, r, s] = val*par
-#                                    D4[t, u, w, v, p, q, r, s] =-val*par
-#                                    D4[t, v, u, w, p, q, r, s] =-val*par
-#                                    D4[t, v, w, u, p, q, r, s] = val*par
-#                                    D4[t, w, v, u, p, q, r, s] =-val*par
-#                                    D4[t, w, u, v, p, q, r, s] = val*par
-#                                    D4[u, t, v, w, p, q, r, s] =-val*par
-#                                    D4[u, t, w, v, p, q, r, s] =+val*par
-#                                    D4[u, v, t, w, p, q, r, s] =+val*par
-#                                    D4[u, v, w, t, p, q, r, s] =-val*par
-#                                    D4[u, w, v, t, p, q, r, s] =+val*par
-#                                    D4[u, w, t, v, p, q, r, s] =-val*par
-#                                    D4[v, u, t, w, p, q, r, s] =-val*par
-#                                    D4[v, u, w, t, p, q, r, s] = val*par
-#                                    D4[v, t, u, w, p, q, r, s] = val*par
-#                                    D4[v, t, w, u, p, q, r, s] =-val*par
-#                                    D4[v, w, t, u, p, q, r, s] = val*par
-#                                    D4[v, w, u, t, p, q, r, s] =-val*par
-#                                    D4[w, u, v, t, p, q, r, s] =-val*par
-#                                    D4[w, u, t, v, p, q, r, s] = val*par
-#                                    D4[w, v, u, t, p, q, r, s] = val*par
-#                                    D4[w, v, t, u, p, q, r, s] =-val*par
-#                                    D4[w, t, v, u, p, q, r, s] = val*par
-#                                    D4[w, t, u, v, p, q, r, s] =-val*par
-#                                    
-#                                    par = -1
-#                                    D4[t, u, v, w, p, q, s, r] = val*par
-#                                    D4[t, u, w, v, p, q, s, r] =-val*par
-#                                    D4[t, v, u, w, p, q, s, r] =-val*par
-#                                    D4[t, v, w, u, p, q, s, r] = val*par
-#                                    D4[t, w, v, u, p, q, s, r] =-val*par
-#                                    D4[t, w, u, v, p, q, s, r] = val*par
-#                                    D4[u, t, v, w, p, q, s, r] =-val*par
-#                                    D4[u, t, w, v, p, q, s, r] =+val*par
-#                                    D4[u, v, t, w, p, q, s, r] =+val*par
-#                                    D4[u, v, w, t, p, q, s, r] =-val*par
-#                                    D4[u, w, v, t, p, q, s, r] =+val*par
-#                                    D4[u, w, t, v, p, q, s, r] =-val*par
-#                                    D4[v, u, t, w, p, q, s, r] =-val*par
-#                                    D4[v, u, w, t, p, q, s, r] = val*par
-#                                    D4[v, t, u, w, p, q, s, r] = val*par
-#                                    D4[v, t, w, u, p, q, s, r] =-val*par
-#                                    D4[v, w, t, u, p, q, s, r] = val*par
-#                                    D4[v, w, u, t, p, q, s, r] =-val*par
-#                                    D4[w, u, v, t, p, q, s, r] =-val*par
-#                                    D4[w, u, t, v, p, q, s, r] = val*par
-#                                    D4[w, v, u, t, p, q, s, r] = val*par
-#                                    D4[w, v, t, u, p, q, s, r] =-val*par
-#                                    D4[w, t, v, u, p, q, s, r] = val*par
-#                                    D4[w, t, u, v, p, q, s, r] =-val*par
-#
-#                                    par = -1
-#                                    D4[t, u, v, w, p, r, q, s] = val*par
-#                                    D4[t, u, w, v, p, r, q, s] =-val*par
-#                                    D4[t, v, u, w, p, r, q, s] =-val*par
-#                                    D4[t, v, w, u, p, r, q, s] = val*par
-#                                    D4[t, w, v, u, p, r, q, s] =-val*par
-#                                    D4[t, w, u, v, p, r, q, s] = val*par
-#                                    D4[u, t, v, w, p, r, q, s] =-val*par
-#                                    D4[u, t, w, v, p, r, q, s] =+val*par
-#                                    D4[u, v, t, w, p, r, q, s] =+val*par
-#                                    D4[u, v, w, t, p, r, q, s] =-val*par
-#                                    D4[u, w, v, t, p, r, q, s] =+val*par
-#                                    D4[u, w, t, v, p, r, q, s] =-val*par
-#                                    D4[v, u, t, w, p, r, q, s] =-val*par
-#                                    D4[v, u, w, t, p, r, q, s] = val*par
-#                                    D4[v, t, u, w, p, r, q, s] = val*par
-#                                    D4[v, t, w, u, p, r, q, s] =-val*par
-#                                    D4[v, w, t, u, p, r, q, s] = val*par
-#                                    D4[v, w, u, t, p, r, q, s] =-val*par
-#                                    D4[w, u, v, t, p, r, q, s] =-val*par
-#                                    D4[w, u, t, v, p, r, q, s] = val*par
-#                                    D4[w, v, u, t, p, r, q, s] = val*par
-#                                    D4[w, v, t, u, p, r, q, s] =-val*par
-#                                    D4[w, t, v, u, p, r, q, s] = val*par
-#                                    D4[w, t, u, v, p, r, q, s] =-val*par
-#
-#                                    par = 1
-#                                    D4[t, u, v, w, p, r, s, q] = val*par
-#                                    D4[t, u, w, v, p, r, s, q] =-val*par
-#                                    D4[t, v, u, w, p, r, s, q] =-val*par
-#                                    D4[t, v, w, u, p, r, s, q] = val*par
-#                                    D4[t, w, v, u, p, r, s, q] =-val*par
-#                                    D4[t, w, u, v, p, r, s, q] = val*par
-#                                    D4[u, t, v, w, p, r, s, q] =-val*par
-#                                    D4[u, t, w, v, p, r, s, q] =+val*par
-#                                    D4[u, v, t, w, p, r, s, q] =+val*par
-#                                    D4[u, v, w, t, p, r, s, q] =-val*par
-#                                    D4[u, w, v, t, p, r, s, q] =+val*par
-#                                    D4[u, w, t, v, p, r, s, q] =-val*par
-#                                    D4[v, u, t, w, p, r, s, q] =-val*par
-#                                    D4[v, u, w, t, p, r, s, q] = val*par
-#                                    D4[v, t, u, w, p, r, s, q] = val*par
-#                                    D4[v, t, w, u, p, r, s, q] =-val*par
-#                                    D4[v, w, t, u, p, r, s, q] = val*par
-#                                    D4[v, w, u, t, p, r, s, q] =-val*par
-#                                    D4[w, u, v, t, p, r, s, q] =-val*par
-#                                    D4[w, u, t, v, p, r, s, q] = val*par
-#                                    D4[w, v, u, t, p, r, s, q] = val*par
-#                                    D4[w, v, t, u, p, r, s, q] =-val*par
-#                                    D4[w, t, v, u, p, r, s, q] = val*par
-#                                    D4[w, t, u, v, p, r, s, q] =-val*par
-#                                    
-#                                    par = -1
-#                                    D4[t, u, v, w, p, s, r, q] = val*par
-#                                    D4[t, u, w, v, p, s, r, q] =-val*par
-#                                    D4[t, v, u, w, p, s, r, q] =-val*par
-#                                    D4[t, v, w, u, p, s, r, q] = val*par
-#                                    D4[t, w, v, u, p, s, r, q] =-val*par
-#                                    D4[t, w, u, v, p, s, r, q] = val*par
-#                                    D4[u, t, v, w, p, s, r, q] =-val*par
-#                                    D4[u, t, w, v, p, s, r, q] =+val*par
-#                                    D4[u, v, t, w, p, s, r, q] =+val*par
-#                                    D4[u, v, w, t, p, s, r, q] =-val*par
-#                                    D4[u, w, v, t, p, s, r, q] =+val*par
-#                                    D4[u, w, t, v, p, s, r, q] =-val*par
-#                                    D4[v, u, t, w, p, s, r, q] =-val*par
-#                                    D4[v, u, w, t, p, s, r, q] = val*par
-#                                    D4[v, t, u, w, p, s, r, q] = val*par
-#                                    D4[v, t, w, u, p, s, r, q] =-val*par
-#                                    D4[v, w, t, u, p, s, r, q] = val*par
-#                                    D4[v, w, u, t, p, s, r, q] =-val*par
-#                                    D4[w, u, v, t, p, s, r, q] =-val*par
-#                                    D4[w, u, t, v, p, s, r, q] = val*par
-#                                    D4[w, v, u, t, p, s, r, q] = val*par
-#                                    D4[w, v, t, u, p, s, r, q] =-val*par
-#                                    D4[w, t, v, u, p, s, r, q] = val*par
-#                                    D4[w, t, u, v, p, s, r, q] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[t, u, v, w, p, s, q, r] = val*par
-#                                    D4[t, u, w, v, p, s, q, r] =-val*par
-#                                    D4[t, v, u, w, p, s, q, r] =-val*par
-#                                    D4[t, v, w, u, p, s, q, r] = val*par
-#                                    D4[t, w, v, u, p, s, q, r] =-val*par
-#                                    D4[t, w, u, v, p, s, q, r] = val*par
-#                                    D4[u, t, v, w, p, s, q, r] =-val*par
-#                                    D4[u, t, w, v, p, s, q, r] =+val*par
-#                                    D4[u, v, t, w, p, s, q, r] =+val*par
-#                                    D4[u, v, w, t, p, s, q, r] =-val*par
-#                                    D4[u, w, v, t, p, s, q, r] =+val*par
-#                                    D4[u, w, t, v, p, s, q, r] =-val*par
-#                                    D4[v, u, t, w, p, s, q, r] =-val*par
-#                                    D4[v, u, w, t, p, s, q, r] = val*par
-#                                    D4[v, t, u, w, p, s, q, r] = val*par
-#                                    D4[v, t, w, u, p, s, q, r] =-val*par
-#                                    D4[v, w, t, u, p, s, q, r] = val*par
-#                                    D4[v, w, u, t, p, s, q, r] =-val*par
-#                                    D4[w, u, v, t, p, s, q, r] =-val*par
-#                                    D4[w, u, t, v, p, s, q, r] = val*par
-#                                    D4[w, v, u, t, p, s, q, r] = val*par
-#                                    D4[w, v, t, u, p, s, q, r] =-val*par
-#                                    D4[w, t, v, u, p, s, q, r] = val*par
-#                                    D4[w, t, u, v, p, s, q, r] =-val*par
-#                                    
-#### q, [p, r, s] ...           
-#                                    par = -1
-#                                    D4[t, u, v, w, q, p, r, s] = val*par
-#                                    D4[t, u, w, v, q, p, r, s] =-val*par
-#                                    D4[t, v, u, w, q, p, r, s] =-val*par
-#                                    D4[t, v, w, u, q, p, r, s] = val*par
-#                                    D4[t, w, v, u, q, p, r, s] =-val*par
-#                                    D4[t, w, u, v, q, p, r, s] = val*par
-#                                    D4[u, t, v, w, q, p, r, s] =-val*par
-#                                    D4[u, t, w, v, q, p, r, s] =+val*par
-#                                    D4[u, v, t, w, q, p, r, s] =+val*par
-#                                    D4[u, v, w, t, q, p, r, s] =-val*par
-#                                    D4[u, w, v, t, q, p, r, s] =+val*par
-#                                    D4[u, w, t, v, q, p, r, s] =-val*par
-#                                    D4[v, u, t, w, q, p, r, s] =-val*par
-#                                    D4[v, u, w, t, q, p, r, s] = val*par
-#                                    D4[v, t, u, w, q, p, r, s] = val*par
-#                                    D4[v, t, w, u, q, p, r, s] =-val*par
-#                                    D4[v, w, t, u, q, p, r, s] = val*par
-#                                    D4[v, w, u, t, q, p, r, s] =-val*par
-#                                    D4[w, u, v, t, q, p, r, s] =-val*par
-#                                    D4[w, u, t, v, q, p, r, s] = val*par
-#                                    D4[w, v, u, t, q, p, r, s] = val*par
-#                                    D4[w, v, t, u, q, p, r, s] =-val*par
-#                                    D4[w, t, v, u, q, p, r, s] = val*par
-#                                    D4[w, t, u, v, q, p, r, s] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[t, u, v, w, q, p, s, r] = val*par
-#                                    D4[t, u, w, v, q, p, s, r] =-val*par
-#                                    D4[t, v, u, w, q, p, s, r] =-val*par
-#                                    D4[t, v, w, u, q, p, s, r] = val*par
-#                                    D4[t, w, v, u, q, p, s, r] =-val*par
-#                                    D4[t, w, u, v, q, p, s, r] = val*par
-#                                    D4[u, t, v, w, q, p, s, r] =-val*par
-#                                    D4[u, t, w, v, q, p, s, r] =+val*par
-#                                    D4[u, v, t, w, q, p, s, r] =+val*par
-#                                    D4[u, v, w, t, q, p, s, r] =-val*par
-#                                    D4[u, w, v, t, q, p, s, r] =+val*par
-#                                    D4[u, w, t, v, q, p, s, r] =-val*par
-#                                    D4[v, u, t, w, q, p, s, r] =-val*par
-#                                    D4[v, u, w, t, q, p, s, r] = val*par
-#                                    D4[v, t, u, w, q, p, s, r] = val*par
-#                                    D4[v, t, w, u, q, p, s, r] =-val*par
-#                                    D4[v, w, t, u, q, p, s, r] = val*par
-#                                    D4[v, w, u, t, q, p, s, r] =-val*par
-#                                    D4[w, u, v, t, q, p, s, r] =-val*par
-#                                    D4[w, u, t, v, q, p, s, r] = val*par
-#                                    D4[w, v, u, t, q, p, s, r] = val*par
-#                                    D4[w, v, t, u, q, p, s, r] =-val*par
-#                                    D4[w, t, v, u, q, p, s, r] = val*par
-#                                    D4[w, t, u, v, q, p, s, r] =-val*par 
-#
-#                                    par = 1
-#                                    D4[t, u, v, w, q, r, p, s] = val*par
-#                                    D4[t, u, w, v, q, r, p, s] =-val*par
-#                                    D4[t, v, u, w, q, r, p, s] =-val*par
-#                                    D4[t, v, w, u, q, r, p, s] = val*par
-#                                    D4[t, w, v, u, q, r, p, s] =-val*par
-#                                    D4[t, w, u, v, q, r, p, s] = val*par
-#                                    D4[u, t, v, w, q, r, p, s] =-val*par
-#                                    D4[u, t, w, v, q, r, p, s] =+val*par
-#                                    D4[u, v, t, w, q, r, p, s] =+val*par
-#                                    D4[u, v, w, t, q, r, p, s] =-val*par
-#                                    D4[u, w, v, t, q, r, p, s] =+val*par
-#                                    D4[u, w, t, v, q, r, p, s] =-val*par
-#                                    D4[v, u, t, w, q, r, p, s] =-val*par
-#                                    D4[v, u, w, t, q, r, p, s] = val*par
-#                                    D4[v, t, u, w, q, r, p, s] = val*par
-#                                    D4[v, t, w, u, q, r, p, s] =-val*par
-#                                    D4[v, w, t, u, q, r, p, s] = val*par
-#                                    D4[v, w, u, t, q, r, p, s] =-val*par
-#                                    D4[w, u, v, t, q, r, p, s] =-val*par
-#                                    D4[w, u, t, v, q, r, p, s] = val*par
-#                                    D4[w, v, u, t, q, r, p, s] = val*par
-#                                    D4[w, v, t, u, q, r, p, s] =-val*par
-#                                    D4[w, t, v, u, q, r, p, s] = val*par
-#                                    D4[w, t, u, v, q, r, p, s] =-val*par
-#
-#                                    par = -1
-#                                    D4[t, u, v, w, q, r, s, p] = val*par
-#                                    D4[t, u, w, v, q, r, s, p] =-val*par
-#                                    D4[t, v, u, w, q, r, s, p] =-val*par
-#                                    D4[t, v, w, u, q, r, s, p] = val*par
-#                                    D4[t, w, v, u, q, r, s, p] =-val*par
-#                                    D4[t, w, u, v, q, r, s, p] = val*par
-#                                    D4[u, t, v, w, q, r, s, p] =-val*par
-#                                    D4[u, t, w, v, q, r, s, p] =+val*par
-#                                    D4[u, v, t, w, q, r, s, p] =+val*par
-#                                    D4[u, v, w, t, q, r, s, p] =-val*par
-#                                    D4[u, w, v, t, q, r, s, p] =+val*par
-#                                    D4[u, w, t, v, q, r, s, p] =-val*par
-#                                    D4[v, u, t, w, q, r, s, p] =-val*par
-#                                    D4[v, u, w, t, q, r, s, p] = val*par
-#                                    D4[v, t, u, w, q, r, s, p] = val*par
-#                                    D4[v, t, w, u, q, r, s, p] =-val*par
-#                                    D4[v, w, t, u, q, r, s, p] = val*par
-#                                    D4[v, w, u, t, q, r, s, p] =-val*par
-#                                    D4[w, u, v, t, q, r, s, p] =-val*par
-#                                    D4[w, u, t, v, q, r, s, p] = val*par
-#                                    D4[w, v, u, t, q, r, s, p] = val*par
-#                                    D4[w, v, t, u, q, r, s, p] =-val*par
-#                                    D4[w, t, v, u, q, r, s, p] = val*par
-#                                    D4[w, t, u, v, q, r, s, p] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[t, u, v, w, q, s, r, p] = val*par
-#                                    D4[t, u, w, v, q, s, r, p] =-val*par
-#                                    D4[t, v, u, w, q, s, r, p] =-val*par
-#                                    D4[t, v, w, u, q, s, r, p] = val*par
-#                                    D4[t, w, v, u, q, s, r, p] =-val*par
-#                                    D4[t, w, u, v, q, s, r, p] = val*par
-#                                    D4[u, t, v, w, q, s, r, p] =-val*par
-#                                    D4[u, t, w, v, q, s, r, p] =+val*par
-#                                    D4[u, v, t, w, q, s, r, p] =+val*par
-#                                    D4[u, v, w, t, q, s, r, p] =-val*par
-#                                    D4[u, w, v, t, q, s, r, p] =+val*par
-#                                    D4[u, w, t, v, q, s, r, p] =-val*par
-#                                    D4[v, u, t, w, q, s, r, p] =-val*par
-#                                    D4[v, u, w, t, q, s, r, p] = val*par
-#                                    D4[v, t, u, w, q, s, r, p] = val*par
-#                                    D4[v, t, w, u, q, s, r, p] =-val*par
-#                                    D4[v, w, t, u, q, s, r, p] = val*par
-#                                    D4[v, w, u, t, q, s, r, p] =-val*par
-#                                    D4[w, u, v, t, q, s, r, p] =-val*par
-#                                    D4[w, u, t, v, q, s, r, p] = val*par
-#                                    D4[w, v, u, t, q, s, r, p] = val*par
-#                                    D4[w, v, t, u, q, s, r, p] =-val*par
-#                                    D4[w, t, v, u, q, s, r, p] = val*par
-#                                    D4[w, t, u, v, q, s, r, p] =-val*par
-#                                    
-#                                    par = -1
-#                                    D4[t, u, v, w, q, s, p, r] = val*par
-#                                    D4[t, u, w, v, q, s, p, r] =-val*par
-#                                    D4[t, v, u, w, q, s, p, r] =-val*par
-#                                    D4[t, v, w, u, q, s, p, r] = val*par
-#                                    D4[t, w, v, u, q, s, p, r] =-val*par
-#                                    D4[t, w, u, v, q, s, p, r] = val*par
-#                                    D4[u, t, v, w, q, s, p, r] =-val*par
-#                                    D4[u, t, w, v, q, s, p, r] =+val*par
-#                                    D4[u, v, t, w, q, s, p, r] =+val*par
-#                                    D4[u, v, w, t, q, s, p, r] =-val*par
-#                                    D4[u, w, v, t, q, s, p, r] =+val*par
-#                                    D4[u, w, t, v, q, s, p, r] =-val*par
-#                                    D4[v, u, t, w, q, s, p, r] =-val*par
-#                                    D4[v, u, w, t, q, s, p, r] = val*par
-#                                    D4[v, t, u, w, q, s, p, r] = val*par
-#                                    D4[v, t, w, u, q, s, p, r] =-val*par
-#                                    D4[v, w, t, u, q, s, p, r] = val*par
-#                                    D4[v, w, u, t, q, s, p, r] =-val*par
-#                                    D4[w, u, v, t, q, s, p, r] =-val*par
-#                                    D4[w, u, t, v, q, s, p, r] = val*par
-#                                    D4[w, v, u, t, q, s, p, r] = val*par
-#                                    D4[w, v, t, u, q, s, p, r] =-val*par
-#                                    D4[w, t, v, u, q, s, p, r] = val*par
-#                                    D4[w, t, u, v, q, s, p, r] =-val*par
-## r, [p,q,s]
-#                                    par = -1
-#                                    D4[t, u, v, w, r, q, p, s] = val*par
-#                                    D4[t, u, w, v, r, q, p, s] =-val*par
-#                                    D4[t, v, u, w, r, q, p, s] =-val*par
-#                                    D4[t, v, w, u, r, q, p, s] = val*par
-#                                    D4[t, w, v, u, r, q, p, s] =-val*par
-#                                    D4[t, w, u, v, r, q, p, s] = val*par
-#                                    D4[u, t, v, w, r, q, p, s] =-val*par
-#                                    D4[u, t, w, v, r, q, p, s] =+val*par
-#                                    D4[u, v, t, w, r, q, p, s] =+val*par
-#                                    D4[u, v, w, t, r, q, p, s] =-val*par
-#                                    D4[u, w, v, t, r, q, p, s] =+val*par
-#                                    D4[u, w, t, v, r, q, p, s] =-val*par
-#                                    D4[v, u, t, w, r, q, p, s] =-val*par
-#                                    D4[v, u, w, t, r, q, p, s] = val*par
-#                                    D4[v, t, u, w, r, q, p, s] = val*par
-#                                    D4[v, t, w, u, r, q, p, s] =-val*par
-#                                    D4[v, w, t, u, r, q, p, s] = val*par
-#                                    D4[v, w, u, t, r, q, p, s] =-val*par
-#                                    D4[w, u, v, t, r, q, p, s] =-val*par
-#                                    D4[w, u, t, v, r, q, p, s] = val*par
-#                                    D4[w, v, u, t, r, q, p, s] = val*par
-#                                    D4[w, v, t, u, r, q, p, s] =-val*par
-#                                    D4[w, t, v, u, r, q, p, s] = val*par
-#                                    D4[w, t, u, v, r, q, p, s] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[t, u, v, w, r, q, s, p] = val*par
-#                                    D4[t, u, w, v, r, q, s, p] =-val*par
-#                                    D4[t, v, u, w, r, q, s, p] =-val*par
-#                                    D4[t, v, w, u, r, q, s, p] = val*par
-#                                    D4[t, w, v, u, r, q, s, p] =-val*par
-#                                    D4[t, w, u, v, r, q, s, p] = val*par
-#                                    D4[u, t, v, w, r, q, s, p] =-val*par
-#                                    D4[u, t, w, v, r, q, s, p] =+val*par
-#                                    D4[u, v, t, w, r, q, s, p] =+val*par
-#                                    D4[u, v, w, t, r, q, s, p] =-val*par
-#                                    D4[u, w, v, t, r, q, s, p] =+val*par
-#                                    D4[u, w, t, v, r, q, s, p] =-val*par
-#                                    D4[v, u, t, w, r, q, s, p] =-val*par
-#                                    D4[v, u, w, t, r, q, s, p] = val*par
-#                                    D4[v, t, u, w, r, q, s, p] = val*par
-#                                    D4[v, t, w, u, r, q, s, p] =-val*par
-#                                    D4[v, w, t, u, r, q, s, p] = val*par
-#                                    D4[v, w, u, t, r, q, s, p] =-val*par
-#                                    D4[w, u, v, t, r, q, s, p] =-val*par
-#                                    D4[w, u, t, v, r, q, s, p] = val*par
-#                                    D4[w, v, u, t, r, q, s, p] = val*par
-#                                    D4[w, v, t, u, r, q, s, p] =-val*par
-#                                    D4[w, t, v, u, r, q, s, p] = val*par
-#                                    D4[w, t, u, v, r, q, s, p] =-val*par 
-#
-#                                    par = 1
-#                                    D4[t, u, v, w, r, p, q, s] = val*par
-#                                    D4[t, u, w, v, r, p, q, s] =-val*par
-#                                    D4[t, v, u, w, r, p, q, s] =-val*par
-#                                    D4[t, v, w, u, r, p, q, s] = val*par
-#                                    D4[t, w, v, u, r, p, q, s] =-val*par
-#                                    D4[t, w, u, v, r, p, q, s] = val*par
-#                                    D4[u, t, v, w, r, p, q, s] =-val*par
-#                                    D4[u, t, w, v, r, p, q, s] =+val*par
-#                                    D4[u, v, t, w, r, p, q, s] =+val*par
-#                                    D4[u, v, w, t, r, p, q, s] =-val*par
-#                                    D4[u, w, v, t, r, p, q, s] =+val*par
-#                                    D4[u, w, t, v, r, p, q, s] =-val*par
-#                                    D4[v, u, t, w, r, p, q, s] =-val*par
-#                                    D4[v, u, w, t, r, p, q, s] = val*par
-#                                    D4[v, t, u, w, r, p, q, s] = val*par
-#                                    D4[v, t, w, u, r, p, q, s] =-val*par
-#                                    D4[v, w, t, u, r, p, q, s] = val*par
-#                                    D4[v, w, u, t, r, p, q, s] =-val*par
-#                                    D4[w, u, v, t, r, p, q, s] =-val*par
-#                                    D4[w, u, t, v, r, p, q, s] = val*par
-#                                    D4[w, v, u, t, r, p, q, s] = val*par
-#                                    D4[w, v, t, u, r, p, q, s] =-val*par
-#                                    D4[w, t, v, u, r, p, q, s] = val*par
-#                                    D4[w, t, u, v, r, p, q, s] =-val*par
-#
-#                                    par = -1
-#                                    D4[t, u, v, w, r, p, s, q] = val*par
-#                                    D4[t, u, w, v, r, p, s, q] =-val*par
-#                                    D4[t, v, u, w, r, p, s, q] =-val*par
-#                                    D4[t, v, w, u, r, p, s, q] = val*par
-#                                    D4[t, w, v, u, r, p, s, q] =-val*par
-#                                    D4[t, w, u, v, r, p, s, q] = val*par
-#                                    D4[u, t, v, w, r, p, s, q] =-val*par
-#                                    D4[u, t, w, v, r, p, s, q] =+val*par
-#                                    D4[u, v, t, w, r, p, s, q] =+val*par
-#                                    D4[u, v, w, t, r, p, s, q] =-val*par
-#                                    D4[u, w, v, t, r, p, s, q] =+val*par
-#                                    D4[u, w, t, v, r, p, s, q] =-val*par
-#                                    D4[v, u, t, w, r, p, s, q] =-val*par
-#                                    D4[v, u, w, t, r, p, s, q] = val*par
-#                                    D4[v, t, u, w, r, p, s, q] = val*par
-#                                    D4[v, t, w, u, r, p, s, q] =-val*par
-#                                    D4[v, w, t, u, r, p, s, q] = val*par
-#                                    D4[v, w, u, t, r, p, s, q] =-val*par
-#                                    D4[w, u, v, t, r, p, s, q] =-val*par
-#                                    D4[w, u, t, v, r, p, s, q] = val*par
-#                                    D4[w, v, u, t, r, p, s, q] = val*par
-#                                    D4[w, v, t, u, r, p, s, q] =-val*par
-#                                    D4[w, t, v, u, r, p, s, q] = val*par
-#                                    D4[w, t, u, v, r, p, s, q] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[t, u, v, w, r, s, p, q] = val*par
-#                                    D4[t, u, w, v, r, s, p, q] =-val*par
-#                                    D4[t, v, u, w, r, s, p, q] =-val*par
-#                                    D4[t, v, w, u, r, s, p, q] = val*par
-#                                    D4[t, w, v, u, r, s, p, q] =-val*par
-#                                    D4[t, w, u, v, r, s, p, q] = val*par
-#                                    D4[u, t, v, w, r, s, p, q] =-val*par
-#                                    D4[u, t, w, v, r, s, p, q] =+val*par
-#                                    D4[u, v, t, w, r, s, p, q] =+val*par
-#                                    D4[u, v, w, t, r, s, p, q] =-val*par
-#                                    D4[u, w, v, t, r, s, p, q] =+val*par
-#                                    D4[u, w, t, v, r, s, p, q] =-val*par
-#                                    D4[v, u, t, w, r, s, p, q] =-val*par
-#                                    D4[v, u, w, t, r, s, p, q] = val*par
-#                                    D4[v, t, u, w, r, s, p, q] = val*par
-#                                    D4[v, t, w, u, r, s, p, q] =-val*par
-#                                    D4[v, w, t, u, r, s, p, q] = val*par
-#                                    D4[v, w, u, t, r, s, p, q] =-val*par
-#                                    D4[w, u, v, t, r, s, p, q] =-val*par
-#                                    D4[w, u, t, v, r, s, p, q] = val*par
-#                                    D4[w, v, u, t, r, s, p, q] = val*par
-#                                    D4[w, v, t, u, r, s, p, q] =-val*par
-#                                    D4[w, t, v, u, r, s, p, q] = val*par
-#                                    D4[w, t, u, v, r, s, p, q] =-val*par
-#                                    
-#                                    par = -1
-#                                    D4[t, u, v, w, r, s, q, p] = val*par
-#                                    D4[t, u, w, v, r, s, q, p] =-val*par
-#                                    D4[t, v, u, w, r, s, q, p] =-val*par
-#                                    D4[t, v, w, u, r, s, q, p] = val*par
-#                                    D4[t, w, v, u, r, s, q, p] =-val*par
-#                                    D4[t, w, u, v, r, s, q, p] = val*par
-#                                    D4[u, t, v, w, r, s, q, p] =-val*par
-#                                    D4[u, t, w, v, r, s, q, p] =+val*par
-#                                    D4[u, v, t, w, r, s, q, p] =+val*par
-#                                    D4[u, v, w, t, r, s, q, p] =-val*par
-#                                    D4[u, w, v, t, r, s, q, p] =+val*par
-#                                    D4[u, w, t, v, r, s, q, p] =-val*par
-#                                    D4[v, u, t, w, r, s, q, p] =-val*par
-#                                    D4[v, u, w, t, r, s, q, p] = val*par
-#                                    D4[v, t, u, w, r, s, q, p] = val*par
-#                                    D4[v, t, w, u, r, s, q, p] =-val*par
-#                                    D4[v, w, t, u, r, s, q, p] = val*par
-#                                    D4[v, w, u, t, r, s, q, p] =-val*par
-#                                    D4[w, u, v, t, r, s, q, p] =-val*par
-#                                    D4[w, u, t, v, r, s, q, p] = val*par
-#                                    D4[w, v, u, t, r, s, q, p] = val*par
-#                                    D4[w, v, t, u, r, s, q, p] =-val*par
-#                                    D4[w, t, v, u, r, s, q, p] = val*par
-#                                    D4[w, t, u, v, r, s, q, p] =-val*par
-## s, [p,q,r]
-#                                    par = -1
-#                                    D4[t, u, v, w, s, q, r, p] = val*par
-#                                    D4[t, u, w, v, s, q, r, p] =-val*par
-#                                    D4[t, v, u, w, s, q, r, p] =-val*par
-#                                    D4[t, v, w, u, s, q, r, p] = val*par
-#                                    D4[t, w, v, u, s, q, r, p] =-val*par
-#                                    D4[t, w, u, v, s, q, r, p] = val*par
-#                                    D4[u, t, v, w, s, q, r, p] =-val*par
-#                                    D4[u, t, w, v, s, q, r, p] =+val*par
-#                                    D4[u, v, t, w, s, q, r, p] =+val*par
-#                                    D4[u, v, w, t, s, q, r, p] =-val*par
-#                                    D4[u, w, v, t, s, q, r, p] =+val*par
-#                                    D4[u, w, t, v, s, q, r, p] =-val*par
-#                                    D4[v, u, t, w, s, q, r, p] =-val*par
-#                                    D4[v, u, w, t, s, q, r, p] = val*par
-#                                    D4[v, t, u, w, s, q, r, p] = val*par
-#                                    D4[v, t, w, u, s, q, r, p] =-val*par
-#                                    D4[v, w, t, u, s, q, r, p] = val*par
-#                                    D4[v, w, u, t, s, q, r, p] =-val*par
-#                                    D4[w, u, v, t, s, q, r, p] =-val*par
-#                                    D4[w, u, t, v, s, q, r, p] = val*par
-#                                    D4[w, v, u, t, s, q, r, p] = val*par
-#                                    D4[w, v, t, u, s, q, r, p] =-val*par
-#                                    D4[w, t, v, u, s, q, r, p] = val*par
-#                                    D4[w, t, u, v, s, q, r, p] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[t, u, v, w, s, q, p, r] = val*par
-#                                    D4[t, u, w, v, s, q, p, r] =-val*par
-#                                    D4[t, v, u, w, s, q, p, r] =-val*par
-#                                    D4[t, v, w, u, s, q, p, r] = val*par
-#                                    D4[t, w, v, u, s, q, p, r] =-val*par
-#                                    D4[t, w, u, v, s, q, p, r] = val*par
-#                                    D4[u, t, v, w, s, q, p, r] =-val*par
-#                                    D4[u, t, w, v, s, q, p, r] =+val*par
-#                                    D4[u, v, t, w, s, q, p, r] =+val*par
-#                                    D4[u, v, w, t, s, q, p, r] =-val*par
-#                                    D4[u, w, v, t, s, q, p, r] =+val*par
-#                                    D4[u, w, t, v, s, q, p, r] =-val*par
-#                                    D4[v, u, t, w, s, q, p, r] =-val*par
-#                                    D4[v, u, w, t, s, q, p, r] = val*par
-#                                    D4[v, t, u, w, s, q, p, r] = val*par
-#                                    D4[v, t, w, u, s, q, p, r] =-val*par
-#                                    D4[v, w, t, u, s, q, p, r] = val*par
-#                                    D4[v, w, u, t, s, q, p, r] =-val*par
-#                                    D4[w, u, v, t, s, q, p, r] =-val*par
-#                                    D4[w, u, t, v, s, q, p, r] = val*par
-#                                    D4[w, v, u, t, s, q, p, r] = val*par
-#                                    D4[w, v, t, u, s, q, p, r] =-val*par
-#                                    D4[w, t, v, u, s, q, p, r] = val*par
-#                                    D4[w, t, u, v, s, q, p, r] =-val*par 
-#
-#                                    par = 1
-#                                    D4[t, u, v, w, s, r, q, p] = val*par
-#                                    D4[t, u, w, v, s, r, q, p] =-val*par
-#                                    D4[t, v, u, w, s, r, q, p] =-val*par
-#                                    D4[t, v, w, u, s, r, q, p] = val*par
-#                                    D4[t, w, v, u, s, r, q, p] =-val*par
-#                                    D4[t, w, u, v, s, r, q, p] = val*par
-#                                    D4[u, t, v, w, s, r, q, p] =-val*par
-#                                    D4[u, t, w, v, s, r, q, p] =+val*par
-#                                    D4[u, v, t, w, s, r, q, p] =+val*par
-#                                    D4[u, v, w, t, s, r, q, p] =-val*par
-#                                    D4[u, w, v, t, s, r, q, p] =+val*par
-#                                    D4[u, w, t, v, s, r, q, p] =-val*par
-#                                    D4[v, u, t, w, s, r, q, p] =-val*par
-#                                    D4[v, u, w, t, s, r, q, p] = val*par
-#                                    D4[v, t, u, w, s, r, q, p] = val*par
-#                                    D4[v, t, w, u, s, r, q, p] =-val*par
-#                                    D4[v, w, t, u, s, r, q, p] = val*par
-#                                    D4[v, w, u, t, s, r, q, p] =-val*par
-#                                    D4[w, u, v, t, s, r, q, p] =-val*par
-#                                    D4[w, u, t, v, s, r, q, p] = val*par
-#                                    D4[w, v, u, t, s, r, q, p] = val*par
-#                                    D4[w, v, t, u, s, r, q, p] =-val*par
-#                                    D4[w, t, v, u, s, r, q, p] = val*par
-#                                    D4[w, t, u, v, s, r, q, p] =-val*par
-#
-#                                    par = -1
-#                                    D4[t, u, v, w, s, r, p, q] = val*par
-#                                    D4[t, u, w, v, s, r, p, q] =-val*par
-#                                    D4[t, v, u, w, s, r, p, q] =-val*par
-#                                    D4[t, v, w, u, s, r, p, q] = val*par
-#                                    D4[t, w, v, u, s, r, p, q] =-val*par
-#                                    D4[t, w, u, v, s, r, p, q] = val*par
-#                                    D4[u, t, v, w, s, r, p, q] =-val*par
-#                                    D4[u, t, w, v, s, r, p, q] =+val*par
-#                                    D4[u, v, t, w, s, r, p, q] =+val*par
-#                                    D4[u, v, w, t, s, r, p, q] =-val*par
-#                                    D4[u, w, v, t, s, r, p, q] =+val*par
-#                                    D4[u, w, t, v, s, r, p, q] =-val*par
-#                                    D4[v, u, t, w, s, r, p, q] =-val*par
-#                                    D4[v, u, w, t, s, r, p, q] = val*par
-#                                    D4[v, t, u, w, s, r, p, q] = val*par
-#                                    D4[v, t, w, u, s, r, p, q] =-val*par
-#                                    D4[v, w, t, u, s, r, p, q] = val*par
-#                                    D4[v, w, u, t, s, r, p, q] =-val*par
-#                                    D4[w, u, v, t, s, r, p, q] =-val*par
-#                                    D4[w, u, t, v, s, r, p, q] = val*par
-#                                    D4[w, v, u, t, s, r, p, q] = val*par
-#                                    D4[w, v, t, u, s, r, p, q] =-val*par
-#                                    D4[w, t, v, u, s, r, p, q] = val*par
-#                                    D4[w, t, u, v, s, r, p, q] =-val*par
-#                                    
-#                                    par = 1
-#                                    D4[t, u, v, w, s, p, r, q] = val*par
-#                                    D4[t, u, w, v, s, p, r, q] =-val*par
-#                                    D4[t, v, u, w, s, p, r, q] =-val*par
-#                                    D4[t, v, w, u, s, p, r, q] = val*par
-#                                    D4[t, w, v, u, s, p, r, q] =-val*par
-#                                    D4[t, w, u, v, s, p, r, q] = val*par
-#                                    D4[u, t, v, w, s, p, r, q] =-val*par
-#                                    D4[u, t, w, v, s, p, r, q] =+val*par
-#                                    D4[u, v, t, w, s, p, r, q] =+val*par
-#                                    D4[u, v, w, t, s, p, r, q] =-val*par
-#                                    D4[u, w, v, t, s, p, r, q] =+val*par
-#                                    D4[u, w, t, v, s, p, r, q] =-val*par
-#                                    D4[v, u, t, w, s, p, r, q] =-val*par
-#                                    D4[v, u, w, t, s, p, r, q] = val*par
-#                                    D4[v, t, u, w, s, p, r, q] = val*par
-#                                    D4[v, t, w, u, s, p, r, q] =-val*par
-#                                    D4[v, w, t, u, s, p, r, q] = val*par
-#                                    D4[v, w, u, t, s, p, r, q] =-val*par
-#                                    D4[w, u, v, t, s, p, r, q] =-val*par
-#                                    D4[w, u, t, v, s, p, r, q] = val*par
-#                                    D4[w, v, u, t, s, p, r, q] = val*par
-#                                    D4[w, v, t, u, s, p, r, q] =-val*par
-#                                    D4[w, t, v, u, s, p, r, q] = val*par
-#                                    D4[w, t, u, v, s, p, r, q] =-val*par
-#                                    
-#                                    par = -1
-#                                    D4[t, u, v, w, s, p, q, r] = val*par
-#                                    D4[t, u, w, v, s, p, q, r] =-val*par
-#                                    D4[t, v, u, w, s, p, q, r] =-val*par
-#                                    D4[t, v, w, u, s, p, q, r] = val*par
-#                                    D4[t, w, v, u, s, p, q, r] =-val*par
-#                                    D4[t, w, u, v, s, p, q, r] = val*par
-#                                    D4[u, t, v, w, s, p, q, r] =-val*par
-#                                    D4[u, t, w, v, s, p, q, r] =+val*par
-#                                    D4[u, v, t, w, s, p, q, r] =+val*par
-#                                    D4[u, v, w, t, s, p, q, r] =-val*par
-#                                    D4[u, w, v, t, s, p, q, r] =+val*par
-#                                    D4[u, w, t, v, s, p, q, r] =-val*par
-#                                    D4[v, u, t, w, s, p, q, r] =-val*par
-#                                    D4[v, u, w, t, s, p, q, r] = val*par
-#                                    D4[v, t, u, w, s, p, q, r] = val*par
-#                                    D4[v, t, w, u, s, p, q, r] =-val*par
-#                                    D4[v, w, t, u, s, p, q, r] = val*par
-#                                    D4[v, w, u, t, s, p, q, r] =-val*par
-#                                    D4[w, u, v, t, s, p, q, r] =-val*par
-#                                    D4[w, u, t, v, s, p, q, r] = val*par
-#                                    D4[w, v, u, t, s, p, q, r] = val*par
-#                                    D4[w, v, t, u, s, p, q, r] =-val*par
-#                                    D4[w, t, v, u, s, p, q, r] = val*par
-#                                    D4[w, t, u, v, s, p, q, r] =-val*par
-    return D4
-def get_4RDM_full(state):
+def get_4RDM_full(state, mapping='jordan_wigner'):
     """Function
     Compute 4RDM of QuantmState `state` in QuketData.
     Indices correspond to qubit number.
@@ -2749,7 +512,7 @@ def get_4RDM_full(state):
                     pqrs += 1
                     string = f"{p} {q} {r} {s}"
                     op = FermionOperator(string)
-                    state_list.append(evolve(op, state))
+                    state_list.append(evolve(op, state, mapping=mapping))
                     tuvw = -1
                     for t in range(n_qubits):
                         for u in range(t):
@@ -2792,7 +555,7 @@ def get_4RDM_full(state):
                                         my_D4[p, q, r, s, w, v, t, u] =-val*par
                                         my_D4[p, q, r, s, w, t, v, u] = val*par
                                         my_D4[p, q, r, s, w, t, u, v] =-val*par
-                                        
+
                                         par = -1
                                         my_D4[p, q, s, r, t, u, v, w] = val*par
                                         my_D4[p, q, s, r, t, u, w, v] =-val*par
@@ -2896,7 +659,7 @@ def get_4RDM_full(state):
                                         my_D4[p, s, r, q, w, v, t, u] =-val*par
                                         my_D4[p, s, r, q, w, t, v, u] = val*par
                                         my_D4[p, s, r, q, w, t, u, v] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[p, s, q, r, t, u, v, w] = val*par
                                         my_D4[p, s, q, r, t, u, w, v] =-val*par
@@ -2922,8 +685,8 @@ def get_4RDM_full(state):
                                         my_D4[p, s, q, r, w, v, t, u] =-val*par
                                         my_D4[p, s, q, r, w, t, v, u] = val*par
                                         my_D4[p, s, q, r, w, t, u, v] =-val*par
-                                        
-### q, [p, r, s] ...                                   
+
+### q, [p, r, s] ...
                                         par = -1
                                         my_D4[q, p, r, s, t, u, v, w] = val*par
                                         my_D4[q, p, r, s, t, u, w, v] =-val*par
@@ -2949,7 +712,7 @@ def get_4RDM_full(state):
                                         my_D4[q, p, r, s, w, v, t, u] =-val*par
                                         my_D4[q, p, r, s, w, t, v, u] = val*par
                                         my_D4[q, p, r, s, w, t, u, v] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[q, p, s, r, t, u, v, w] = val*par
                                         my_D4[q, p, s, r, t, u, w, v] =-val*par
@@ -3027,7 +790,7 @@ def get_4RDM_full(state):
                                         my_D4[q, r, s, p, w, v, t, u] =-val*par
                                         my_D4[q, r, s, p, w, t, v, u] = val*par
                                         my_D4[q, r, s, p, w, t, u, v] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[q, s, r, p, t, u, v, w] = val*par
                                         my_D4[q, s, r, p, t, u, w, v] =-val*par
@@ -3053,7 +816,7 @@ def get_4RDM_full(state):
                                         my_D4[q, s, r, p, w, v, t, u] =-val*par
                                         my_D4[q, s, r, p, w, t, v, u] = val*par
                                         my_D4[q, s, r, p, w, t, u, v] =-val*par
-                                        
+
                                         par = -1
                                         my_D4[q, s, p, r, t, u, v, w] = val*par
                                         my_D4[q, s, p, r, t, u, w, v] =-val*par
@@ -3105,7 +868,7 @@ def get_4RDM_full(state):
                                         my_D4[r, q, p, s, w, v, t, u] =-val*par
                                         my_D4[r, q, p, s, w, t, v, u] = val*par
                                         my_D4[r, q, p, s, w, t, u, v] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[r, q, s, p, t, u, v, w] = val*par
                                         my_D4[r, q, s, p, t, u, w, v] =-val*par
@@ -3183,7 +946,7 @@ def get_4RDM_full(state):
                                         my_D4[r, p, s, q, w, v, t, u] =-val*par
                                         my_D4[r, p, s, q, w, t, v, u] = val*par
                                         my_D4[r, p, s, q, w, t, u, v] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[r, s, p, q, t, u, v, w] = val*par
                                         my_D4[r, s, p, q, t, u, w, v] =-val*par
@@ -3209,7 +972,7 @@ def get_4RDM_full(state):
                                         my_D4[r, s, p, q, w, v, t, u] =-val*par
                                         my_D4[r, s, p, q, w, t, v, u] = val*par
                                         my_D4[r, s, p, q, w, t, u, v] =-val*par
-                                        
+
                                         par = -1
                                         my_D4[r, s, q, p, t, u, v, w] = val*par
                                         my_D4[r, s, q, p, t, u, w, v] =-val*par
@@ -3261,7 +1024,7 @@ def get_4RDM_full(state):
                                         my_D4[s, q, r, p, w, v, t, u] =-val*par
                                         my_D4[s, q, r, p, w, t, v, u] = val*par
                                         my_D4[s, q, r, p, w, t, u, v] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[s, q, p, r, t, u, v, w] = val*par
                                         my_D4[s, q, p, r, t, u, w, v] =-val*par
@@ -3339,7 +1102,7 @@ def get_4RDM_full(state):
                                         my_D4[s, r, p, q, w, v, t, u] =-val*par
                                         my_D4[s, r, p, q, w, t, v, u] = val*par
                                         my_D4[s, r, p, q, w, t, u, v] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[s, p, r, q, t, u, v, w] = val*par
                                         my_D4[s, p, r, q, t, u, w, v] =-val*par
@@ -3365,7 +1128,7 @@ def get_4RDM_full(state):
                                         my_D4[s, p, r, q, w, v, t, u] =-val*par
                                         my_D4[s, p, r, q, w, t, v, u] = val*par
                                         my_D4[s, p, r, q, w, t, u, v] =-val*par
-                                        
+
                                         par = -1
                                         my_D4[s, p, q, r, t, u, v, w] = val*par
                                         my_D4[s, p, q, r, t, u, w, v] =-val*par
@@ -3418,7 +1181,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, p, q, r, s] =-val*par
                                         my_D4[w, t, v, u, p, q, r, s] = val*par
                                         my_D4[w, t, u, v, p, q, r, s] =-val*par
-                                        
+
                                         par = -1
                                         my_D4[t, u, v, w, p, q, s, r] = val*par
                                         my_D4[t, u, w, v, p, q, s, r] =-val*par
@@ -3496,7 +1259,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, p, r, s, q] =-val*par
                                         my_D4[w, t, v, u, p, r, s, q] = val*par
                                         my_D4[w, t, u, v, p, r, s, q] =-val*par
-                                        
+
                                         par = -1
                                         my_D4[t, u, v, w, p, s, r, q] = val*par
                                         my_D4[t, u, w, v, p, s, r, q] =-val*par
@@ -3522,7 +1285,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, p, s, r, q] =-val*par
                                         my_D4[w, t, v, u, p, s, r, q] = val*par
                                         my_D4[w, t, u, v, p, s, r, q] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[t, u, v, w, p, s, q, r] = val*par
                                         my_D4[t, u, w, v, p, s, q, r] =-val*par
@@ -3548,8 +1311,8 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, p, s, q, r] =-val*par
                                         my_D4[w, t, v, u, p, s, q, r] = val*par
                                         my_D4[w, t, u, v, p, s, q, r] =-val*par
-                                        
-### q, [p, r, s] ...           
+
+### q, [p, r, s] ...
                                         par = -1
                                         my_D4[t, u, v, w, q, p, r, s] = val*par
                                         my_D4[t, u, w, v, q, p, r, s] =-val*par
@@ -3575,7 +1338,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, q, p, r, s] =-val*par
                                         my_D4[w, t, v, u, q, p, r, s] = val*par
                                         my_D4[w, t, u, v, q, p, r, s] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[t, u, v, w, q, p, s, r] = val*par
                                         my_D4[t, u, w, v, q, p, s, r] =-val*par
@@ -3600,7 +1363,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, u, t, q, p, s, r] = val*par
                                         my_D4[w, v, t, u, q, p, s, r] =-val*par
                                         my_D4[w, t, v, u, q, p, s, r] = val*par
-                                        my_D4[w, t, u, v, q, p, s, r] =-val*par 
+                                        my_D4[w, t, u, v, q, p, s, r] =-val*par
 
                                         par = 1
                                         my_D4[t, u, v, w, q, r, p, s] = val*par
@@ -3653,7 +1416,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, q, r, s, p] =-val*par
                                         my_D4[w, t, v, u, q, r, s, p] = val*par
                                         my_D4[w, t, u, v, q, r, s, p] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[t, u, v, w, q, s, r, p] = val*par
                                         my_D4[t, u, w, v, q, s, r, p] =-val*par
@@ -3679,7 +1442,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, q, s, r, p] =-val*par
                                         my_D4[w, t, v, u, q, s, r, p] = val*par
                                         my_D4[w, t, u, v, q, s, r, p] =-val*par
-                                        
+
                                         par = -1
                                         my_D4[t, u, v, w, q, s, p, r] = val*par
                                         my_D4[t, u, w, v, q, s, p, r] =-val*par
@@ -3731,7 +1494,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, r, q, p, s] =-val*par
                                         my_D4[w, t, v, u, r, q, p, s] = val*par
                                         my_D4[w, t, u, v, r, q, p, s] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[t, u, v, w, r, q, s, p] = val*par
                                         my_D4[t, u, w, v, r, q, s, p] =-val*par
@@ -3756,7 +1519,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, u, t, r, q, s, p] = val*par
                                         my_D4[w, v, t, u, r, q, s, p] =-val*par
                                         my_D4[w, t, v, u, r, q, s, p] = val*par
-                                        my_D4[w, t, u, v, r, q, s, p] =-val*par 
+                                        my_D4[w, t, u, v, r, q, s, p] =-val*par
 
                                         par = 1
                                         my_D4[t, u, v, w, r, p, q, s] = val*par
@@ -3809,7 +1572,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, r, p, s, q] =-val*par
                                         my_D4[w, t, v, u, r, p, s, q] = val*par
                                         my_D4[w, t, u, v, r, p, s, q] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[t, u, v, w, r, s, p, q] = val*par
                                         my_D4[t, u, w, v, r, s, p, q] =-val*par
@@ -3835,7 +1598,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, r, s, p, q] =-val*par
                                         my_D4[w, t, v, u, r, s, p, q] = val*par
                                         my_D4[w, t, u, v, r, s, p, q] =-val*par
-                                        
+
                                         par = -1
                                         my_D4[t, u, v, w, r, s, q, p] = val*par
                                         my_D4[t, u, w, v, r, s, q, p] =-val*par
@@ -3887,7 +1650,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, s, q, r, p] =-val*par
                                         my_D4[w, t, v, u, s, q, r, p] = val*par
                                         my_D4[w, t, u, v, s, q, r, p] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[t, u, v, w, s, q, p, r] = val*par
                                         my_D4[t, u, w, v, s, q, p, r] =-val*par
@@ -3912,7 +1675,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, u, t, s, q, p, r] = val*par
                                         my_D4[w, v, t, u, s, q, p, r] =-val*par
                                         my_D4[w, t, v, u, s, q, p, r] = val*par
-                                        my_D4[w, t, u, v, s, q, p, r] =-val*par 
+                                        my_D4[w, t, u, v, s, q, p, r] =-val*par
 
                                         par = 1
                                         my_D4[t, u, v, w, s, r, q, p] = val*par
@@ -3965,7 +1728,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, s, r, p, q] =-val*par
                                         my_D4[w, t, v, u, s, r, p, q] = val*par
                                         my_D4[w, t, u, v, s, r, p, q] =-val*par
-                                        
+
                                         par = 1
                                         my_D4[t, u, v, w, s, p, r, q] = val*par
                                         my_D4[t, u, w, v, s, p, r, q] =-val*par
@@ -3991,7 +1754,7 @@ def get_4RDM_full(state):
                                         my_D4[w, v, t, u, s, p, r, q] =-val*par
                                         my_D4[w, t, v, u, s, p, r, q] = val*par
                                         my_D4[w, t, u, v, s, p, r, q] =-val*par
-                                        
+
                                         par = -1
                                         my_D4[t, u, v, w, s, p, q, r] = val*par
                                         my_D4[t, u, w, v, s, p, q, r] =-val*par
@@ -4025,19 +1788,19 @@ def debug_RDM(Quket):
     """
     Debug code for 1, 2, 3, and 4-RDMs.
     This code also illustrates how to contract with integrals.
-    """ 
+    """
     n_qubits = Quket.n_qubits
     state = Quket.state
     n_orbs = Quket.n_active_orbitals
     n_active_electrons = Quket.n_active_electrons
     t0 = time.time()
-    D1 = get_1RDM_full(state)
+    D1 = get_1RDM_full(state, mapping=Quket.cf.mapping)
     t1 = time.time()
-    D2 = get_2RDM_full(state)
+    D2 = get_2RDM_full(state, mapping=Quket.cf.mapping)
     t2 = time.time()
-    D3 = get_3RDM_full(state)
+    D3 = get_3RDM_full(state, mapping=Quket.cf.mapping)
     t3 = time.time()
-    D4 = get_4RDM_full(state)
+    D4 = get_4RDM_full(state, mapping=Quket.cf.mapping)
     t4 = time.time()
 
     prints(f'Total time for RDMs in {n_qubits}-qubit simulation.')
@@ -4045,7 +1808,7 @@ def debug_RDM(Quket):
     prints(f'D2 : {t2-t1}')
     prints(f'D3 : {t3-t2}')
     prints(f'D4 : {t4-t3}')
-    ### Debugging D2, D3, D4 
+    ### Debugging D2, D3, D4
     X1 = np.zeros((n_qubits,n_qubits))
     X2 = np.zeros((n_qubits,n_qubits,n_qubits,n_qubits))
     X3 = np.zeros((n_qubits,n_qubits,n_qubits,n_qubits,n_qubits,n_qubits))
@@ -4053,11 +1816,11 @@ def debug_RDM(Quket):
     pqruv = -1
     for p in range(n_qubits):
         for q in range(n_qubits):
-            for r in range(n_qubits):  
+            for r in range(n_qubits):
                 X1[p,q] += D2[p,r,r,q]/(n_active_electrons-1)
                 if n_active_electrons > 2:
                     for u in range(n_qubits):
-                        for v in range(n_qubits):     
+                        for v in range(n_qubits):
                             X2[p,q,r,u] += D3[p,q,v,v,r,u]/(n_active_electrons-2)
                             pqruv += 1
                             if n_active_electrons > 3:
@@ -4076,8 +1839,8 @@ def debug_RDM(Quket):
 
     ### Compute energy from 1-, 2-RDMs by contracting with integrals.
     E0 = Quket.zero_body_integrals_active
-    h1 = Quket.one_body_integrals_active 
-    h2 = Quket.two_body_integrals_active   # h2[p,q,r,s] = 1/2<pq|rs> with p^ q^ r s 
+    h1 = Quket.one_body_integrals_active
+    h2 = Quket.two_body_integrals_active   # h2[p,q,r,s] = 1/2<pq|rs> with p^ q^ r s
     E1 = 0
     E2 = 0
     for p in range(n_qubits):
@@ -4103,13 +1866,13 @@ def get_relax_delta_full(Quket, print_level=0):
     """Function
     Compute the contributions from relaxed term of the density matrix.
     Usually, Hartree-Fock canonical orbitals are used, and we have to consider the non-Hellmann-Feynman
-    term of the (variational) wave function derivative, by enforcing Fpq = 0 under small perturbation. 
+    term of the (variational) wave function derivative, by enforcing Fpq = 0 under small perturbation.
     (For MP2 FNO or CASSCF, we do not support the relaxed term.)
 
     For methods that are unitary invariant w.r.t. occ-occ and vir-vir rotations, such as UCC, or PHF,
     it suffices to consider only the occ-vir block (accordingly, only Aaibj).
     However, for more general VQE methods such as ADAPT or hardware-efficient VQE, one has to
-    incorporate occ-occ and vir-vir rotations because they are not invariant w.r.t. these rotations. 
+    incorporate occ-occ and vir-vir rotations because they are not invariant w.r.t. these rotations.
 
     Author(s): Taisei Nishimaki, Takashi Tsuchimochi
     """
@@ -4121,7 +1884,7 @@ def get_relax_delta_full(Quket, print_level=0):
     ncore = Quket.n_frozen_orbitals + Quket.n_core_orbitals
     nact = Quket.n_active_orbitals
     norbs = Quket.n_orbitals
-    nsec = norbs - ncore - nact 
+    nsec = norbs - ncore - nact
     NOA = noa + ncore
     NOB = nob + ncore
     NVA = nva + nsec
@@ -4143,7 +1906,7 @@ def get_relax_delta_full(Quket, print_level=0):
     # general virtual c (C), general occupied k (K)
     ck_size_a = (NVA) * (NOA)
     ck_size_b = (NVB) * (NOB)
-    # active a > b 
+    # active a > b
     ab_size_a = NVA * (NVA-1) // 2
     ab_size_b = NVB * (NVB-1) // 2
     # inactive A, active a
@@ -4192,7 +1955,7 @@ def get_relax_delta_full(Quket, print_level=0):
                 delta_ij_a[i,j] = 0.0
             else:
                 z_ij_a[0,ij] = -1*Ja[i,j]/(mo_energy[i] - mo_energy[j])
-                delta_ij_a[i,j] = z_ij_a[0,ij] 
+                delta_ij_a[i,j] = z_ij_a[0,ij]
             # print("zij:",z_ij_a[0,ij])
             ij+=1
 
@@ -4204,7 +1967,7 @@ def get_relax_delta_full(Quket, print_level=0):
                 delta_ij_b[i,j] = 0.0
             else:
                 z_ij_b[0,ij] = -1*Jb[i,j]/(mo_energy[i] - mo_energy[j])
-                delta_ij_b[i,j] = z_ij_b[0,ij] 
+                delta_ij_b[i,j] = z_ij_b[0,ij]
             ij+=1
     ### z_ab ###
     ab=0
@@ -4360,7 +2123,7 @@ def get_relax_delta_full(Quket, print_level=0):
                                      + h_pqrs[a+NOA,b+NOA,k,c+NOB])
                     ck+=1
             ab+=1
-    
+
     Aabck = np.block([[Aabck_a , Aabck_ab],
                       [Aabck_ba, Aabck_b]])
     if print_level > 1:
@@ -4373,7 +2136,7 @@ def get_relax_delta_full(Quket, print_level=0):
     for i in range(ij_size_a + ij_size_b):
         for j in range((NVA)*(NOA)+(NVB)*(NOB)):
             temp = zij[0,i]*Aijck[i,j]
-            J_ijck[j] += temp 
+            J_ijck[j] += temp
             #print(temp)
     if print_level > 1:
         printmat(J_ijck, name="Jijck")
@@ -4381,7 +2144,7 @@ def get_relax_delta_full(Quket, print_level=0):
     for i in range(ab_size_a + ab_size_b):
         for j in range((NVA)*(NOA)+(NVB)*(NOB)):
             temp = zab[0,i]*Aabck[i,j]
-            J_abck[j] += temp 
+            J_abck[j] += temp
             #print(temp)
     if print_level > 1:
         printmat(J_abck, name="Jabck")
@@ -4405,15 +2168,14 @@ def get_relax_delta_full(Quket, print_level=0):
 
 
     Aaick = get_HF_orbital_hessian(Quket)
-    Jtilde = J_ck.copy() 
+    Jtilde = J_ck.copy()
     Jtilde += J_abck.copy()
     Jtilde += J_ijck.copy()
-
     A_inv = np.linalg.pinv(Aaick)
     z = A_inv@Jtilde
     if cf.debug:
         printmat(z,name="Zai")
-    
+
     index = (NOAVA+NOBVB)//2
     z_aa = z[:index]
     z_bb = z[index : NOAVA+NOBVB]
@@ -4432,7 +2194,7 @@ def get_relax_delta_full(Quket, print_level=0):
 def get_2RDM(Quket, state=None, symmetry=False):
     """Function
     Compute 2RDM of QuantmState in QuketData (active space only).
-    To be explicit, 
+    To be explicit,
     if symmetry = True
     Daaaa[pq,rs] = < pA^ qA^ rA sA >   (p>q, r>s)
     Dbaba[p,q,r,s] = < pB^ qA^ rB sA >
@@ -4443,10 +2205,10 @@ def get_2RDM(Quket, state=None, symmetry=False):
     Dbaab[p,q,r,s] = < pB^ qA^ rA sB >
     Dbbbb[p,q,r,s] = < pB^ qB^ rB sB >
 
-    Args: 
-        Quket (QuketData): QuketData instance 
+    Args:
+        Quket (QuketData): QuketData instance
         state (QuantumState, optional): Target state for which RDM is computed
-        symmetry (bool): If symmetry is true, matrix is folded by anti-symmetry. 
+        symmetry (bool): If symmetry is true, matrix is folded by anti-symmetry.
     Returns:
         Daaaa (4darray): Alpha 2-particle density matrix in the active space
         Dbbbb (4darray): Beta 2-particle density matrix in the active space
@@ -4458,7 +2220,7 @@ def get_2RDM(Quket, state=None, symmetry=False):
     n_qubits = Quket.n_qubits
     if state is None:
         state = Quket.state
-
+    mapping = Quket.cf.mapping
     norbs = Quket.n_active_orbitals
     n_frozen_orbitals = Quket.n_frozen_orbitals
     nott = norbs*(norbs-1)//2
@@ -4467,27 +2229,27 @@ def get_2RDM(Quket, state=None, symmetry=False):
     Dbbbb = np.zeros((nott * (nott+1)//2), float)
     Dbaba = np.zeros((norbs**2 * (norbs**2 + 1)//2), float)
 
-    
+
     t1 = time.time()
     cyc = 0
     pq = 0
     states = {}
     for p in range(norbs):
-        pa = p * 2 
+        pa = p * 2
         pb = pa + 1
         for q in range(p):
-            qa = q * 2 
+            qa = q * 2
             qb = qa + 1
             string_pa = f"{qa} {pa}"
-            states[string_pa] = evolve(FermionOperator(string_pa),state,parallel=False)
+            states[string_pa] = evolve(FermionOperator(string_pa),state,parallel=False,mapping=mapping)
             string_pb = f"{qb} {pb}"
-            states[string_pb] = evolve(FermionOperator(string_pb),state,parallel=False)
+            states[string_pb] = evolve(FermionOperator(string_pb),state,parallel=False,mapping=mapping)
             rs = 0
             for r in range(norbs):
-                ra = r * 2 
+                ra = r * 2
                 rb = ra + 1
                 for s in range(r):
-                    sa = s * 2 
+                    sa = s * 2
                     sb = sa + 1
                     string_qa = f"{sa} {ra}"
                     string_qb = f"{sb} {rb}"
@@ -4496,14 +2258,10 @@ def get_2RDM(Quket, state=None, symmetry=False):
                     cyc += 1
                     if cyc % mpi.nprocs == mpi.rank:
                         #string = f"{pa}^ {qa}^ {ra} {sa}"
-                        #val = calc_RDM(state, n_qubits, string) 
                         val = -inner_product(states[string_pa], states[string_qa]).real
-                        #prints(val - calc_RDM(state, n_qubits, string)) 
                         Daaaa[pq*(pq+1)//2 + rs] = val
                         #string = f"{pb}^ {qb}^ {rb} {sb}"
-                        #val = calc_RDM(state, n_qubits, string) 
                         val = -inner_product(states[string_pb], states[string_qb]).real
-                        #prints(val - calc_RDM(state, n_qubits, string)) 
                         Dbbbb[pq*(pq+1)//2 + rs] = val
                     rs += 1
             pq += 1
@@ -4512,19 +2270,19 @@ def get_2RDM(Quket, state=None, symmetry=False):
     pq = 0
     states = {}
     for p in range(norbs):
-        pa = p * 2 
+        pa = p * 2
         pb = pa + 1
         for q in range(norbs):
-            qa = q * 2 
+            qa = q * 2
             qb = qa + 1
             string_p = f"{qa} {pb}"
-            states[string_p] = evolve(FermionOperator(string_p),state,parallel=False)
+            states[string_p] = evolve(FermionOperator(string_p),state,parallel=False,mapping=mapping)
             rs = 0
             for r in range(norbs):
-                ra = r * 2 
+                ra = r * 2
                 rb = ra + 1
                 for s in range(norbs):
-                    sa = s * 2 
+                    sa = s * 2
                     sb = sa + 1
                     string_q = f"{sa} {rb}"
                     if pq < rs:
@@ -4532,10 +2290,9 @@ def get_2RDM(Quket, state=None, symmetry=False):
                     cyc += 1
                     if cyc % mpi.nprocs == mpi.rank:
                         string = f"{pb}^ {qa}^ {rb} {sa}"
-                        #val = calc_RDM(state, n_qubits, string) 
                         val = -inner_product(states[string_p], states[string_q]).real
                         Dbaba[pq*(pq+1)//2 + rs] = +val
-                    
+
                     rs += 1
             pq += 1
 
@@ -4572,7 +2329,7 @@ def get_2RDM(Quket, state=None, symmetry=False):
 
     Dbaba = Dbaba.reshape(norbs, norbs, norbs, norbs)
 
-    return Daaaa, -Dbaba.transpose(0,1,3,2), Dbbbb
+    return Daaaa, -Dbaba.transpose(0,1,3,2).copy(), Dbbbb
     ###    Daaaa  Dbaab  Dbbbb
 
 
@@ -4588,21 +2345,22 @@ def get_3RDM(Quket, state=None, symmetry=False):
     Dbbbbbb[pqr,stu] = < pB^ qB^ rB^ sB tB uB >    (p>q>r,  s>t>u)
 
     if symmetry = False,
-    Daaaaaa[p,q,r,s,t,u] = < pA^ qA^ rA^ sA tA uA > 
-    Dbaaaab[p,q,r,s,t,u] = < pB^ qA^ rA^ sA tA uB > 
-    Dbbaabb[p,q,r,s,t,u] = < pB^ qB^ rA^ sA tB uB > 
-    Dbbbbbb[p,q,r,s,t,u] = < pB^ qB^ rB^ sB tB uB > 
+    Daaaaaa[p,q,r,s,t,u] = < pA^ qA^ rA^ sA tA uA >
+    Dbaaaab[p,q,r,s,t,u] = < pB^ qA^ rA^ sA tA uB >
+    Dbbaabb[p,q,r,s,t,u] = < pB^ qB^ rA^ sA tB uB >
+    Dbbbbbb[p,q,r,s,t,u] = < pB^ qB^ rB^ sB tB uB >
 
-    Args: 
-        Quket (QuketData): QuketData instance 
+    Args:
+        Quket (QuketData): QuketData instance
         state (QuantumState, optional): Target state for which RDM is computed
-        symmetry (bool): If symmetry is true, matrix is folded by anti-symmetry. 
+        symmetry (bool): If symmetry is true, matrix is folded by anti-symmetry.
     Author(s): Takashi Tsuchimochi
     """
     prints(" === Computing 3RDM === ")
     n_qubits = Quket.n_qubits
     if state is None:
         state = Quket.state
+    mapping = Quket.cf.mapping
 
     norbs = Quket.n_active_orbitals
     n_frozen_orbitals = Quket.n_frozen_orbitals
@@ -4621,22 +2379,22 @@ def get_3RDM(Quket, state=None, symmetry=False):
     p123 = 0
     states = {}
     for p1 in range(norbs):
-        # 
-        p1a = p1 * 2 
+        #
+        p1a = p1 * 2
         p1b = p1a + 1
         for p2 in range(p1):
-            p2a = p2 * 2 
+            p2a = p2 * 2
             p2b = p2a + 1
             for p3 in range(p2):
-                p3a = p3 * 2 
+                p3a = p3 * 2
                 p3b = p3a + 1
-                p3a_state = evolve(FermionOperator(f"{p3a} {p2a} {p1a}"), state, parallel=False) 
-                p3b_state = evolve(FermionOperator(f"{p3b} {p2b} {p1b}"), state, parallel=False) 
+                p3a_state = evolve(FermionOperator(f"{p3a} {p2a} {p1a}"), state, parallel=False, mapping=mapping)
+                p3b_state = evolve(FermionOperator(f"{p3b} {p2b} {p1b}"), state, parallel=False, mapping=mapping)
                 states[f"{p3a} {p2a} {p1a}"] = p3a_state
                 states[f"{p3b} {p2b} {p1b}"] = p3b_state
                 q123 = 0
                 for q1 in range(norbs):
-                    q1a = q1 * 2 
+                    q1a = q1 * 2
                     q1b = q1a + 1
                     for q2 in range(q1):
                         q2a = q2 * 2
@@ -4654,8 +2412,6 @@ def get_3RDM(Quket, state=None, symmetry=False):
                                 val = inner_product(states[f"{p3a} {p2a} {p1a}"], states[f"{q3a} {q2a} {q1a}"]).real
                                 Daaaaaa[p123*(p123+1)//2 + q123] = -val
                                 #string = f"{p1b}^ {p2b}^ {p3b}^ {q1b} {q2b} {q3b}"
-                                #val = calc_RDM(state, n_qubits, string) 
-                                #val = inner_product(p3b_state, q3b_state).real
                                 val = inner_product(states[f"{p3b} {p2b} {p1b}"], states[f"{q3b} {q2b} {q1b}"]).real
                                 Dbbbbbb[p123*(p123+1)//2 + q123] = -val
                                 #prints('val ', val + val_)
@@ -4670,20 +2426,20 @@ def get_3RDM(Quket, state=None, symmetry=False):
     p123 = 0
     states = {}
     for p1 in range(norbs):
-        p1a = p1 * 2 
+        p1a = p1 * 2
         p1b = p1a + 1
         for p2 in range(norbs):
-            p2a = p2 * 2 
+            p2a = p2 * 2
             p2b = p2a + 1
             for p3 in range(p2):
-                p3a = p3 * 2 
+                p3a = p3 * 2
                 p3b = p3a + 1
                 string = f"{p3a} {p2a} {p1b}"
-                p3_state = evolve(FermionOperator(string), state, parallel=False) 
+                p3_state = evolve(FermionOperator(string), state, parallel=False, mapping=mapping)
                 states[string] = p3_state
                 q123 = 0
                 for q1 in range(norbs):
-                    q1a = q1 * 2 
+                    q1a = q1 * 2
                     q1b = q1a + 1
                     for q2 in range(norbs):
                         q2a = q2 * 2
@@ -4696,7 +2452,7 @@ def get_3RDM(Quket, state=None, symmetry=False):
                             cyc += 1
                             if cyc % mpi.nprocs == mpi.rank:
                                 #string = f"{p1b}^ {p2a}^ {p3a}^ {q1b} {q2a} {q3a}"
-                                #q3_state = evolve(FermionOperator(f"{q3a} {q2a} {q1b}"), state, parallel=False) 
+                                #q3_state = evolve(FermionOperator(f"{q3a} {q2a} {q1b}"), state, parallel=False)
                                 #val = -inner_product(p3_state, q3_state).real
                                 val = -inner_product(states[f"{p3a} {p2a} {p1b}"], states[f"{q3a} {q2a} {q1b}"]).real
                                 Dbaabaa[p123q123] = val
@@ -4710,20 +2466,20 @@ def get_3RDM(Quket, state=None, symmetry=False):
     p123 = 0
     states = {}
     for p1 in range(norbs):
-        p1a = p1 * 2 
+        p1a = p1 * 2
         p1b = p1a + 1
         for p2 in range(p1):
-            p2a = p2 * 2 
+            p2a = p2 * 2
             p2b = p2a + 1
             for p3 in range(norbs):
-                p3a = p3 * 2 
-                p3b = p3a + 1 
+                p3a = p3 * 2
+                p3b = p3a + 1
                 string = f"{p3a} {p2b} {p1b}"
-                p3_state = evolve(FermionOperator(string), state, parallel=False) 
+                p3_state = evolve(FermionOperator(string), state, parallel=False, mapping=mapping)
                 states[string] = p3_state
                 q123 = 0
                 for q1 in range(norbs):
-                    q1a = q1 * 2 
+                    q1a = q1 * 2
                     q1b = q1a + 1
                     for q2 in range(q1):
                         q2a = q2 * 2
@@ -4738,7 +2494,6 @@ def get_3RDM(Quket, state=None, symmetry=False):
                                 #string = f"{p1b}^ {p2b}^ {p3a}^ {q1b} {q2b} {q3a}"
                                 #val = -inner_product(p3_state, q3_state).real
                                 val = -inner_product(states[f"{p3a} {p2b} {p1b}"], states[f"{q3a} {q2b} {q1b}"]).real
-                                #prints(val - calc_RDM(state, n_qubits, string)) 
                                 Dbbabba[p123q123] = val
                             p123q123 += 1
                             q123 += 1
@@ -4753,7 +2508,7 @@ def get_3RDM(Quket, state=None, symmetry=False):
 
     if symmetry:
         return Daaaaaa, Dbaabaa, Dbbabba, Dbbbbbb
-        
+
 
     Daaaaaa = symm(Daaaaaa)  # Daaaaaa[pqr, stu]
     Dbbbbbb = symm(Dbbbbbb)  # Dbbbbbb[pqr, stu]
@@ -4762,57 +2517,65 @@ def get_3RDM(Quket, state=None, symmetry=False):
 
     ### Full tensor
     tmp = np.zeros((nottt, norbs**3), float)
-    for pqr in range(nottt):
-        tmp[pqr, :] = skew3(Daaaaaa[pqr, :]).reshape(norbs**3)
-    tmp1 = tmp.T.copy()
-    Daaaaaa = np.zeros((norbs**3, norbs**3), float)
-    for stu in range(norbs**3):
-        Daaaaaa[stu, :] = skew3(tmp1[stu, :]).reshape(norbs**3)
-    Daaaaaa = Daaaaaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs)
+    if nottt > 0:
+        for pqr in range(nottt):
+            tmp[pqr, :] = skew3(Daaaaaa[pqr, :]).reshape(norbs**3)
+        tmp1 = tmp.T.copy()
+        Daaaaaa = np.zeros((norbs**3, norbs**3), float)
+        for stu in range(norbs**3):
+            Daaaaaa[stu, :] = skew3(tmp1[stu, :]).reshape(norbs**3)
+        Daaaaaa = Daaaaaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs)
 
-    tmp = np.zeros((nottt, norbs**3), float)
-    for pqr in range(nottt):
-        tmp[pqr, :] = skew3(Dbbbbbb[pqr, :]).reshape(norbs**3)
-    tmp1 = tmp.T.copy()
-    Dbbbbbb = np.zeros((norbs**3, norbs**3), float)
-    for stu in range(norbs**3):
-        Dbbbbbb[stu, :] = skew3(tmp1[stu, :]).reshape(norbs**3)
-    Dbbbbbb = Dbbbbbb.reshape(norbs, norbs, norbs, norbs, norbs, norbs)
+        tmp = np.zeros((nottt, norbs**3), float)
+        for pqr in range(nottt):
+            tmp[pqr, :] = skew3(Dbbbbbb[pqr, :]).reshape(norbs**3)
+        tmp1 = tmp.T.copy()
+        Dbbbbbb = np.zeros((norbs**3, norbs**3), float)
+        for stu in range(norbs**3):
+            Dbbbbbb[stu, :] = skew3(tmp1[stu, :]).reshape(norbs**3)
+        Dbbbbbb = Dbbbbbb.reshape(norbs, norbs, norbs, norbs, norbs, norbs)
+    else:
+        Daaaaaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs), float)
+        Dbbbbbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs), float)
 
     # bbabba [p, qr, s, tu]
     #         b  aa  b  aa
-    tmp = np.zeros((norbs, nott, norbs, norbs**2), float)
-    for p in range(norbs):
-        for qr in range(nott):
-            for s in range(norbs):
-                tmp[p, qr, s, :] = skew(Dbaabaa[p, qr, s, :]).reshape(norbs**2)
-
-    tmp1 = tmp.transpose(2, 3, 0, 1).reshape(norbs**3, norbs, nott)
-    Dbaabaa = np.zeros((norbs**3, norbs, norbs**2), float)
-    for stu in range(norbs**3):
+    if nott > 0:
+        tmp = np.zeros((norbs, nott, norbs, norbs**2), float)
         for p in range(norbs):
-            Dbaabaa[stu, p, :] = skew(tmp1[stu, p, :]).reshape(norbs**2)
-    Dbaabaa = Dbaabaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs)
+            for qr in range(nott):
+                for s in range(norbs):
+                    tmp[p, qr, s, :] = skew(Dbaabaa[p, qr, s, :]).reshape(norbs**2)
 
-    # bbabba [pq, r, st, u]
-    #         bb  a  bb  a
-    tmp = np.zeros((nott, norbs, norbs, norbs**2), float)
-    for pq in range(nott):
-        for r in range(norbs):
-            for u in range(norbs):
-                tmp[pq, r, u, :] = skew(Dbbabba[pq, r, :, u]).reshape(norbs**2)
+        tmp1 = tmp.transpose(2, 3, 0, 1).reshape(norbs**3, norbs, nott)
+        Dbaabaa = np.zeros((norbs**3, norbs, norbs**2), float)
+        for stu in range(norbs**3):
+            for p in range(norbs):
+                Dbaabaa[stu, p, :] = skew(tmp1[stu, p, :]).reshape(norbs**2)
+        Dbaabaa = Dbaabaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs)
 
-    ### pq, r, u, [s, t]--> [s,t,u], r, pq
-    tmp1 = tmp.transpose(3, 2, 1, 0).reshape(norbs**3, norbs, nott)
-    Dbbabba = np.zeros((norbs**3, norbs, norbs**2), float)
-    for stu in range(norbs**3):
-        for r in range(norbs):
-            Dbbabba[stu, r, :] = skew(tmp1[stu, r, :]).reshape(norbs**2)
-    Dbbabba = Dbbabba.transpose(0, 2, 1).reshape(norbs, norbs, norbs, norbs, norbs, norbs)
+        # bbabba [pq, r, st, u]
+        #         bb  a  bb  a
+        tmp = np.zeros((nott, norbs, norbs, norbs**2), float)
+        for pq in range(nott):
+            for r in range(norbs):
+                for u in range(norbs):
+                    tmp[pq, r, u, :] = skew(Dbbabba[pq, r, :, u]).reshape(norbs**2)
+
+        ### pq, r, u, [s, t]--> [s,t,u], r, pq
+        tmp1 = tmp.transpose(3, 2, 1, 0).reshape(norbs**3, norbs, nott)
+        Dbbabba = np.zeros((norbs**3, norbs, norbs**2), float)
+        for stu in range(norbs**3):
+            for r in range(norbs):
+                Dbbabba[stu, r, :] = skew(tmp1[stu, r, :]).reshape(norbs**2)
+        Dbbabba = Dbbabba.transpose(0, 2, 1).reshape(norbs, norbs, norbs, norbs, norbs, norbs)
+    else:
+        Dbaabaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs), float)
+        Dbbabba = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs), float)
     t2 = time.time()
     prints(f"{t2-t0:.3f} sec")
 
-    return Daaaaaa, Dbaabaa.transpose(0,1,2,4,5,3), Dbbabba.transpose(0,1,2,5,3,4), Dbbbbbb
+    return Daaaaaa, Dbaabaa.transpose(0,1,2,4,5,3).copy(), Dbbabba.transpose(0,1,2,5,3,4).copy(), Dbbbbbb
     #####  Daaaaaa  Dbaaaab  Dbbaabb  Dbbbbbb
 
 
@@ -4828,22 +2591,23 @@ def get_4RDM(Quket, state=None, symmetry=False):
     Dbbbabbba[pqr,s,tuv,w] = < pB^ qB^ rB^ sA^ tB uB vB wA > (p>q>r>, t>u>v)
 
     If symmetry = False,
-    Daaaaaaaa[p,q,r,s,t,u,v,w] = < pA^ qA^ rA^ sA^ tA uA vA wA > 
-    Dbaaaaaab[p,q,r,s,t,u,v,w] = < pB^ qA^ rA^ sA^ tA uA vA wB > 
-    Dbbaaaabb[p,q,r,s,t,u,v,w] = < pB^ qB^ rA^ sA^ tA uA vB wB > 
-    Dbbbaabbb[p,q,r,s,t,u,v,w] = < pB^ qB^ rB^ sA^ tA uB vB wB > 
-    Dbbbbbbbb[p,q,r,s,t,u,v,w] = < pB^ qB^ rB^ sB^ tB uB vB wB > 
+    Daaaaaaaa[p,q,r,s,t,u,v,w] = < pA^ qA^ rA^ sA^ tA uA vA wA >
+    Dbaaaaaab[p,q,r,s,t,u,v,w] = < pB^ qA^ rA^ sA^ tA uA vA wB >
+    Dbbaaaabb[p,q,r,s,t,u,v,w] = < pB^ qB^ rA^ sA^ tA uA vB wB >
+    Dbbbaabbb[p,q,r,s,t,u,v,w] = < pB^ qB^ rB^ sA^ tA uB vB wB >
+    Dbbbbbbbb[p,q,r,s,t,u,v,w] = < pB^ qB^ rB^ sB^ tB uB vB wB >
 
-    Args: 
-        Quket (QuketData): QuketData instance 
+    Args:
+        Quket (QuketData): QuketData instance
         state (QuantumState, optional): Target state for which RDM is computed
-        symmetry (bool): If symmetry is true, matrix is folded by anti-symmetry. 
+        symmetry (bool): If symmetry is true, matrix is folded by anti-symmetry.
     Author(s): Takashi Tsuchimochi
     """
     prints(" === Computing 4RDM === ")
     n_qubits = Quket.n_qubits
     if state is None:
         state = Quket.state
+    mapping = Quket.cf.mapping
 
     norbs = Quket.n_active_orbitals
     n_frozen_orbitals = Quket.n_frozen_orbitals
@@ -4877,10 +2641,10 @@ def get_4RDM(Quket, state=None, symmetry=False):
                     p4a = p4 * 2
                     p4b = p4a + 1
                     string_pa = f"{p4a} {p3a} {p2a} {p1a}"
-                    p4a_state = evolve(FermionOperator(string_pa), state, parallel=False)
+                    p4a_state = evolve(FermionOperator(string_pa), state, parallel=False, mapping=mapping)
                     states[string_pa] = p4a_state
                     string_pb = f"{p4b} {p3b} {p2b} {p1b}"
-                    p4b_state = evolve(FermionOperator(string_pb), state, parallel=False)
+                    p4b_state = evolve(FermionOperator(string_pb), state, parallel=False, mapping=mapping)
                     states[string_pb] = p4b_state
                     q1234 = 0
                     for q1 in range(norbs):
@@ -4903,11 +2667,9 @@ def get_4RDM(Quket, state=None, symmetry=False):
                                     if cyc % mpi.nprocs == mpi.rank:
                                         string = f"{p1a}^ {p2a}^ {p3a}^ {p4a}^ {q1a} {q2a} {q3a} {q4a}"
                                         val = inner_product(states[string_pa], states[string_qa]).real
-                                        #prints(val -  calc_RDM(state, n_qubits, string).real )
                                         Daaaaaaaa[p1234q1234] = val
                                         string = f"{p1b}^ {p2b}^ {p3b}^ {p4b}^ {q1b} {q2b} {q3b} {q4b}"
                                         val = inner_product(states[string_pb], states[string_qb]).real
-                                        #prints(val -  calc_RDM(state, n_qubits, string).real )
                                         Dbbbbbbbb[p1234q1234] = val
                                     q1234 += 1
                                     p1234q1234 += 1
@@ -4931,7 +2693,7 @@ def get_4RDM(Quket, state=None, symmetry=False):
                     p4a = p4 * 2
                     p4b = p4a + 1
                     string_p = f"{p4a} {p3a} {p2a} {p1b}"
-                    p4_state = evolve(FermionOperator(string_p), state, parallel=False)
+                    p4_state = evolve(FermionOperator(string_p), state, parallel=False, mapping=mapping)
                     states[string_p] = p4_state
                     q1234 = 0
                     for q1 in range(norbs):
@@ -4953,7 +2715,6 @@ def get_4RDM(Quket, state=None, symmetry=False):
                                     if cyc % mpi.nprocs == mpi.rank:
                                         string = f"{p1b}^ {p2a}^ {p3a}^ {p4a}^ {q1b} {q2a} {q3a} {q4a}"
                                         val = inner_product(states[string_p], states[string_q]).real
-                                        #prints(val -  calc_RDM(state, n_qubits, string).real )
                                         Dbaaabaaa[p1234q1234] = val
                                     q1234 += 1
                                     p1234q1234 += 1
@@ -4977,7 +2738,7 @@ def get_4RDM(Quket, state=None, symmetry=False):
                     p4a = p4 * 2
                     p4b = p4a + 1
                     string_p = f"{p4a} {p3a} {p2b} {p1b}"
-                    p4_state = evolve(FermionOperator(string_p), state, parallel=False)
+                    p4_state = evolve(FermionOperator(string_p), state, parallel=False, mapping=mapping)
                     states[string_p] = p4_state
                     q1234 = 0
                     for q1 in range(norbs):
@@ -4999,7 +2760,6 @@ def get_4RDM(Quket, state=None, symmetry=False):
                                     if cyc % mpi.nprocs == mpi.rank:
                                         string = f"{p1b}^ {p2b}^ {p3a}^ {p4a}^ {q1b} {q2b} {q3a} {q4a}"
                                         val = inner_product(states[string_p], states[string_q]).real
-                                        #prints(val -  calc_RDM(state, n_qubits, string).real )
                                         Dbbaabbaa[p1234q1234] = val
                                     q1234 += 1
                                     p1234q1234 += 1
@@ -5023,7 +2783,7 @@ def get_4RDM(Quket, state=None, symmetry=False):
                     p4a = p4 * 2
                     p4b = p4a + 1
                     string_p = f"{p4a} {p3b} {p2b} {p1b}"
-                    p4_state = evolve(FermionOperator(string_p), state, parallel=False)
+                    p4_state = evolve(FermionOperator(string_p), state, parallel=False, mapping=mapping)
                     states[string_p] = p4_state
                     q1234 = 0
                     for q1 in range(norbs):
@@ -5045,7 +2805,6 @@ def get_4RDM(Quket, state=None, symmetry=False):
                                     if cyc % mpi.nprocs == mpi.rank:
                                         string = f"{p1b}^ {p2b}^ {p3b}^ {p4a}^ {q1b} {q2b} {q3b} {q4a}"
                                         val = inner_product(states[string_p], states[string_q]).real
-                                        #prints(val -  calc_RDM(state, n_qubits, string).real )
                                         Dbbbabbba[p1234q1234] = val
                                     q1234 += 1
                                     p1234q1234 += 1
@@ -5067,90 +2826,102 @@ def get_4RDM(Quket, state=None, symmetry=False):
 
     if symmetry:
         return Daaaaaaaa, Dbaaabaaa, Dbbaabbaa, Dbbbabbba, Dbbbbbbbb
-        
+
 
     ### Full tensor
-    tmp = np.zeros((notttt, norbs**4), float)
-    for pqrs in range(notttt):
-        tmp[pqrs, :] = skew4(Daaaaaaaa[pqrs, :]).reshape(norbs**4)
-    tmp1 = tmp.T.copy()
-    Daaaaaaaa = np.zeros((norbs**4, norbs**4), float)
-    for tuvw in range(norbs**4):
-        Daaaaaaaa[tuvw, :] = skew4(tmp1[tuvw, :]).reshape(norbs**4)
-    Daaaaaaaa = Daaaaaaaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs)
+    if notttt > 0:
+        tmp = np.zeros((notttt, norbs**4), float)
+        for pqrs in range(notttt):
+            tmp[pqrs, :] = skew4(Daaaaaaaa[pqrs, :]).reshape(norbs**4)
+        tmp1 = tmp.T.copy()
+        Daaaaaaaa = np.zeros((norbs**4, norbs**4), float)
+        for tuvw in range(norbs**4):
+            Daaaaaaaa[tuvw, :] = skew4(tmp1[tuvw, :]).reshape(norbs**4)
+        Daaaaaaaa = Daaaaaaaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs)
 
-    for pqrs in range(notttt):
-        tmp[pqrs, :] = skew4(Dbbbbbbbb[pqrs, :]).reshape(norbs**4)
-    tmp1 = tmp.T.copy()
-    Dbbbbbbbb = np.zeros((norbs**4, norbs**4), float)
-    for tuvw in range(norbs**4):
-        Dbbbbbbbb[tuvw, :] = skew4(tmp1[tuvw, :]).reshape(norbs**4)
-    Dbbbbbbbb = Dbbbbbbbb.reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs)
-
+        for pqrs in range(notttt):
+            tmp[pqrs, :] = skew4(Dbbbbbbbb[pqrs, :]).reshape(norbs**4)
+        tmp1 = tmp.T.copy()
+        Dbbbbbbbb = np.zeros((norbs**4, norbs**4), float)
+        for tuvw in range(norbs**4):
+            Dbbbbbbbb[tuvw, :] = skew4(tmp1[tuvw, :]).reshape(norbs**4)
+        Dbbbbbbbb = Dbbbbbbbb.reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs)
+    else:
+        Daaaaaaaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs), float)
+        Dbbbbbbbb = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs), float)
     # baaabaaa [p, qrs, t, uvw]
     #           b  aaa  b  aaa
-    tmp = np.zeros((norbs, nottt, norbs, norbs**3), float)
-    for p in range(norbs):
-        for qrs in range(nottt):
-            for t in range(norbs):
-                tmp[p, qrs, t, :] = skew3(Dbaaabaaa[p, qrs, t, :]).reshape(norbs**3)
-    # [p, qrs, t, [u,v,w]]  ->  [[t,u,v,w], p, qrs]
-    tmp1 = tmp.transpose(2, 3, 0, 1).reshape(norbs**4, norbs, nottt)
-    Dbaaabaaa = np.zeros((norbs**4, norbs, norbs**3), float)
-    for tuvw in range(norbs**4):
+    if nottt > 0:
+        tmp = np.zeros((norbs, nottt, norbs, norbs**3), float)
         for p in range(norbs):
-            Dbaaabaaa[tuvw, p, :] = skew3(tmp1[tuvw, p, :]).reshape(norbs**3)
-    Dbaaabaaa = Dbaaabaaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs)
+            for qrs in range(nottt):
+                for t in range(norbs):
+                    tmp[p, qrs, t, :] = skew3(Dbaaabaaa[p, qrs, t, :]).reshape(norbs**3)
+        # [p, qrs, t, [u,v,w]]  ->  [[t,u,v,w], p, qrs]
+        tmp1 = tmp.transpose(2, 3, 0, 1).reshape(norbs**4, norbs, nottt)
+        Dbaaabaaa = np.zeros((norbs**4, norbs, norbs**3), float)
+        for tuvw in range(norbs**4):
+            for p in range(norbs):
+                Dbaaabaaa[tuvw, p, :] = skew3(tmp1[tuvw, p, :]).reshape(norbs**3)
+        Dbaaabaaa = Dbaaabaaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs)
+    else:
+        Dbaaabaaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs), float)
 
     # bbaabbaa [pq, rs, tu, vw]
     #           aa  bb  aa  bb
-    tmp = np.zeros((nott, nott, norbs**2, norbs**2), float)
-    tmp_ = np.zeros(( nott, norbs**2), float)
-    for pq in range(nott):
-        for rs in range(nott):
-            for tu in range(nott):
-                tmp_[tu, :] = skew(Dbbaabbaa[pq, rs, tu, :]).reshape(norbs**2)
-            ### pq, rs, tu, [v, w]--> pq, rs, [v,w], tu
-            tmp__ = tmp_.T.reshape(norbs**2, nott)
-            for vw in range(norbs**2):
-                tmp[pq, rs, vw, :] = skew(tmp__[vw, :]).reshape(norbs**2)
-
-    ### [pq, rs, [v,w] ,[t,u]]   ->   [[v,w,t,u], pq, rs]
-    #    aa  bb   b b    a a            b b a a   aa  bb 
-    tmp1 = tmp.transpose(2, 3, 0, 1).reshape(norbs**4, nott, nott)
-    Dbbaabbaa = np.zeros((norbs**4, norbs**2, norbs**2), float)
-    for vwtu in range(norbs**4):
+    if nott > 0:
+        tmp = np.zeros((nott, nott, norbs**2, norbs**2), float)
+        tmp_ = np.zeros(( nott, norbs**2), float)
         for pq in range(nott):
-            tmp_[pq, :] = skew(tmp1[vwtu, pq, :]).reshape(norbs**2)
-        ### [v,w,t,u], pq, [r,s] --> [v,w,t,u], [r,s], pq
-        tmp__ = tmp_.T.reshape(norbs**2, nott)
-        for rs in range(norbs**2):
-            Dbbaabbaa[vwtu, rs, :] = skew(tmp__[rs, :]).reshape(norbs**2)
-    Dbbaabbaa = Dbbaabbaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs) 
+            for rs in range(nott):
+                for tu in range(nott):
+                    tmp_[tu, :] = skew(Dbbaabbaa[pq, rs, tu, :]).reshape(norbs**2)
+                ### pq, rs, tu, [v, w]--> pq, rs, [v,w], tu
+                tmp__ = tmp_.T.reshape(norbs**2, nott)
+                for vw in range(norbs**2):
+                    tmp[pq, rs, vw, :] = skew(tmp__[vw, :]).reshape(norbs**2)
+
+        ### [pq, rs, [v,w] ,[t,u]]   ->   [[v,w,t,u], pq, rs]
+        #    aa  bb   b b    a a            b b a a   aa  bb
+        tmp1 = tmp.transpose(2, 3, 0, 1).reshape(norbs**4, nott, nott)
+        Dbbaabbaa = np.zeros((norbs**4, norbs**2, norbs**2), float)
+        for vwtu in range(norbs**4):
+            for pq in range(nott):
+                tmp_[pq, :] = skew(tmp1[vwtu, pq, :]).reshape(norbs**2)
+            ### [v,w,t,u], pq, [r,s] --> [v,w,t,u], [r,s], pq
+            tmp__ = tmp_.T.reshape(norbs**2, nott)
+            for rs in range(norbs**2):
+                Dbbaabbaa[vwtu, rs, :] = skew(tmp__[rs, :]).reshape(norbs**2)
+        Dbbaabbaa = Dbbaabbaa.reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs)
+    else:
+        Dbbaabbaa = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs), float)
 
     # bbbabbba [pqr, s, tuv, w]
     #           bbb  a  bbb  a
-    tmp = np.zeros((nottt, norbs, norbs, norbs**3), float)
-    tmp_ = np.zeros(( norbs, norbs**3), float)
-    for pqr in range(nottt):
-        for s in range(norbs):
-            tmp_ = Dbbbabbba[pqr, s, :, :].T.copy()
-            for w in range(norbs):
-                tmp[pqr, s, w, :] = skew3(tmp_[w, :]).reshape(norbs**3)
-    ### [pqr, s, w, [t,u,v]]  -> [[t,u,v], w, s, pqr]
-    ###  bbb  a  a   b b b         b b b   a  a  bbb
-    tmp1 = tmp.transpose(3, 2, 1, 0).reshape(norbs**3, norbs, norbs, nottt)
-    Dbbbabbba = np.zeros((norbs**3, norbs, norbs, norbs**3), float)
-    for tuv in range(norbs**3):
-        for w in range(norbs):
+    if nottt > 0:
+        tmp = np.zeros((nottt, norbs, norbs, norbs**3), float)
+        tmp_ = np.zeros(( norbs, norbs**3), float)
+        for pqr in range(nottt):
             for s in range(norbs):
-                Dbbbabbba[tuv, w, s, :] = skew3(tmp1[tuv, w, s, :]).reshape(norbs**3)
+                tmp_ = Dbbbabbba[pqr, s, :, :].T.copy()
+                for w in range(norbs):
+                    tmp[pqr, s, w, :] = skew3(tmp_[w, :]).reshape(norbs**3)
+        ### [pqr, s, w, [t,u,v]]  -> [[t,u,v], w, s, pqr]
+        ###  bbb  a  a   b b b         b b b   a  a  bbb
+        tmp1 = tmp.transpose(3, 2, 1, 0).reshape(norbs**3, norbs, norbs, nottt)
+        Dbbbabbba = np.zeros((norbs**3, norbs, norbs, norbs**3), float)
+        for tuv in range(norbs**3):
+            for w in range(norbs):
+                for s in range(norbs):
+                    Dbbbabbba[tuv, w, s, :] = skew3(tmp1[tuv, w, s, :]).reshape(norbs**3)
 
-    Dbbbabbba = Dbbbabbba.transpose(0, 1, 3, 2).reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs)
+        Dbbbabbba = Dbbbabbba.transpose(0, 1, 3, 2).reshape(norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs)
+    else:
+        Dbbbabbba = np.zeros((norbs, norbs, norbs, norbs, norbs, norbs, norbs, norbs), float)
 
     t2 = time.time()
     prints(f"{t2-t0:.3f} sec")
 
-    return Daaaaaaaa, -Dbaaabaaa.transpose(0,1,2,3,5,6,7,4), Dbbaabbaa.transpose(0,1,2,3,6,7,4,5), -Dbbbabbba.transpose(0,1,2,3,7,4,5,6), Dbbbbbbbb
+    return Daaaaaaaa, -Dbaaabaaa.transpose(0,1,2,3,5,6,7,4).copy(), Dbbaabbaa.transpose(0,1,2,3,6,7,4,5).copy(), -Dbbbabbba.transpose(0,1,2,3,7,4,5,6).copy(), Dbbbbbbbb
     #####  Daaaaaaaa  Dbaaaaaab  Dbbaaaabb  Dbbbaabbb  Dbbbbbbbb
 

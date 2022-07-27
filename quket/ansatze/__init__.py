@@ -26,16 +26,6 @@ from .hflib import(
     cost_uhf,
     mix_orbitals,
     )
-from .icmrucc import(
-    set_circuit_ic_mrucc,
-    cost_ic_mrucc,
-    )
-from .jmucc import(    
-    set_circuit_sauccsdX,
-    get_baji,
-    cost_jmucc,
-    deriv_jmucc,
-    )
 from .phflib import(   
     set_circuit_rhfZ,
     set_circuit_rohfZ,
@@ -47,13 +37,10 @@ from .saoo import(
     cost_uccgd_forSAOO
     )
 from .ucclib import(
-    set_circuit_uccsd,
     get_baji,
-    cost_uccd,
     cost_exp,
     create_uccsd_state,
     set_circuit_uccsd,
-    set_circuit_sauccsd,
     set_circuit_sauccd,
     set_circuit_uccd,
     )

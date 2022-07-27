@@ -14,6 +14,7 @@ from .excitation import(
     get_excite_dict,
     get_excite_dict_sf,
     evolve,
+    devolve,
     FermionOperator_from_list,
     )
 from .circuit import(

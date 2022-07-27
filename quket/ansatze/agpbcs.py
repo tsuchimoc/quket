@@ -12,13 +12,14 @@
 # limitations under the License.
 import time
 
-from qulacs import QuantumState, QuantumCircuit
+from qulacs import QuantumCircuit
 from qulacs.gate import PauliRotation
 
 from quket import config as cf
 from quket.fileio import SaveTheta, printmat, print_state, prints
 from quket.utils import orthogonal_constraint
 from quket.projection import S2Proj, NProj
+from quket.lib import QuantumState
 from .upcclib import upcc_Gsingles
 
 
@@ -66,8 +67,6 @@ def cost_bcs(Quket, print_level, theta_list, k):
     ndim1 = Quket.ndim1
     ndim = Quket.ndim
 
-    #state = QuantumState(n_qubits)
-    #state.set_computational_basis(det)
     state = Quket.init_state.copy()
     circuit = set_circuit_bcs(ansatz, n_qubits, n_orbitals, ndim1, ndim,
                               theta_list, k)

@@ -156,12 +156,19 @@ vqe_ansatz_list = [
         "adapt",
         "ic_mrucc",
         "ic_mrucc_spinfree",
-        "hamiltonian"
+        "hamiltonian",
+        "anti-hamiltonian",
+        "hva",
+        "ahva",
+        "user-defined"
         ]
 qite_ansatz_list = [
         "exact",
         "inexact",
         "hamiltonian",
+        "anti-hamiltonian",
+        "hva",
+        "ahva",
         "hamiltonian2",
         "cite",
         "uccsd",
@@ -172,6 +179,7 @@ qite_ansatz_list = [
         "qeb",
         "pauli",
         "pauli_yz",
+        "user-defined"
         ]
 post_method_list = [
         "lucc",
@@ -197,6 +205,7 @@ abelian_groups =['C1', 'C2', 'Ci', 'Cs', 'C2v', 'C2h', 'D2', 'D2h']
 ##################################
 #  Define only useful variables  #
 ##################################
+_mapping = "jordan_wigner"
 _units = "angstrom"
 _bohr_to_angstrom = 0.529177249
 timing = False

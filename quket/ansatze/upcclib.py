@@ -12,7 +12,7 @@
 # limitations under the License.
 import time
 
-from qulacs import QuantumState, QuantumCircuit
+from qulacs import QuantumCircuit
 
 from quket import config as cf
 from quket.fileio import SaveTheta, print_state, prints
@@ -21,6 +21,7 @@ from quket.utils import orthogonal_constraint
 from .ucclib import ucc_Gsingles
 from quket.opelib import single_ope_Pauli
 from quket.projection import S2Proj
+from quket.lib import QuantumState
 
 
 def set_circuit_upccgsd(n_qubits, norbs, theta_list, ndim1, ndim2, k):

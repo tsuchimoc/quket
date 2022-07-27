@@ -26,8 +26,6 @@ import numpy as np
 import itertools
 from scipy.optimize import minimize
 from qulacs.observable import create_observable_from_openfermion_text
-from qulacs import QuantumState
-from openfermion.ops import QubitOperator
 
 from quket.mpilib import mpilib as mpi
 from quket import config as cf
@@ -37,6 +35,7 @@ from quket.linalg import SR1, LSR1
 from quket.fileio import LoadTheta, SaveTheta, error, prints, printmat, tstamp, print_state
 from quket.opelib import create_exp_state, set_exp_circuit
 from quket.utils import get_ndims
+from quket.lib import QubitOperator, QuantumState
 
 def cost_StateAverage(Quket, print_level, theta_list):
     """Function
@@ -136,7 +135,6 @@ def cost_StateAverage(Quket, print_level, theta_list):
     return cost, S2s
 
 
-
 def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
                opt_options, print_level, maxiter, Kappa_to_T1):
     """Function:
@@ -147,11 +145,9 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     from quket.ansatze import adapt_vqe_driver
     from quket.ansatze import cost_uccgd_forSAOO
     from quket.ansatze import cost_bcs
-    from quket.ansatze import cost_jmucc, deriv_jmucc
-    from quket.ansatze import cost_ic_mrucc
     from quket.ansatze import cost_uhf, mix_orbitals
     from quket.ansatze import cost_proj
-    from quket.ansatze import cost_uccd, cost_exp
+    from quket.ansatze import cost_exp
     from quket.ansatze import cost_upccgsd
     if cf.debug:
         tstamp('Enter VQE_driver')
@@ -164,15 +160,29 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
         return
 
     prints('Entered VQE driver')
-    jw_hamiltonian = Quket.operators.jw_Hamiltonian
-    jw_s2 = Quket.operators.jw_S2
+    qubit_hamiltonian = Quket.operators.qubit_Hamiltonian
+    qubit_s2 = Quket.operators.qubit_S2
     ansatz = Quket.ansatz
-    noa = Quket.noa
-    nob = Quket.nob
-    nva = Quket.nva
-    nvb = Quket.nvb
-    nca = ncb = Quket.nc
-    norbs = Quket.n_active_orbitals
+    if Quket.ansatz is None and Quket.pauli_list is None:
+        error('ansatz undefined in vqe.')
+    try:
+        noa = Quket.noa
+        nob = Quket.nob
+        nva = Quket.nva
+        nvb = Quket.nvb
+    except:
+        noa = 0
+        nob = 0
+        nva = 0
+        nvb = 0
+    try:
+        nca = ncb = Quket.nc
+    except:
+        nca = ncb = 0
+    try:
+        norbs = Quket.n_active_orbitals
+    except:
+        norbs = 0
     spin_gen = ansatz in ["sghf"]
 
     t1 = time.time()
@@ -185,7 +195,6 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     istate = len(Quket.lower_states)  
 
     ### set up the number of orbitals and such ###
-    n_electrons = Quket.n_active_electrons
     n_qubits = Quket.n_qubits
     n_Pqubits = Quket.n_qubits + 1
     anc = Quket.anc
@@ -193,16 +202,22 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     ### get ndim ###
     ndim1, ndim2, ndim = get_ndims(Quket)
     _ndim1, _ndim2, _ndim = ndim1, ndim2, ndim
-    if "bcs" in ansatz or "pccgsd" in ansatz:
-        k_param = ndim//(ndim1+ndim2)
+    try:
+        if "bcs" in ansatz or "pccgsd" in ansatz:
+            k_param = ndim//(ndim1+ndim2)
+    except:
+        k_param = 0
 
     # set number of dimensions QuketData
 
     if Quket._ndim is None:
         _ndim1, _ndim2, _ndim = ndim1, ndim2, ndim
         Quket._ndim = _ndim
-        if "bcs" in ansatz or "pccgsd" in ansatz:
-            k_param = ndim//(ndim1+ndim2)
+        try:
+            if "bcs" in ansatz or "pccgsd" in ansatz:
+                k_param = ndim//(ndim1+ndim2)
+        except:
+            k_param = 0
 
         # set number of dimensions QuketData
         prints(f'Number of parameters: Singles {ndim1}    Doubles {ndim2}    Total {ndim}')
@@ -224,22 +239,25 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     term0_H = Quket.qulacs.Hamiltonian.get_term(0)
     coef0_H = term0_H.get_coef()
     coef0_H = coef0_H.real
-    term0_S2 = Quket.qulacs.S2.get_term(0)
-    coef0_S2 = term0_S2.get_coef()
-    coef0_S2 = coef0_S2.real
+    if Quket.qulacs.S2 is not None:
+        term0_S2 = Quket.qulacs.S2.get_term(0)
+        coef0_S2 = term0_S2.get_coef()
+        coef0_S2 = coef0_S2.real
 
     coef0_H = 0
     coef0_S2 = 0
 
-    jw_ancZ = QubitOperator(f"Z{anc}")
-    jw_hamiltonianZ = (jw_hamiltonian - coef0_H*QubitOperator(""))*jw_ancZ
-    jw_s2Z = (jw_s2 - coef0_S2*QubitOperator(""))*jw_ancZ
+    qubit_ancZ = QubitOperator(f"Z{anc}")
+    qubit_hamiltonianZ = (qubit_hamiltonian - coef0_H*QubitOperator(""))*qubit_ancZ
+    if qubit_s2 is not None:
+        qubit_s2Z = (qubit_s2 - coef0_S2*QubitOperator(""))*qubit_ancZ
     qulacs_hamiltonianZ \
-            = create_observable_from_openfermion_text(str(jw_hamiltonianZ))
-    qulacs_s2Z \
-            = create_observable_from_openfermion_text(str(jw_s2Z))
+            = create_observable_from_openfermion_text(str(qubit_hamiltonianZ))
+    if qubit_s2 is not None:
+        qulacs_s2Z \
+                = create_observable_from_openfermion_text(str(qubit_s2Z))
     qulacs_ancZ \
-            = create_observable_from_openfermion_text(str(jw_ancZ))
+            = create_observable_from_openfermion_text(str(qubit_ancZ))
     create_state = None
     #############################
     ### set up cost functions ###
@@ -276,36 +294,6 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
                 print_control,
                 kappa_list,
                 )
-    elif ansatz in ("hf", "uccsd", "sauccsd", "uccgsd", "uccd", "sauccd", "uccgd", "sauccgsd", "sauccgd", "uccgsdt", "uccgsdtq"):
-        ### UCCSD ###
-        if Quket.multi.nstates == 0:
-            cost_wrap = lambda theta_list: cost_exp(
-                    Quket,
-                    0,
-                    theta_list,
-                    parallel=not Quket.cf.finite_difference
-                    )[0]
-            cost_callback = lambda theta_list, print_control: cost_exp(
-                    Quket,
-                    print_control,
-                    theta_list,
-                    parallel=not Quket.cf.finite_difference
-                    )
-
-            create_state = lambda theta_list, init_state: create_exp_state(Quket, init_state=Quket.init_state, pauli_list=Quket.pauli_list, theta_list=theta_list, rho=Quket.rho)
-        else:
-            cost_wrap = lambda theta_list : cost_StateAverage(
-                    Quket,
-                    0,
-                    theta_list
-                    )[0]
-            cost_callback = lambda theta_list, print_control: cost_StateAverage(
-                    Quket,
-                    print_control,
-                    theta_list
-                    )
-            create_state = lambda theta_list, init_state: create_exp_state(Quket, init_state=Quket.init_state, pauli_list=Quket.pauli_list, theta_list=theta_list, rho=Quket.rho)
-
     elif "bcs" in ansatz:
         ###BCS###
         cost_wrap = lambda theta_list: cost_bcs(
@@ -402,36 +390,35 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
                 kappa_list,
                 theta_list,
                 )
-    elif ansatz == "jmucc":
-        cost_wrap = lambda theta_list: cost_jmucc(
-                Quket,
-                0,
-                theta_list,
-                )[0]
-        cost_callback = lambda theta_list, print_control: cost_jmucc(
-                Quket,
-                print_control,
-                theta_list,
-                )
-        from quket.ansatze.jmucc import deriv_jmucc 
-        create_state = lambda theta_list : deriv_jmucc(Quket, theta_list)
-    elif "ic_mrucc" in ansatz:
-        cost_wrap = lambda theta_list : cost_ic_mrucc(
-                Quket,
-                0,
-                Quket.qulacs.Hamiltonian,
-                Quket.qulacs.S2,
-                theta_list,
-                sf="spinfree" in ansatz,
-                )[0]
-        cost_callback = lambda theta_list, print_control: cost_ic_mrucc(
-                Quket,
-                print_control,
-                Quket.qulacs.Hamiltonian,
-                Quket.qulacs.S2,
-                theta_list,
-                sf="spinfree" in ansatz,
-                )
+    else:  #ansatz in ("hf", "uccsd", "sauccsd", "uccgsd", "uccd", "sauccd", "uccgd", "sauccgsd", "sauccgd", "uccgsdt", "uccgsdtq"):
+        if Quket.multi.nstates == 0:
+            cost_wrap = lambda theta_list: cost_exp(
+                    Quket,
+                    0,
+                    theta_list,
+                    parallel=not Quket.cf.finite_difference
+                    )[0]
+            cost_callback = lambda theta_list, print_control: cost_exp(
+                    Quket,
+                    print_control,
+                    theta_list,
+                    parallel=not Quket.cf.finite_difference
+                    )
+
+            create_state = lambda theta_list, init_state: create_exp_state(Quket, init_state=Quket.init_state, pauli_list=Quket.pauli_list, theta_list=theta_list, rho=Quket.rho)
+        else:
+            cost_wrap = lambda theta_list : cost_StateAverage(
+                    Quket,
+                    0,
+                    theta_list
+                    )[0]
+            cost_callback = lambda theta_list, print_control: cost_StateAverage(
+                    Quket,
+                    print_control,
+                    theta_list
+                    )
+            create_state = lambda theta_list, init_state: create_exp_state(Quket, init_state=Quket.init_state, pauli_list=Quket.pauli_list, theta_list=theta_list, rho=Quket.rho)
+
     fstr = f"0{n_qubits}b"
     prints(f"Performing VQE for {ansatz}")
     prints(f"Number of VQE parameters: {ndim}")
@@ -439,8 +426,11 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
         prints(f"Initial configuration: |{format(Quket.current_det, fstr)}>")
     else:
         prints(f"Initial configuration: ",end='')
-        for state_ in Quket.current_det:
-            prints(f" {state_[0]:+} * |{format(state_[1], fstr)}>", end='')
+        for i, state_ in enumerate(Quket.current_det):
+            prints(f" {state_[0]:+.4f} * |{format(state_[1], fstr)}>", end='')
+            if i > 10:
+                prints(" ... ", end='')
+                break
         prints('')
     prints(f"Convergence criteria: ftol = {Quket.ftol:1.0E}, "
                                  f"gtol = {Quket.gtol:1.0E}")
@@ -477,50 +467,54 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
         printmat(kappa_list)
     elif kappa_guess == "zero":
         kappa_list *= 0
-
     #############################
     ### set up initial theta  ###
     #############################
-
-    theta_list = np.zeros(_ndim)
-    if theta_guess == "zero":
-        theta_list *= 0
-    elif theta_guess == "read":
-        theta_list = LoadTheta(_ndim, cf.theta_list_file, offset=istate)
-    elif theta_guess == "random":
-        theta_list = (0.5-np.random.rand(_ndim))*0.001
-    if Kappa_to_T1 and theta_guess != "read":
-        ### Use Kappa for T1  ###
-        if Quket.DS:
-            theta_list[:ndim1] = kappa_list[:ndim1]
+    if theta_guess == "prev":
+        if Quket.theta_list is not None:
+            ## Read Quket.theta_list as guess
+            theta_list = Quket.theta_list[:len(Quket.pauli_list)]
         else:
-            theta_list[ndim2:] = kappa_list[:ndim1]
-        kappa_list *= 0
-        prints("Initial T1 amplitudes will be read from kappa.")
-
-    if optk:
-        theta_list_fix = theta_list[ndim1:]
-        theta_list = theta_list[:ndim1]
-        if Gen:
-            # Generalized Singles.
-            temp = theta_list.copy()
-            theta_list = np.zeros(_ndim)
-            indices = [i*(i-1)//2 + j
-                        for i in range(norbs)
-                            for j in range(i)
-                                if i >= noa and j < noa]
-            indices.extend([i*(i-1)//2 + j + ndim1
-                                for i in range(norbs)
-                                    for j in range(i)
-                                        if i >= nob and j < nob])
-            theta_list[indices] = temp[:len(indices)]
+            theta_list = np.zeros(ndim, float)
     else:
-        theta_list_fix = 0
+        theta_list = np.zeros(_ndim)
+        if theta_guess == "zero":
+            theta_list *= 0
+        elif theta_guess == "read":
+            theta_list = LoadTheta(_ndim, cf.theta_list_file, offset=istate)
+        elif theta_guess == "random":
+            theta_list = (0.5-np.random.rand(_ndim))*0.001
+        if Kappa_to_T1 and theta_guess != "read":
+            ### Use Kappa for T1  ###
+            if Quket.DS:
+                theta_list[:ndim1] = kappa_list[:ndim1]
+            else:
+                theta_list[ndim2:] = kappa_list[:ndim1]
+            kappa_list *= 0
+            prints("Initial T1 amplitudes will be read from kappa.")
 
-    ### Broadcast lists
-    kappa_list = mpi.bcast(kappa_list, root=0)
-    theta_list = mpi.bcast(theta_list, root=0)
+        if optk:
+            theta_list_fix = theta_list[ndim1:]
+            theta_list = theta_list[:ndim1]
+            if Gen:
+                # Generalized Singles.
+                temp = theta_list.copy()
+                theta_list = np.zeros(_ndim)
+                indices = [i*(i-1)//2 + j
+                            for i in range(norbs)
+                                for j in range(i)
+                                    if i >= noa and j < noa]
+                indices.extend([i*(i-1)//2 + j + ndim1
+                                    for i in range(norbs)
+                                        for j in range(i)
+                                            if i >= nob and j < nob])
+                theta_list[indices] = temp[:len(indices)]
+        else:
+            theta_list_fix = 0
 
+        ### Broadcast lists
+        kappa_list = mpi.bcast(kappa_list, root=0)
+        theta_list = mpi.bcast(theta_list, root=0)
     #######
     # Based on pauli_list
     #######
@@ -529,7 +523,8 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
         ndim = len(Quket.pauli_list)
         Quket.ndim = ndim
         if Quket.tapered['pauli_list'] and \
-           hasattr(Quket, 'allowed_pauli_list'):
+           hasattr(Quket, 'allowed_pauli_list') and \
+           len(theta_list) == _ndim:
             ndim = len(Quket.pauli_list)
             new_theta_list = []
             for i in range(_ndim):
@@ -548,18 +543,6 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     elif Quket.method == 'mbe':
         ndim = len(Quket.pauli_list)
         Quket.ndim = ndim
-
-    #######
-    # Finally, check Quket.theta_list. If it exists, overwrite theta_list by it.
-    ######
-    if Quket.theta_list is not None:
-        ## Try to read Quket.theta_list as guess
-        if len(Quket.theta_list) == ndim:
-            theta_list = Quket.theta_list.copy()
-        else:
-            # This theta_list does not seem to have the correct dimension.
-            # Do not overwrite!
-            pass
 
     # If everything is good, theta_list should have the same dimension as pauli_list (if the latter exists) 
     # Sanity check
@@ -601,10 +584,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
             jac_wrap_mpi = lambda theta_list: jac_mpi_num(cost_wrap, theta_list)
         else:
             ### Numerical/Analytical derivatives of wave function (vector-state)
-            if ansatz in ["jmucc"]:
-                # Currently numerical
-                jac_wrap_mpi = lambda theta_list: deriv_jmucc(Quket, theta_list)
-            elif Quket.multi.nstates==0:
+            if Quket.multi.nstates==0:
                 # Currently analytical
                 jac_wrap_mpi = lambda theta_list: jac_mpi_deriv(create_state, Quket, theta_list, init_state=None, current_state=Quket.state)
             else:
@@ -662,53 +642,9 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
 
     return Evqe, S2
 
-    #####################
-    ### Sampling test ###
-    #####################
-    from quket.src import sampling
-    #n_term = fermionic_hamiltonian.get_term_count()
-    # There are n_term - 1 Pauli operators to measure (identity not counted).
-    # <HUg> = \sum_I  h_I <P_I Ug>
-    #theta_list = ([ 0.0604642,   0.785282,   1.28474901, -0.0248133,
-    #               -0.01770559, -0.7854844, -0.28473988,  0.02487922])
-    #sampling.cost_phf_sample(Quket, 1, qulacs_hamiltonianZ, qulacs_s2Z,
-    #                         qulacs_ancZ, theta_list, 1000000)
-    #sampling.cost_uhf_sample(Quket, 1, qulacs_hamiltonian, qulacs_s2,
-    #                         theta_list, 1000)
-    #cost_uhf(1, n_qubits, n_electrons, noa, nob, nva, nvb,
-    #         qulacs_hamiltonian, qulacs_s2, theta_list)
-    #sampling.cost_uhf_sample(Quket, 1, qulacs_hamiltonian, qulacs_s2,
-    #                         theta_list, 100000)
-    #amplelist = [10, 100, 1000, 10000, 100000, 1000000, 10000000]
-    #amplelist = [10, 100, 1000, 10000]
-    #samplelist = [1]
-    #samplelist = [1000000]
-    #sampling.cost_uhf_sample(Quket, 1, qulacs_hamiltonian, qulacs_s2,
-    #                         uhf_theta_list, samplelist)
-    #sampling.cost_phf_sample(Quket, 1, qulacs_hamiltonian, qulacs_hamiltonianZ,
-    #                         qulacs_s2Z, qulacs_ancZ, coef0_H, coef0_S2,
-    #                         method, opt.x, samplelist)
-
-    #####################
-    ### Rotation test ###
-    #####################
-    # The obtained results are invariant with respect to  occ-occ rotations?
-    #if ansatz == 'uccsd':
-    #    Gen = 1
-    #    if Gen:
-    #        kappa_list = np.zeros(norbs*(norbs-1))
-    #    else:
-    #        kappa_list = np.zeros(ndim1)
-    #    theta_list = opt.x
-    #    cost_wrap = lambda kappa_list: \
-    #            cost_opttest_uccsd(0, n_qubits, n_electrons,
-    #                               noa, nob, nva, nvb, rho, DS, Gen,
-    #                               qulacs_hamiltonian, qulacs_s2, method,
-    #                               kappa_list, theta_list)[0]
-    #    opt = minimize(cost_wrap, kappa_list,
-    #                   method=opt_method, options=opt_options)
 def vqe(Quket):
     """
+    Alternative subroutine for VQE.
     Run VQE with pauli_list and theta_list in Quket.
     The exponential ansats form is assumed, and is applied to Quket.init_state.
     Only single-state VQE is supported currently.
@@ -745,6 +681,10 @@ def vqe(Quket):
         else:
             prints('Not yet supported.')
             return 
+
+    """
+      Set guess
+    """
     cf.t_old = time.time()
     opt = minimize(
            cost_wrap_mpi,
@@ -754,5 +694,9 @@ def vqe(Quket):
            options=Quket.cf.opt_options,
            callback=lambda x: cost_callback(x, print_control=1),
           )
+    cost_callback(opt.x, print_control=2),
     prints('VQE Done.')
-    prints('Final energy: ', opt.fun)
+    Quket.theta_list = opt.x
+    Quket.energy = opt.fun
+    Quket.state = create_state(opt.x, Quket.init_state)
+

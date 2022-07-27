@@ -12,7 +12,7 @@
 # limitations under the License.
 import time
 import numpy as np
-from qulacs import QuantumState, QuantumCircuit
+from qulacs import QuantumCircuit
 
 from quket import config as cf
 from quket.fileio import (SaveTheta, print_state, prints, print_amplitudes)
@@ -21,6 +21,7 @@ from .ucclib import (ucc_singles, ucc_singles_g, set_circuit_uccsd,
 from quket.projection import(
     controlled_Ug_gen
     )
+from quket.lib import QuantumState
 def set_circuit_rhfZ(n_Pqubits, n_electrons):
     """Function:
     Construct circuit for RHF |0000...1111> with one ancilla

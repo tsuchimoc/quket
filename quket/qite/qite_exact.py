@@ -15,7 +15,6 @@ import time
 import scipy as sp
 import numpy as np
 from numpy import linalg as LA
-from qulacs import QuantumState
 from qulacs.state import inner_product
 
 from .qite_function import calc_delta, calc_psi, calc_inner1, make_state1
@@ -23,6 +22,8 @@ from quket import config as cf
 from quket.mpilib import mpilib as mpi
 from quket.fileio import prints, print_state
 from quket.linalg import lstsq, root_inv
+from quket.utils import transform_state_jw2bk
+from quket.lib import QuantumState
 
 
 def qite_exact(Quket):
@@ -40,6 +41,8 @@ def qite_exact(Quket):
     delta = QuantumState(n)
     first_state = QuantumState(n)
     first_state.set_computational_basis(qbit)
+    if Quket.cf.mapping == "bravyi_kitaev":
+        first_state = transform_state_jw2bk(first_state)
 
     prints(f"Exact QITE: Pauli operator group size = {size}")
     energy = []

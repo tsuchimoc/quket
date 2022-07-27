@@ -53,9 +53,9 @@ def get_Fock(h1, h2, DA, DB):
 def get_htilde(Quket, h1=None, h2=None):
     """
     Ecore = sum 2h[p,p] + 2(pp|qq) - (pq|qp)
-    htilde = h[p,q] + 2(pq|KK) - (pK|Kq) 
+    htilde = h[p,q] + 2(pq|KK) - (pK|Kq)
     """
-    ncore = Quket.n_frozen_orbitals + Quket.n_core_orbitals
+    ncore = Quket.n_frozen_orbitals# + Quket.n_core_orbitals　＃changed since ver8.0, dfferent from ver7.0
     norbs = Quket.n_orbitals
     Ecore = 0
     if h1 is None:
@@ -68,15 +68,15 @@ def get_htilde(Quket, h1=None, h2=None):
     else:
         h_pqIJ = h2[:,:,:ncore,:ncore]
         h_pIJq = h2[:,:ncore,:ncore,:]
-        
+
     for p in range(ncore):
-        Ecore +=  htilde[p,p] 
+        Ecore +=  htilde[p,p]
     for p in range(norbs):
         for q in range(norbs):
             for K in range(ncore):
-                htilde[p,q] += 2*h_pqIJ[p,q,K,K] - h_pIJq[p,K,K,q] 
+                htilde[p,q] += 2*h_pqIJ[p,q,K,K] - h_pIJq[p,K,K,q]
     for p in range(ncore):
-        Ecore +=  htilde[p,p] 
+        Ecore +=  htilde[p,p]
     Ecore += Quket.nuclear_repulsion
     return Ecore, htilde
 
@@ -94,25 +94,25 @@ def decompose_CAV(x, ncore, nact, nsec):
     norbs = ncore + nact + nsec
     nott = norbs*(norbs-1)//2
     natt = nact*(nact-1)//2
-    if x.shape[0] != nott: 
+    if x.shape[0] != nott:
         raise ValueError(f"x has dimensions of {x.shape}, which is not consistent with norbs={norbs}.")
     xAC = []
     xAA = []
     xVC = []
     xVA = []
-    pq = 0 
+    pq = 0
     for p in range(norbs):
         for q in range(p):
-            if ncore <= p < ncore+nact: 
-                # A 
-                if q < ncore: 
+            if ncore <= p < ncore+nact:
+                # A
+                if q < ncore:
                     # AC
                     xAC.append(x[pq])
-                elif ncore <= q < ncore+nact: 
+                elif ncore <= q < ncore+nact:
                     # AA
                     xAA.append(x[pq])
 
-            elif ncore+nact <= p:  
+            elif ncore+nact <= p:
                 # V
                 if q < ncore:
                     # VC
@@ -135,25 +135,25 @@ def compose_CAV(xAC, xAA, xVC, xVA, ncore, nact, nsec):
     nott = norbs*(norbs-1)//2
     natt = nact*(nact-1)//2
     x = np.zeros(nott)
-    pq_AC = 0 
-    pq_AA = 0 
-    pq_VC = 0 
-    pq_VA = 0 
+    pq_AC = 0
+    pq_AA = 0
+    pq_VC = 0
+    pq_VA = 0
     pq = 0
     for p in range(norbs):
         for q in range(p):
-            if ncore <= p < ncore+nact: 
-                # A 
-                if q < ncore: 
+            if ncore <= p < ncore+nact:
+                # A
+                if q < ncore:
                     # AC
                     x[pq] = xAC[pq_AC]
                     pq_AC += 1
-                elif ncore <= q < ncore+nact: 
+                elif ncore <= q < ncore+nact:
                     # AA
                     x[pq] = xAA[pq_AA]
                     pq_AA += 1
 
-            elif ncore+nact <= p:  
+            elif ncore+nact <= p:
                 # V
                 if q < ncore:
                     # VC
@@ -175,35 +175,35 @@ def ao2mo(Eri_AO, C, compact=True):
     ntt = nbasis*(nbasis+1)//2
     nott = norbs*(norbs+1)//2
     Vij_pq = np.zeros((ntt, nott), dtype=float)
-   
+
     ipos, my_ndim = mpi.myrange(ntt)
     for ij in range(ipos, ipos+my_ndim):
         # (ij|pq) <- (ij|kl) Ckp Clq
         V = symm(Eri_AO[ij,:])
         A = C.T@V@C
         Vij_pq[ij, :] = vectorize_symm(A)
-    Vij_pq = mpi.allreduce(Vij_pq)    
+    Vij_pq = mpi.allreduce(Vij_pq)
     Vpq_ij = Vij_pq.transpose(1,0).copy()
     del(Vij_pq)
     Vpq_rs = np.zeros((nott, nott), dtype=float)
-    
+
     ipos, my_ndim = mpi.myrange(nott)
     for pq in range(ipos, ipos+my_ndim):
         # (pq|rs) <- (pq|ij) Cir Cjs
         V = symm(Vpq_ij[pq,:])
         A = C.T@V@C
         Vpq_rs[pq,:] = vectorize_symm(A)
-    
-    Vpq_rs = mpi.allreduce(Vpq_rs)    
+
+    Vpq_rs = mpi.allreduce(Vpq_rs)
 
     if compact:
         return Vpq_rs
     else:
         del(Vpq_ij)
-        Vpq_rs_full = np.zeros((norbs,norbs,norbs,norbs), dtype=float) 
+        Vpq_rs_full = np.zeros((norbs,norbs,norbs,norbs), dtype=float)
         pq = 0
         for p in range(norbs):
             for q in range(p+1):
                 Vpq_rs_full[p,q,:,:] = Vpq_rs_full[q,p,:,:] = symm(Vpq_rs[pq,:])
-                pq += 1 
+                pq += 1
         return Vpq_rs_full

@@ -21,7 +21,7 @@ Functions to prepare several types of rotations, including singles and doubles r
 
 """
 import numpy as np
-from qulacs import QuantumCircuit, QuantumState
+from qulacs import QuantumCircuit
 from qulacs.gate import PauliRotation
 
 from quket import config as cf
@@ -1103,92 +1103,3 @@ def count_CNOT_Gdoubles_pqrs_Ry(p,q,r,s):
         ncnot += 1
 #        print(f"CNOT1 [{k+1, k}]")     
     return ncnot
-def set_exp_circuit(n_qubits, pauli_list, theta_list, rho=1):
-    """Function
-    Set the circuit
-         prod exp[i theta pauli] 
-    
-    Args:
-        n_qubits (int): Number of qubits.
-        pauli_list (list): List of pauli strings
-        theta_list (ndarray): List of theta (should match the dimensions!)
-        rho (int): Trotter number
-    Returns:
-        circuit (QuantumCircuit):
-    """
-    circuit = QuantumCircuit(n_qubits)
-    for pauli, theta in zip(pauli_list, theta_list):
-        if abs(theta) > cf.theta_threshold:
-            for op, coef in pauli.terms.items():
-                target_list = []
-                pauli_index = []
-                for op_ in op:
-                    m = op_[0]
-                    if op_[1] == 'X':
-                        target_list.append(m)
-                        pauli_index.append(1)
-                    elif op_[1] == 'Y':
-                        target_list.append(m)
-                        pauli_index.append(2)
-                    elif op_[1] == 'Z':
-                        target_list.append(m)
-                        pauli_index.append(3)        
-                # PauliRotation does exp[i theta/2 P]
-                if coef.real:
-                    gate = PauliRotation(target_list, pauli_index, 2*coef.real*theta/rho)
-                elif coef.imag:
-                    gate = PauliRotation(target_list, pauli_index, 2*coef.imag*theta/rho)
-                else:
-                    continue
-                circuit.add_gate(gate)
-                cf.ncnot += 2*(len(op) - 1)
-    return circuit
-
-def create_exp_state(Quket, init_state=None, pauli_list=None, theta_list=None, rho=None):
-    """
-    Given pauli_list and theta_list, create an exponentially parameterized quantum state
-     
-         prod_i Exp[ (theta[i] * pauli[i]) ] |0>
-
-    where |0> is the initial state. 
-
-    Args:
-        Quket: QuketData class instance
-        init_state (optional): initial quantum state
-        pauli_list (optional): List of paulis as openfermion.QubitOperator
-        theta_list (optional): List of parameters theta
-        rho (optional): Trotter number
-    Returns:
-        
-    Author(s): Takashi Tsuchimochi
-    """
-    n_qubits = Quket.n_qubits
-    if init_state is None:
-        #### Form a product state from integer 'current_det'
-        #state = QuantumState(n_qubits)
-        #state.set_computational_basis(Quket.current_det)
-        state = Quket.init_state.copy()
-    else:
-        ### Copy the initial state
-        state = init_state.copy()
-
-    if pauli_list is None:
-        pauli_list = Quket.pauli_list
-
-    if theta_list is None:
-        theta_list = Quket.theta_list
-
-    if rho is None:
-        rho = Quket.rho
-
-
-    if len(pauli_list) != len(theta_list):
-        raise Exception(f'Dimensions of pauli_list ({len(pauli_list)}) and theta_list ({len(theta_list)}) not consistent.')
-
-    ### 
-    circuit = set_exp_circuit(n_qubits, pauli_list, theta_list, rho)
-    for i in range(rho):
-        circuit.update_quantum_state(state)
-
-    return state
-

@@ -27,16 +27,17 @@ from itertools import combinations
 
 import numpy as np
 import scipy as sp
-from qulacs import QuantumState, QuantumCircuit
+from qulacs import QuantumCircuit
 from qulacs.state import inner_product
 
 from quket import config as cf
 from quket.mpilib import mpilib as mpi
 from quket.fileio import prints
 from quket.linalg import Binomial
-from .utils import cost_mpi, jac_mpi_deriv 
+from quket.lib import QuantumState, QubitOperator
+from .utils import cost_mpi, jac_mpi_deriv, jw2bk, bk2jw, transform_state_jw2bk
 
-def cost_fci(norbs, nalpha, nbeta, coeff, NonzeroList, Hamiltonian, lower_states=None):
+def cost_fci(norbs, nalpha, nbeta, coeff, NonzeroList, Hamiltonian, lower_states=None, mapping='jordan_wigner'):
     """Function
     From nonzero fci coefficients, form quantum state and evaluate FCI energy
     as an expectation value of Hamiltonian using Qulacs.observable.
@@ -58,7 +59,7 @@ def cost_fci(norbs, nalpha, nbeta, coeff, NonzeroList, Hamiltonian, lower_states
         Efci (float): FCI Energy
     """
     from quket.opelib import evolve
-    fci_state = create_fci(norbs, nalpha, nbeta, coeff, NonzeroList, init_state=None)
+    fci_state = create_fci(norbs, nalpha, nbeta, coeff, NonzeroList, init_state=None, mapping=mapping)
 
 
     H_state = evolve(Hamiltonian,  fci_state, parallel=True)
@@ -66,12 +67,12 @@ def cost_fci(norbs, nalpha, nbeta, coeff, NonzeroList, Hamiltonian, lower_states
 
     #Efci =  Hamiltonian.get_expectation_value(fci_state)
     for istate in range(len(lower_states)):
-        overlap = inner_product(lower_states[istate], fci_state)
+        overlap = inner_product(lower_states[istate]['state'], fci_state)
         Efci += -Efci * abs(overlap)**2
         
     return Efci
 
-def fci2qubit(Quket, nroots=None, threshold=1e-8, shift=1):
+def fci2qubit(Quket, nroots=None, threshold=1e-8, shift=1, verbose=False):
     """Function
     Perform mapping from fci coefficients to qubit representation (Jordan-Wigner).
     This is simply VQE with FCI ansatz.
@@ -82,9 +83,18 @@ def fci2qubit(Quket, nroots=None, threshold=1e-8, shift=1):
         threshold (float): Threshold for FCI coefficients to be included
         shift (float): shift for penalty function, shift * (S^2 - s(s+1))
     """
+    if not hasattr(Quket, "fci_coeff"):
+        if nroots is None:
+            nroots = Quket.cf.nroots
+        prints("Running OpenFemrion's QubitDavidson.")
+        return exact_diagonalization_openfermion(Quket, nroots)
+        
     if Quket.fci_coeff is None:
-        prints('No fci_coeff found in Quket data')
-        return None
+        if nroots is None:
+            nroots = Quket.cf.nroots
+        prints('No fci_coeff done by PySCF.')
+        prints("Running OpenFemrion's QubitDavidson.")
+        return exact_diagonalization_openfermion(Quket, nroots)
     if Quket.spin != Quket.multiplicity:
         prints("\nWARNING: PySCF uses high-spin FCI but low-spin FCI is not possible.\n",
                "         You may be able to get such states by changing in mod.py,\n",
@@ -98,6 +108,7 @@ def fci2qubit(Quket, nroots=None, threshold=1e-8, shift=1):
     nbeta = Quket.nob
     norbs = Quket.n_active_orbitals
     n_qubits = Quket._n_qubits
+    lower_states = Quket.lower_states.copy()
     ### Turn off projector
     SpinProj = Quket.projection.SpinProj
     NumberProj = Quket.projection.NumberProj
@@ -105,11 +116,10 @@ def fci2qubit(Quket, nroots=None, threshold=1e-8, shift=1):
     Quket.projection.NumberProj = False
     #n_qubits_sym = Quket.n_qubits_sym
     spin = Quket.spin - 1
-    from openfermion import QubitOperator
     from copy import deepcopy
     shift = 1
-    Hamiltonian = deepcopy(Quket.operators.jw_Hamiltonian)
-    Hamiltonian += shift * (Quket.operators.jw_S2 - QubitOperator('',spin*(spin+1)) )
+    Hamiltonian = deepcopy(Quket.operators.qubit_Hamiltonian)
+    Hamiltonian += shift * (Quket.operators.qubit_S2 - QubitOperator('',spin*(spin+1)) )
     NDetA = Binomial(norbs, nalpha)
     NDetB = Binomial(norbs, nbeta)
     listA =  list(combinations(range(norbs), nalpha))
@@ -148,7 +158,7 @@ def fci2qubit(Quket, nroots=None, threshold=1e-8, shift=1):
                     num += 1
                     coeff.append(fci_coeff[ia, ib])
 
-        opt_options = {"disp": False,
+        opt_options = {"disp": verbose,
                        "maxiter": 1000,
                        "maxfun": Quket.cf.maxfun,
                        "gtol":1e-6,
@@ -161,9 +171,10 @@ def fci2qubit(Quket, nroots=None, threshold=1e-8, shift=1):
                          NonzeroList,
                          Hamiltonian,
                          lower_states=fci_states,
+                         mapping=Quket.cf.mapping
                          )
         cost_wrap_mpi = lambda coeff: cost_mpi(cost_wrap, coeff)
-        create_state = lambda coeff, init_state: create_fci(norbs, nalpha, nbeta, coeff, NonzeroList, init_state=None)
+        create_state = lambda coeff, init_state: create_fci(norbs, nalpha, nbeta, coeff, NonzeroList, init_state=None, mapping=Quket.cf.mapping)
         jac_wrap_mpi = lambda coeff: jac_mpi_deriv(create_state, Quket, coeff, Hamiltonian=Hamiltonian)
 
         opt = sp.optimize.minimize(cost_wrap_mpi, coeff,
@@ -186,20 +197,23 @@ def fci2qubit(Quket, nroots=None, threshold=1e-8, shift=1):
                     i += 1
         fci_state = QuantumState(n_qubits)
         fci_state.load(vec)
+        if Quket.cf.mapping == "bravyi_kitaev":
+            fci_state = transform_state_jw2bk(fci_state)
         norm2 = fci_state.get_squared_norm()
         fci_state.normalize(norm2)
-        fci_states.append(fci_state) 
         E = Quket.get_E(fci_state)
-        Quket.lower_states.append([E, fci_state])
+        fci_dict = {'energy':E, 'state':fci_state, 'theta_list':[], 'det':0} 
+        fci_states.append(fci_dict) 
+        Quket.lower_states.append(fci_dict)
         istate += 1
     
     # Retrieve projection flags and lower_states
     Quket.projection.SpinProj = SpinProj
     Quket.projection.NumberProj = NumberProj
-    Quket.lower_states = []
+    Quket.lower_states = lower_states
     return fci_states
 
-def create_fci(norbs, nalpha, nbeta, coeff, NonzeroList, init_state=None):
+def create_fci(norbs, nalpha, nbeta, coeff, NonzeroList, init_state=None, mapping='jordan_wigner'):
     """Function
     From nonzero fci coefficients, form FCI quantum state.
 
@@ -237,6 +251,8 @@ def create_fci(norbs, nalpha, nbeta, coeff, NonzeroList, init_state=None):
             occA = np.array([n*2 for n in listA[ia]])
             if NonzeroList[ia, ib]:
                 k = np.sum(2**occA) + np.sum(2**occB)
+                if mapping == "bravyi_kitaev":
+                    k = jw2bk(k, n_qubits)
                 vec[k] = coeff[i]
                 i += 1
 
@@ -247,3 +263,38 @@ def create_fci(norbs, nalpha, nbeta, coeff, NonzeroList, init_state=None):
         
     return fci_state
 
+
+def exact_diagonalization_openfermion(Quket, nroots):
+    from openfermion.linalg import eigenspectrum, QubitDavidson
+    # Setting up QubitDavidson
+    Quket.operators.qubit_Hamiltonian.compress()
+    qubit_eigen = QubitDavidson(Quket.operators.qubit_Hamiltonian)
+    n_qubits = Quket.n_qubits
+    results = qubit_eigen.get_lowest_n(nroots)
+
+    # Tranlating the exact eigenstates of OpenFermion to qulacs QunatumState class
+    fci_states = []
+    for istate in range(nroots):
+        ind_max = np.argmax([abs(results[2][k][istate]) for k in range(2**n_qubits)])
+        vmax = results[2][ind_max][istate]
+        phase = np.exp(-1j * np.arctan(vmax.imag/vmax.real))
+        fci_wfn  = QuantumState(n_qubits)
+        fci_wfn.multiply_coef(0)
+        det  = QuantumState(n_qubits)
+        for i_openfermion in range(2**n_qubits):
+            coef = results[2][i_openfermion][istate] * phase
+        
+            ###    OpenFermion: i_openfermion =  k0 k1 k2 k3 ... k_{nqubit-1} 
+            ###    Qulacs     : i_qulacs      =  k_{nqubit-1} ... k3 k2 k1 k0
+            i_qulacs = 0
+            for k in range (n_qubits):
+                kk = 1 << k
+                if kk & i_openfermion > 0:
+                    i_qulacs = i_qulacs | 1 << n_qubits-k-1        
+            det.set_computational_basis(i_qulacs)
+                    
+            det.multiply_coef(coef)
+            fci_wfn.add_state(det)
+        fci_dict = {'energy':results[1][istate], 'state':fci_wfn, 'theta_list':[], 'det':0} 
+        fci_states.append(fci_dict)
+    return fci_states

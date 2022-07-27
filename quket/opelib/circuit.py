@@ -21,11 +21,12 @@ Functions to prepare several types of rotations, including singles and doubles r
 
 """
 import numpy as np
-from qulacs import QuantumCircuit, QuantumState
+from qulacs import QuantumCircuit
 from qulacs.gate import PauliRotation
 
 from quket import config as cf
 from quket.fileio import prints 
+from quket.lib import QuantumState
 
 def single_ope_Pauli(a, i, circuit, theta, approx=cf.approx_exp):
     """Function:
@@ -1529,6 +1530,56 @@ def count_CNOT_Gdoubles_pqrs_Ry(p,q,r,s):
 #        print(f"CNOT1 [{k+1, k}]")     
     return ncnot
 
+def make_gate(n, index, pauli_id):
+    """Function
+    Make a gate for Pauli string like X0Y1Z2...
+
+    Args:
+        n (int): Number of qubits
+        index (list): Index of Qubits to be operated.
+        pauli_id (list): Index of 0,1,2,3 or I,X,Y,Z.
+
+    Returns:
+        circuit (QuantumCircuit)
+
+    Example:
+        If the target gate is X0 Y1 Z3 Y5 Z6 and the
+        total number of qubits is 8, then set
+
+        n = 8
+        index = [0, 1, 3, 5, 6]
+        pauli_id = ['X', 'Y', 'Z', 'Y', 'Z']
+        or
+        pauli_id = [1, 2, 3, 2, 3]
+    """
+    circuit = QuantumCircuit(n)
+    for i in range(len(index)):
+        gate_number = index[i]
+        if pauli_id[i] == 1 or pauli_id[i] == 'X':
+            circuit.add_X_gate(gate_number)
+        elif pauli_id[i] == 2 or pauli_id[i] == 'Y':
+            circuit.add_Y_gate(gate_number)
+        elif pauli_id[i] == 3 or pauli_id[i] == 'Z':
+            circuit.add_Z_gate(gate_number)
+    return circuit
+
+def Pauli2Circuit(n, Pauli, circuit=None):
+    """Function
+    Given a list of Pauli operators in the format of OpenFermion,
+    for example, ((0, 'X'), (1, 'X'), (2, 'X'), (3, 'X'), (6, 'X'), (8, 'X')),
+    create a gate circuit using qulacs.
+    """
+    if circuit is None:
+        circuit = QuantumCircuit(n)
+    for ibit, xyz in Pauli:
+        if xyz == 'X':
+            circuit.add_X_gate(ibit)
+        elif xyz == 'Y':
+            circuit.add_Y_gate(ibit)
+        elif xyz == 'Z':
+            circuit.add_Z_gate(ibit)
+    return circuit
+
 def set_exp_circuit(n_qubits, pauli_list, theta_list, rho=1):
     """Function
     Set the circuit
@@ -1576,13 +1627,14 @@ def set_exp_circuit(n_qubits, pauli_list, theta_list, rho=1):
                 ### [[pauli_1], [pauli_2], ...]
                 ### where pauli_1 and pauli_2 ... are a linear combination of
                 ### pauli strings and they may not commute.
+                ### These operators need to have the same phase (real/imag)
                 for pauli_ in pauli:
                     pauli_rotation_gate(pauli_, theta, rho, circuit) 
             else:
                 pauli_rotation_gate(pauli, theta, rho, circuit) 
     return circuit
 
-def create_exp_state(Quket, init_state=None, pauli_list=None, theta_list=None, rho=None):
+def create_exp_state(Quket, init_state=None, pauli_list=None, theta_list=None, rho=None, overwrite=False):
     """
     Given pauli_list and theta_list, create an exponentially parameterized quantum state
      
@@ -1596,6 +1648,7 @@ def create_exp_state(Quket, init_state=None, pauli_list=None, theta_list=None, r
         pauli_list (optional): List of paulis as openfermion.QubitOperator
         theta_list (optional): List of parameters theta
         rho (optional): Trotter number
+        overwrite (optional): if init_state is provided, overwrite it without copy.
     Returns:
         
     Author(s): Takashi Tsuchimochi
@@ -1606,6 +1659,8 @@ def create_exp_state(Quket, init_state=None, pauli_list=None, theta_list=None, r
         #state = QuantumState(n_qubits)
         #state.set_computational_basis(Quket.current_det)
         state = Quket.init_state.copy()
+    elif overwrite:
+        state = init_state
     else:
         ### Copy the initial state
         state = init_state.copy()

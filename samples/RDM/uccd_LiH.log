@@ -9,15 +9,15 @@
 ///             Q   Q       U    U      K   K       E    E       T              ///
 ///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
 ///                                                                             ///
-///                      Quantum Computing Simulator Ver 0.8.1                  ///
+///                      Quantum Computing Simulator Ver 0.9                    ///
 ///                                                                             ///
 ///        Copyright 2019-2022                                                  ///
 ///        The Quket Developers                                                 ///
 ///        All rights Reserved.                                                 ///
 ///                                                                             ///
 ///////////////////////////////////////////////////////////////////////////////////
-2022-05-25 12:40:19.517906: 
-16 processes x 2 = Total 32 cores
+2022-07-27 19:55:44.828416: 
+8 processes x 4 = Total 32 cores
 
 ##################### INPUT ########################
 basis = sto-3G
@@ -44,17 +44,17 @@ theta_guess =read
 +----------------+
 | CHEMICAL STATE |
 +----------------+
-basis=sto-3G
-mo_basis=hf
-n_orbitals=6
-n_frozen_orbitals=	0
+	basis=sto-3G
+	mo_basis=hf
+	n_orbitals=6
+	n_frozen_orbitals=0
 	n_core_orbitals=0
 	n_active_orbitals=6
 	n_frozenv_orbitals=0
 	n_secondary_orbitals=0
-n_electrons=4
+	n_electrons=4
 	n_active_electrons=4
-excitation
+	excitation
 	include={'c': 'a/s', 'a': 'a/s', 'cc': 'aa/as/ss', 'ca': 'aa/as/ss', 'aa': 'aa/as/ss'}
 Basis set = sto-3G
 
@@ -64,9 +64,9 @@ Basis set = sto-3G
 *******************************************
 
 Symmetry Coov : C2v(Abelian)
-E[FCI]    = -7.882408973194764     (Spin = 1   Ms = 0)
-E[HF]     = -7.86203864917781    (Spin = 1   Ms = 0)
-2022-05-25 12:40:20.317789:  QuketData initialized
+E[FCI]    = -7.882408973195     (Spin = 1   Ms = 0)
+E[HF]     = -7.862038649178     (Spin = 1   Ms = 0)
+2022-07-27 19:55:45.907023:  QuketData initialized
 NBasis = 6
 
 [Molecular Orbitals]
@@ -84,14 +84,14 @@ NBasis = 6
 
 MO coeff
 
-  eig  |  -2.34863551292201  |  -0.28573689346854  |   0.07826518697126  |   0.16393817934389  |   0.16393817934389  |   0.54923438724496  |
+  eig  |  -2.34863551292202  |  -0.28573689346852  |   0.07826518697126  |   0.16393817934389  |   0.16393817934389  |   0.54923438724498  |
        ------------------------------------------------------------------------------------------
-    0      0.99124500430117     -0.16744845114073     -0.20997266084609      0.00000000000000      0.00000000000000      0.09279179325792  
-    1      0.03267596030932      0.45475974184629      0.79962271564849      0.00000000000000      0.00000000000000     -0.70487641194118  
-    2     -0.00513726375476      0.28009335917893     -0.49523606105582     -0.00000000000000      0.58778118859293     -0.79374205760512  
-    3     -0.00238942500221      0.13027598101346     -0.23034235397945      0.76822127959738     -0.51792194896508     -0.36918235237447  
-    4      0.00286731000266     -0.15633117721615      0.27641082477534      0.64018439966448      0.62150633875810      0.44301882284937  
-    5      0.00447905379344      0.54875863724519     -0.13976590649762      0.00000000000000      0.00000000000000      1.18757118415669  
+    0      0.99124500430117     -0.16744845114072     -0.20997266084610      0.00000000000000      0.00000000000000      0.09279179325792  
+    1      0.03267596030932      0.45475974184625      0.79962271564851      0.00000000000000      0.00000000000000     -0.70487641194119  
+    2     -0.00513726375476      0.28009335917897     -0.49523606105582     -0.00000000000000      0.58778118859293     -0.79374205760511  
+    3     -0.00238942500221      0.13027598101347     -0.23034235397945      0.76822127959738     -0.51792194896508     -0.36918235237447  
+    4      0.00286731000266     -0.15633117721617      0.27641082477534      0.64018439966448      0.62150633875810      0.44301882284936  
+    5      0.00447905379344      0.54875863724519     -0.13976590649757      0.00000000000000      0.00000000000000      1.18757118415669  
 
 
 Overlap
@@ -105,7 +105,7 @@ Overlap
     4      0.00000000000000     -0.00000000000000      0.00000000000000      0.00000000000000      1.00000000000000     -0.23206507270432  
     5      0.06729923497459      0.39663945623209      0.41578325526191      0.19338756058693     -0.23206507270432      1.00000000000000  
 
-2022-05-25 12:40:20.427910:  Enter VQE_driver
+2022-07-27 19:55:46.015901:  Enter VQE_driver
 Entered VQE driver
 secondary: 0, vir: (4, 4), act: (2, 2), core: 0
 ndim1: 0, ndim2: 76
@@ -115,10 +115,17 @@ Initial configuration: |000000001111>
 Convergence criteria: ftol = 1E-09, gtol = 1E-05
 Derivatives: Analytical
 Circuit order: Exp[T1] Exp[T2] |0>
-Initial E[uccd] = -7.881963097385  <S**2> = +0.000000000004818  rho = 1  
- cost =    -7.8819630973850101    ||g|| = 1.70e-05    g_max = 9.26e-06
-Hstate:  0.004   Create state:  0.031   Inner_product:  0.000
- Final: E[uccd] = -7.881963097385  <S**2> = +0.000000000004818  rho = 1 
+Initial: E[uccd] = -7.881963097385  <S**2> = +0.000000  rho = 1  
+ cost =    -7.8819630973850012    ||g|| = 1.70e-05    g_max = 9.26e-06   grad time = 0.053
+mpi.rank=0    Initial |H>:  0.006   Initial U!|H>: 0.000    U!|0>:  0.005    U!|H>: 0.005    sigma|0>:  0.005   Inner_product:  0.000
+mpi.rank=1    Initial |H>:  0.006   Initial U!|H>: 0.010    U!|0>:  0.005    U!|H>: 0.005    sigma|0>:  0.006   Inner_product:  0.000
+mpi.rank=2    Initial |H>:  0.006   Initial U!|H>: 0.018    U!|0>:  0.004    U!|H>: 0.004    sigma|0>:  0.005   Inner_product:  0.000
+mpi.rank=3    Initial |H>:  0.006   Initial U!|H>: 0.027    U!|0>:  0.005    U!|H>: 0.005    sigma|0>:  0.005   Inner_product:  0.000
+mpi.rank=4    Initial |H>:  0.006   Initial U!|H>: 0.030    U!|0>:  0.004    U!|H>: 0.004    sigma|0>:  0.004   Inner_product:  0.000
+mpi.rank=5    Initial |H>:  0.006   Initial U!|H>: 0.031    U!|0>:  0.004    U!|H>: 0.004    sigma|0>:  0.005   Inner_product:  0.000
+mpi.rank=6    Initial |H>:  0.006   Initial U!|H>: 0.033    U!|0>:  0.004    U!|H>: 0.004    sigma|0>:  0.005   Inner_product:  0.000
+mpi.rank=7    Initial |H>:  0.006   Initial U!|H>: 0.034    U!|0>:  0.004    U!|H>: 0.004    sigma|0>:  0.005   Inner_product:  0.000
+  Final: E[uccd] = -7.881963097385  <S**2> = +0.000000  rho = 1 
 
 (uccd state)
       Basis              Coef
@@ -126,7 +133,7 @@ Hstate:  0.004   Create state:  0.031   Inner_product:  0.000
 | 110000000011 > : -0.1160 +0.0000i
 
 
-VQE Done: CPU Time =          0.2235
+VQE Done: CPU Time =          0.2259
 
 uccd (vqe) 
       Basis              Coef
@@ -199,9 +206,9 @@ Zai
 
 
  Nuclear-replusion energy: 0.9956160907709449
-1RDM energy: -12.426206457527035
-2RDM energy: 3.548627269371088
-Total energy: -7.881963097385003
+1RDM energy: -12.426206457527037
+2RDM energy: 3.5486272693710923
+Total energy: -7.881963097385
 
 Dipole moment from 1RDM (in Debye):
 x = -3.87550  y = -1.80256  z = 2.16307
@@ -211,4 +218,4 @@ Dipole moment from relaxed 1RDM (in Debye):
 x = -3.78583     y = -1.76085    z = 2.11302
 | mu | = 4.67952
 Saved in ./uccd_LiH.qkt.
-Normal termination of quket at 2022-05-25 12:40:20.716791
+Normal termination of quket at 2022-07-27 19:55:46.308456

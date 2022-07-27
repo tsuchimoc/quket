@@ -16,18 +16,16 @@ from dataclasses import dataclass, field, InitVar
 import numpy as np
 from numpy import ndarray
 try:
-    from openfermion.utils import number_operator, s_squared_operator
     from openfermion.hamiltonians import MolecularData
 except:
     from openfermion.chem import MolecularData
-    from openfermion.hamiltonians import number_operator, s_squared_operator
 from openfermion.hamiltonians import fermi_hubbard
-from openfermion.ops.operators import FermionOperator
 
 
 from quket.mpilib import mpilib as mpi
 from quket import config as cf
 from quket.fileio import prints, error
+from quket.lib import number_operator, s_squared_operator
 
 
 @dataclass
@@ -55,6 +53,10 @@ class Hubbard():
     n_electrons: int = None
     hubbard_ao: bool = True
     from_vir: bool = False
+    n_frozen_orbitals: int = 0
+    n_secondary_orbitals: int = 0
+    n_core_orbitals: int = 0
+    n_frozenv_orbitals: int = 0
 
     natom: int = field(init=False)
     n_orbitals: int = field(init=False)
@@ -100,17 +102,17 @@ class Hubbard():
                    f"from {self.n_electrons} to {value}.")
         self.n_electrons = value
 
-    @property
-    def n_frozen_orbitals(self):
-        return 0
+    #@property
+    #def n_frozen_orbitals(self):
+    #    return 0
 
-    @property
-    def n_frozenv_orbitals(self):
-        return 0
+    #@property
+    #def n_frozenv_orbitals(self):
+    #    return 0
 
-    @property
-    def n_core_orbitals(self):
-        return 0
+    #@property
+    #def n_core_orbitals(self):
+    #    return 0
 
     @property
     def n_active_orbitals(self):
@@ -123,9 +125,9 @@ class Hubbard():
                    f"from {self.n_orbitals} to {value}.")
         self.n_orbitals = value
 
-    @property
-    def n_secondary_orbitals(self):
-        return 0
+    #@property
+    #def n_secondary_orbitals(self):
+    #    return 0
 
     @property
     def noa(self):
@@ -183,7 +185,7 @@ class Hubbard():
     def ns(self):
         return self.n_secondary_orbitals
 
-    def get_operators(self, guess="minao", run_fci=True, jw_hamiltonian=None, run_hf=True):
+    def get_operators(self, guess="minao", run_fci=True, run_hf=True):
         if self.hubbard_ao:
             ### Local (AO) basis 
             Hamiltonian = fermi_hubbard(self.hubbard_nx, self.hubbard_ny,

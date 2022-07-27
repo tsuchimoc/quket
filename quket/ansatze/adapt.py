@@ -27,15 +27,14 @@ import time
 import copy
 
 from scipy.optimize import minimize
-from qulacs import QuantumState, QuantumCircuit
+from qulacs import QuantumCircuit
 from qulacs.state import inner_product
-from openfermion import QubitOperator
-from openfermion.utils import commutator
 
 from quket.mpilib import mpilib as mpi
 from quket import config as cf
 
 #from .pauli_algebra.fast_commutator import fast_commutator_general
+from quket.lib import QubitOperator, QuantumState, commutator
 from quket.post import prop 
 from quket.fileio import prints, print_state, print_amplitudes_adapt, error, SaveAdapt, LoadAdapt, SaveTheta, LoadTheta
 from quket.utils import Gdoubles_list
@@ -384,11 +383,11 @@ def cost_adapt_pauli(theta_list, Quket, parallel=True):
 
         Pstate = S2Proj( Quket , state, normalize=False)
         norm = inner_product(Pstate, state)  ### <phi|P|phi>
-        Hstate = evolve(Quket.operators.jw_Hamiltonian,  Pstate,  parallel=parallel)  ## HP|phi>
+        Hstate = evolve(Quket.operators.qubit_Hamiltonian,  Pstate,  parallel=parallel)  ## HP|phi>
         Energy = (inner_product(state, Hstate)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
         cost = Energy
 
-        S2state = evolve(Quket.operators.jw_S2,  Pstate,  parallel=parallel)  ## S2P|phi>
+        S2state = evolve(Quket.operators.qubit_S2,  Pstate,  parallel=parallel)  ## S2P|phi>
         S2 = (inner_product(state, S2state)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
 
     else:
@@ -402,13 +401,13 @@ def cost_adapt_pauli(theta_list, Quket, parallel=True):
     ### Penalty Sz
     #  Sz ** 2
     if Quket.constraint_lambda_Sz > 0:
-        Sz2 = Quket.operators.jw_Sz * Quket.operators.jw_Sz
+        Sz2 = Quket.operators.qubit_Sz * Quket.operators.qubit_Sz
         Sz2state = evolve(Sz2, state, parallel=parallel) ## Sz|Phi>
         penalty = Quket.constraint_lambda_Sz * (inner_product(state, Sz2state)).real ## <phi|Sz|phi> as penalty 
         cost += penalty 
     if Quket.constraint_lambda_S2_expectation > 0 :
         # penalty (<S**2> - s(s+1))
-        S2state = evolve(Quket.operators.jw_S2, state, parallel=parallel) ## S2|Phi>
+        S2state = evolve(Quket.operators.qubit_S2, state, parallel=parallel) ## S2|Phi>
         ## S2 = <Phi|S**2|Phi>
         penalty = Quket.constraint_lambda * inner_product(state, S2state).real
         cost += penalty
@@ -435,12 +434,12 @@ def cost_adapt_pauli_last(theta_last,  Quket):
 
         Pstate = S2Proj( Quket , state, normalize=False)
         norm = inner_product(Pstate, state)  ### <phi|P|phi>
-        Hstate = evolve(Quket.operators.jw_Hamiltonian,  Pstate,  parallel=True)  ## HP|phi>
+        Hstate = evolve(Quket.operators.qubit_Hamiltonian,  Pstate,  parallel=True)  ## HP|phi>
         Energy = (inner_product(state, Hstate)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
         cost = Energy
         
 
-        S2state = evolve(Quket.operators.jw_S2,  Pstate,  parallel=True)  ## S2P|phi>
+        S2state = evolve(Quket.operators.qubit_S2,  Pstate,  parallel=True)  ## S2P|phi>
         S2 = (inner_product(state, S2state)/norm).real   ## <phi|HP|phi>/<phi|P|phi>
 
 
@@ -455,14 +454,14 @@ def cost_adapt_pauli_last(theta_last,  Quket):
     ### Penalty Sz
     #  Sz ** 2
     if Quket.constraint_lambda_Sz > 0:
-        Sz2 = Quket.operators.jw_Sz * Quket.operators.jw_Sz
+        Sz2 = Quket.operators.qubit_Sz * Quket.operators.qubit_Sz
         Sz2state = evolve(Sz2, state, parallel=True) ## Sz|Phi>
         penalty = Quket.constraint_lambda_Sz * (inner_product(state, Sz2state)).real ## <phi|Sz|phi> as penalty 
         #prints("penalty = ", penalty)
         cost += penalty 
     if Quket.constraint_lambda_S2_expectation > 0 :
         # penalty (<S**2> - s(s+1))
-        S2state = evolve(Quket.operators.jw_S2, state, parallel=True) ## S2|Phi>
+        S2state = evolve(Quket.operators.qubit_S2, state, parallel=True) ## S2|Phi>
         ## S2 = <Phi|S**2|Phi>
         penalty = Quket.constraint_lambda * inner_product(state, S2state).real
         cost += penalty
@@ -486,9 +485,9 @@ def calculate_lucc_non_vqe_gradient(Quket,  pauli_list):
     def get_TE(Quket, ope):
 
         #compute theta and energy with first order
-        #H_ope = fast_commutator_general(Quket.operators.jw_Hamiltonian, ope)
+        #H_ope = fast_commutator_general(Quket.operators.qubit_Hamiltonian, ope)
         #H_ope_ope = fast_commutator_general(H_ope, ope)
-        H_ope = commutator(Quket.operators.jw_Hamiltonian, ope)
+        H_ope = commutator(Quket.operators.qubit_Hamiltonian, ope)
         H_ope_ope = commutator(H_ope, ope)
 
         H_ope = OpenFermionOperator2QulacsObservable(H_ope, Quket.n_qubits)
@@ -526,7 +525,7 @@ def calculate_spin_adapt_gradient_pauli(Quket, theta_list, pauli_list, fullspin=
 
     t0 = time.time()
     spatial_orbitals = Quket.n_active_orbitals
-    jw_Hamiltonian = Quket.operators.jw_Hamiltonian
+    qubit_Hamiltonian = Quket.operators.qubit_Hamiltonian
     ndim = len( theta_list )
     #state here is not spin projected
     state, dummy = create_adapt_state_pauli(Quket, theta_list, depth=ndim-1)
@@ -548,16 +547,16 @@ def calculate_spin_adapt_gradient_pauli(Quket, theta_list, pauli_list, fullspin=
                 prints(f"ADAPT stopped because the norm <P> is too small! norm = {norm}")
                 prints(f"This is because the reference state has no component for the target spin.")
                 error("")
-            H_state = evolve(Quket.operators.jw_Hamiltonian,  P_state, parallel=True)
+            H_state = evolve(Quket.operators.qubit_Hamiltonian,  P_state, parallel=True)
             P_state.multiply_coef(-Quket.energy)
             H_state.add_state(P_state)
             H_state.multiply_coef(1/norm)
 
         else:
-            H_state = evolve(Quket.operators.jw_Hamiltonian, state, parallel=True)
+            H_state = evolve(Quket.operators.qubit_Hamiltonian, state, parallel=True)
         if Quket.constraint_lambda_Sz > 0 :
             # penalty (Sz - Ms)**2
-            Sz2 = Quket.operators.jw_Sz * Quket.operators.jw_Sz
+            Sz2 = Quket.operators.qubit_Sz * Quket.operators.qubit_Sz
             Sz2state = evolve(Sz2, state, parallel=True) ## Sz|Phi>
             ## Ms2 = <Phi|Sz**2|Phi>
             Ms2 = inner_product(state, Sz2state).real
@@ -571,7 +570,7 @@ def calculate_spin_adapt_gradient_pauli(Quket, theta_list, pauli_list, fullspin=
 
         if Quket.constraint_lambda_S2_expectation > 0 :
             # penalty (<S**2> - s(s+1))
-            S2state = evolve(Quket.operators.jw_S2, state, parallel=True) ## S2|Phi>
+            S2state = evolve(Quket.operators.qubit_S2, state, parallel=True) ## S2|Phi>
             ## S2 = <Phi|S**2|Phi>
             S2 = inner_product(state, S2state).real
 
@@ -597,15 +596,15 @@ def calculate_spin_adapt_gradient_pauli(Quket, theta_list, pauli_list, fullspin=
             if type(pauli) is list:
                 grad = 0
                 for pauli_ in pauli:
-                    grad += abs(pauli_grad(pauli_, state , jw_Hamiltonian , Quket, numerical=numerical, H_state=H_state) )
+                    grad += abs(pauli_grad(pauli_, state , qubit_Hamiltonian , Quket, numerical=numerical, H_state=H_state) )
             else:
-                grad = abs(pauli_grad(pauli, state , jw_Hamiltonian , Quket, numerical=numerical, H_state=H_state) )
+                grad = abs(pauli_grad(pauli, state , qubit_Hamiltonian , Quket, numerical=numerical, H_state=H_state) )
             my_gradient_list.append( grad )
             present = pauli
             my_pauli_list.append( present )
-            if present == last:
-                if grad > 1e-4: 
-                    prints(f'{present} was chosen last time and now gradient is {grad}', root=mpi.rank)
+            #if present == last:
+            #    if grad > 1e-4: 
+            #        prints(f'{present} was chosen last time and now gradient is {grad}', root=mpi.rank)
  
             if my_grad < grad:
                 my_grad = grad
@@ -634,7 +633,7 @@ def calculate_spin_adapt_gradient_pauli(Quket, theta_list, pauli_list, fullspin=
         for (grad, pauli) in zip(gradient_list, pauli_list):
             if last == pauli:
                 prints(f'i={i}   {pauli}  -->  {grad} is supposed to be zero!')
-            else:
+            elif abs(grad) > 1e-10:
                 prints(f'i={i}   {pauli}  -->  {grad}')
             i+=1
     

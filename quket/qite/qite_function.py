@@ -16,32 +16,18 @@ from pprint import pprint
 import time
 
 import numpy as np
-from qulacs import QuantumCircuit, QuantumState
+from qulacs import QuantumCircuit
 from qulacs.gate import PauliRotation
 from qulacs.state import inner_product
-from openfermion.transforms import get_fermion_operator, jordan_wigner
-from openfermion.ops import FermionOperator, QubitOperator
-from openfermion.utils import hermitian_conjugated
 
 from quket import config as cf
 from quket.mpilib import mpilib as mpi
 from quket.opelib import OpenFermionOperator2QulacsObservable, OpenFermionOperator2QulacsGeneralOperator
 from quket.fileio import prints, printmat
-from quket.utils import get_occvir_lists, fermi_to_str, make_gate, get_pauli_index_and_coef
+from quket.utils.utils import get_occvir_lists, fermi_to_str, get_pauli_index_and_coef
+from quket.opelib.circuit import make_gate
 from quket.linalg import root_inv,lstsq, Lowdin_orthonormalization, tikhonov
-
-def eig(H_q, S_q):
-    root_invS = root_inv(S_q, eps=1e-6)
-    H_ortho = root_invS.T@H_q@root_invS
-    if np.isnan(H_ortho).any() or np.isinf(H_ortho).any():
-        print("contain nan or inf")
-        printmat(S_q, name="S_q")
-        error()
-    else:
-        en, dvec = np.linalg.eigh(H_ortho)
-        q_en = en[0]
-    return q_en
-
+from quket.lib import QuantumState, QubitOperator, FermionOperator, get_fermion_operator, jordan_wigner, hermitian_conjugated
 
 def multiply_Hpauli(chi_i, n, pauli, db, j):
     """
@@ -85,7 +71,7 @@ def calc_Hpsi(H, psi, shift=0, db=1, j=1):
         my_chi.add_state(chi_i)
     my_vec = my_chi.get_vector()
     vec = np.zeros(2**n, dtype=complex)
-    mpi.comm.Allreduce(my_vec, vec, mpi.MPI.SUM)
+    vec = mpi.allreduce(my_vec, mpi.MPI.SUM)
     chi.load(vec)
 
     # Add (shift * db/j) |psi>
@@ -98,8 +84,6 @@ def make_pauli_id(num, n, active):
     """
     4ビットの場合
     [0 0 0 0]
-    [0 0 0 1]
-    [0 0 0 2]
     [0 0 0 3]
     [0 0 1 0]
     [0 0 1 1]
@@ -138,7 +122,7 @@ def calc_expHpsi(psi, observable, n, db, shift=0, order=0, ref_shift=0):
     d = 10.0
     j = 1
     phase = -1
-    while d > 1e-8:
+    while d > 1e-16:
         chi.multiply_coef(0)
         ### MPI ###
         my_chi = chi.copy()
@@ -149,8 +133,7 @@ def calc_expHpsi(psi, observable, n, db, shift=0, order=0, ref_shift=0):
             chi_i = multiply_Hpauli(chi_i, n, pauli, db, j)
             my_chi.add_state(chi_i)
         my_vec = my_chi.get_vector()
-        vec = np.zeros(2**n, dtype=complex)
-        mpi.comm.Allreduce(my_vec, vec, mpi.MPI.SUM)
+        vec = mpi.allreduce(my_vec, mpi.MPI.SUM)
         chi.load(vec)
         phase *= -1
         # Add (shift * db/j) |chi_dash>
@@ -161,6 +144,7 @@ def calc_expHpsi(psi, observable, n, db, shift=0, order=0, ref_shift=0):
         chi_dash = chi.copy()
         # chi  = H.psi  ->  1/2 H.(H.psi) -> 1/3 H.(1/2 H.(H.psi)) ...
         expHpsi.add_state(chi)
+        #print_state(expHpsi)
         # check chi =  (1/j!) H^j psi  is small enough
         d = np.sqrt(chi.get_squared_norm())
         # Truncation order
@@ -201,8 +185,7 @@ def calc_delta(psi, observable, n, db, shift=0, order=0, ref_shift=0):
             chi_i = multiply_Hpauli(chi_i, n, pauli, db, j)
             my_chi.add_state(chi_i)
         my_vec = my_chi.get_vector()
-        vec = np.zeros(2**n, dtype=complex)
-        mpi.comm.Allreduce(my_vec, vec, mpi.MPI.SUM)
+        vec = mpi.allreduce(my_vec, mpi.MPI.SUM)
         chi.load(vec)
         # Add (shift * db/j) |chi_dash>
         shift_chi_dash = chi_dash.copy()
@@ -262,112 +245,6 @@ def calc_delta(psi, observable, n, db, shift=0, order=0, ref_shift=0):
     DE = shift - ref_shift
     return delta, 1/np.sqrt(norm) * np.exp(DE*db)
 
-#def calc_delta_adaptive(psi, observable, n, shift=0, order=0):
-#    """Function
-#    Form delta
-#            delta = (exp[-db (H-shift)] - 1) psi
-#    where exp[-db (H-shift)] is Taylor-expanded.
-#    The Taylor-expansion is truncated at `order`
-#    If order = 0 (default), the expansion is exactly performed. 
-#    For the "real" QITE, the proposed order is 1.
-#    """
-#    nterms = observable.get_term_count()
-#    from ..fileio import print_state
-#
-#    db = 0.5
-#    accept_err = 0.001
-#    err = 1e-6
-#    norm = 0
-#    #while abs(abs(norm - 1) - err) > 1e-6:
-#    for k in range(2):
-#        d = 10.0
-#        j = 1
-#        chi = psi.copy()
-#        chi_dash = psi.copy()
-#        expHpsi = psi.copy()  # Will hold exp[-db H] psi after while statement
-#        while d > 1e-8:
-#            chi.multiply_coef(0)
-#            ### MPI ###
-#            my_chi = chi.copy()
-#            ipos, my_nterms = mpi.myrange(nterms)
-#            for i in range(ipos, ipos+my_nterms):
-#                chi_i = chi_dash.copy()
-#                pauli = observable.get_term(i)
-#                chi_i = multiply_Hpauli(chi_i, n, pauli, db, j)
-#                my_chi.add_state(chi_i)
-#            my_vec = my_chi.get_vector()
-#            vec = np.zeros(2**n, dtype=complex)
-#            mpi.comm.Allreduce(my_vec, vec, mpi.MPI.SUM)
-#            chi.load(vec)
-#            # Add (shift * db/j) |chi_dash>
-#            shift_chi_dash = chi_dash.copy()
-#            shift_chi_dash.multiply_coef(shift*db/j)
-#            chi.add_state(shift_chi_dash)
-#
-#            chi_dash = chi.copy()
-#            # chi  = H.psi  ->  1/2 H.(H.psi) -> 1/3 H.(1/2 H.(H.psi)) ...
-#            expHpsi.add_state(chi)
-#            # check chi =  (1/j!) H^j psi  is small enough
-#            d = np.sqrt(chi.get_squared_norm())
-#            # Truncation order
-#            if j == order:
-#                break
-#            j += 1
-#        norm = expHpsi.get_squared_norm()
-#        #  norm = 1 - <phi|(H-E)|phi> * db + <phi|(H-E)^2|phi> * db^2/2  -->  1
-#        #  (1 - norm) = <phi|(H-E)|phi> * db
-#        #  0.02  
-#        err = abs(norm - 1) - accept_err
-#        #if err > 1e-6
-#        #    db *= np.sqrt(err / abs((norm - 1)))
-#        if k == 0 and err > 0:
-#            db *= np.sqrt(accept_err / abs((norm - 1)))
-#            prints(accept_err, norm-1)
-#        
-#
-#    prints('CONVERGED:  norm ~ ',norm, ' db = ', db)
-#    expHpsi.normalize(norm)
-#    psi0 = psi.copy()
-#    psi0.multiply_coef(-1)
-## コピーは不要と思われる
-#    #delta = expHpsi.copy()
-#    delta = expHpsi
-#    delta.add_state(psi0)
-#    #return delta, 1/np.sqrt(norm)
-#    return delta, 1/np.sqrt(norm) * np.exp(shift*db), db
-
-
-def calc_msqite_delta(psi_dash, observable, n, db):
-    chi = psi_dash.copy()
-    chi_dash = psi_dash.copy()
-    psi_dash_copy = psi_dash.copy()
-    nterms = observable.get_term_count()
-
-    d = 10.0
-    j = 1
-    while d > 1e-8:
-        chi.multiply_coef(0)
-        for i in range(nterms):
-            chi_i = chi_dash.copy()
-            pauli = observable.get_term(i)
-            chi_i = multiply_Hpauli(chi_i, n, pauli, db, j)
-            chi.add_state(chi_i)
-        chi_dash = chi.copy()
-# psi_dashを変更しているけどOK? psi_dash_copyではない?
-        psi_dash.add_state(chi)
-        j += 1
-        d = np.sqrt(chi.get_squared_norm())
-# 上の注釈部分に変更がなければ、コピーは不要だと思われる
-    #psi = psi_dash_copy.copy()
-    psi = psi_dash_copy
-    psi.multiply_coef(-1)
-# コピーは不要だと思われる
-    #delta = psi_dash.copy()
-    delta = psi_dash
-    delta.add_state(psi)
-    return delta
-
-
 def calc_psi(psi_dash, n, index, a, active):
     circuit = QuantumCircuit(n)
     for i, a_i in enumerate(a):
@@ -395,139 +272,6 @@ def calc_psi_lessH(psi_dash, n, index, a, id_set):
     return psi_next
 
 
-def hamiltonian_to_str(fermionic_hamiltonian, SD, threshold=0.):
-    """
-    フェルミ演算子をstring型のリストに変える
-    If SD = True, only singles and doubles operators
-    """
-    hamiltonian_list = fermi_to_str(fermionic_hamiltonian)
-    hamiltonian_list = sort_hamiltonian_list(hamiltonian_list, threshold, SD)
-    return hamiltonian_list
-
-
-def sort_hamiltonian_list(hamiltonian_list, threshold, SD):
-    """Function
-    Sort hamiltonian_list in descending order.
-    If the coefficient is less than threshold in aboslute value, truncate.
-    """
-    if cf.debug and mpi.main_rank:
-        pprint(hamiltonian_list)
-
-    hamiltonian_list_tmp = []
-    len_list = len(hamiltonian_list)
-    for i in range(len_list):
-        coef = float(hamiltonian_list[i][0])
-        num_cre, num_anni = num_fermi(hamiltonian_list[i][1])
-        if abs(coef) > threshold:
-            if (SD and num_cre <= 2) or not SD:
-                hamiltonian_list_tmp.append([coef, hamiltonian_list[i][1]])
-
-    hamiltonian_list = sorted(hamiltonian_list_tmp,
-                              reverse=True,
-                              key=lambda x: abs(x[0]))
-    new_len_list = len(hamiltonian_list)
-    if threshold > 0:
-        prints(f"Truncation threshold = {threshold}: "
-               f"A total of {len_list-new_len_list} terms truncated.")
-    return hamiltonian_list
-
-
-def num_fermi(x):
-    """
-    Count the number of Fermion operators in string x
-    """
-    num_cre = x.count("^")
-    total = len(x.strip().split(" "))
-    num_anni = total - num_cre
-    return num_cre, num_anni
-
-
-def conv_id(string):
-    """
-    X,Y,Zを数字1,2,3に置き換える
-    """
-    if "X" in string[0]:
-        num = 1
-    elif "Y" in string[0]:
-        num = 2
-    elif "Z" in string[0]:
-        num = 3
-    else:
-        num = 0
-    return num
-
-
-def conv_id2XYZ(pauli_id):
-    """Function
-    Set pauli_id ([0, 0, 1, 3], etc.) to pauli string, X2 Z3
-    """
-    pauli_str = ""
-    for i in range(len(pauli_id)):
-        if pauli_id[i] == 1:
-            pauli_str += f" X{i}"
-        if pauli_id[i] == 2:
-            pauli_str += f" Y{i}"
-        if pauli_id[i] == 3:
-            pauli_str += f" Z{i}"
-    return pauli_str
-
-
-def conv_anti(hamiltonian_list):
-    """
-    str型にしたフェルミ演算子から
-    反エルミートな演算子を作る
-    """
-    if cf.debug:
-        prints("---Anti-Fermionic Operators Used---")
-
-    op = 0*QubitOperator("")
-    for i in range(len(hamiltonian_list)):
-        fop = FermionOperator(hamiltonian_list[i][1])
-        anti_fop = fop - hermitian_conjugated(fop)
-        anti_tmp = str(jordan_wigner(anti_fop)).replace("]", "")
-        anti_list = [x.strip().split("[")
-                     for x in anti_tmp.split("+")
-                     # anti_tmp.strip()ではなくx.strip()では?
-                     # if not anti_tmp.strip() == ""]
-                     if not x.strip() == ""]
-# 1以上ではない?
-        if len(anti_list) > 1:
-            if cf.debug:
-                tmp = str(anti_fop).replace("1.0", "")
-                tmp = tmp.replace("+", "").replace("-", "").strip().split('\n')
-                prints(tmp[0], tmp[1])
-
-            for j in range(len(anti_list)):
-                qop = QubitOperator(anti_list[j][1])
-                op += qop
-    return op
-
-
-def anti_to_base(op, n):
-    """
-    反エルミートから基底に使うパウリ演算子を取り出す
-    """
-    id_set = []
-    op_list = [x.strip().split("[")
-               for x in str(op).replace("]", "").split("+")]
-    if len(op_list[0]) == 1:
-        return id_set, 0
-
-    for i in range(len(op_list)):
-        id_ = [0]*n
-        op = op_list[i][1].split(" ")
-        for j in range(len(op)):
-            for k in range(n):
-                if int(op[j][1:]) == k:
-                    id_[k] = conv_id(op[j])
-        id_set.append(id_)
-        if cf.debug:
-            prints(f"i={i}  op={op}")
-            prints(id_)
-    size = len(id_set)
-    return id_set, size
-
-
 def make_state1(i, n, active_qubit, index, psi_dash):
     pauli_id = make_pauli_id(i, n, active_qubit)
     circuit = make_gate(n, index, pauli_id)
@@ -539,21 +283,6 @@ def make_state1(i, n, active_qubit, index, psi_dash):
 def calc_inner1(i, j, n, active_qubit, index, psi_dash):
     s_i = make_state1(i, n, active_qubit, index, psi_dash)
     s_j = make_state1(j, n, active_qubit, index, psi_dash)
-    s = inner_product(s_j, s_i)
-    return s
-
-
-def make_state2(i, n, id_set, index, psi_dash):
-    pauli_id = id_set[i]
-    circuit = make_gate(n, index, pauli_id)
-    state = psi_dash.copy()
-    circuit.update_quantum_state(state)
-    return state
-
-
-def calc_inner2(i, j, n, id_set, index, psi_dash):
-    s_i = make_state2(i, n, id_set, index, psi_dash)
-    s_j = make_state2(j, n, id_set, index, psi_dash)
     s = inner_product(s_j, s_i)
     return s
 
@@ -858,98 +587,6 @@ def Overlap_by_nonredundant_pauli_list(nonredundant_sigma, pauli_ij_index, pauli
     #prints(f'T2 = {t3 - t2}')
     return S
 
-def qite_s_operators(id_set, n):
-    """Function
-    Given id_set, which contains sigma_i,
-    return the UNIQUE set of sigma_i(dag) * sigma_j.
-
-    Args:
-        id_set[k] ([int]): Either 0, 1, 2, 3
-                           to represent I, X, Y, Z at k-th qubit
-        n (int): number of qubits
-    Returns:
-        sigma_list ([Observable]): list of unique qulacs observables
-        sigma_ij_index ([int]): tells which unique sigma in sigma_list
-                                should be used for sigma_i * sigma_j
-        sigma_ij_coef ([[complex]): phase of sigma_i * sigma_j,
-                                    either 1, -1, 1j, -1j
-    """
-    size = len(id_set)
-    import time
-
-    my_sigma_list = []
-    sizeT = size*(size-1)//2
-    ipos, my_ndim = mpi.myrange(sizeT)
-    ij = 0
-    time1 = time.time()
-    for i in range(size):
-        pauli_i = conv_id2XYZ(id_set[i])
-        sigma_i = QubitOperator(pauli_i)
-        for j in range(i):
-            if ij in range(ipos, ipos+my_ndim):
-                pauli_j = conv_id2XYZ(id_set[j])
-                sigma_j = QubitOperator(pauli_j)
-                sigma_ij = sigma_i*sigma_j
-                coef, pauli_ij = separate_pauli(sigma_ij)
-                if pauli_ij not in my_sigma_list:
-                    my_sigma_list.append(pauli_ij)
-            ij += 1
-
-    data = mpi.comm.gather(my_sigma_list, root=0)
-    if mpi.rank == 0:
-        sigma_list = [x for l in data for x in l]
-        sigma_list = list(set(sigma_list))
-    else:
-        sigma_list = None
-    sigma_list = mpi.comm.bcast(sigma_list, root=0)
-    len_list = len(sigma_list)
-    time2 = time.time()
-
-    ij = 0
-    sigma_ij_coef = np.zeros(sizeT, dtype=complex)
-    sigma_ij_index = np.zeros(sizeT, dtype=int)
-    my_sigma_ij_coef = np.zeros(sizeT, dtype=complex)
-    my_sigma_ij_index = np.zeros(sizeT, dtype=int)
-    for i in range(size):
-        pauli_i = conv_id2XYZ(id_set[i])
-        sigma_i = QubitOperator(pauli_i)
-        for j in range(i):
-            if ij in range(ipos, ipos + my_ndim):
-                pauli_j = conv_id2XYZ(id_set[j])
-                sigma_j = QubitOperator(pauli_j)
-                sigma_ij = sigma_i * sigma_j
-                coef, pauli_ij = separate_pauli(sigma_ij)
-
-                idx = sigma_list.index(pauli_ij)
-                my_sigma_ij_index[ij] = idx
-                my_sigma_ij_coef[ij] = coef
-            ij += 1
-    mpi.comm.Allreduce(my_sigma_ij_index, sigma_ij_index, mpi.MPI.SUM)
-    mpi.comm.Allreduce(my_sigma_ij_coef, sigma_ij_coef, mpi.MPI.SUM)
-    time3 = time.time()
-    prints('???',time2-time1, time3-time2)
-
-    # Redefine sigma_list as qulacs.Observable
-    for i in range(len_list):
-        ope = QubitOperator(sigma_list[i])
-        sigma_list[i] = OpenFermionOperator2QulacsObservable(ope, n)
-
-    return sigma_list, sigma_ij_index, sigma_ij_coef
-
-
-def separate_pauli(sigma):
-    """Function
-    Extract coefficient and pauli word from a single QubitOperator 'sigma'
-
-    Args:
-        sigma (QubitOperator):
-    Returns:
-        coef (complex): coefficient
-        pauli (str): pauli word
-    """
-    tmp = str(sigma).replace("]", "").split("[")
-    return complex(tmp[0]), tmp[1]
-
 
 def qlanczos(cm_list, energy, s2, t, H_q=None, S_q=None, S2_q=None):
     """
@@ -1009,21 +646,22 @@ def qlanczos(cm_list, energy, s2, t, H_q=None, S_q=None, S2_q=None):
             #S_q[ti, tj] = nm_list[ti2] * nm_list[tj2] / nm_list[tr]**2
 
             # Use c[m] list instead of n[m] list
-            # nm_list[ti2] = c[0] * c[1] * ... * c[tj2] * ... * c[tr] * ... * c[ti2]
-            # nm_list[tj2] = c[0] * c[1] * ... * c[tj2]
-            # nm_list[tr]  = c[0] * c[1] * ... * c[tj2] * ... * c[tr]
+            # 1/(nm_list[ti2])**2 = c[0] * c[1] * ... * c[tj2] * ... * c[tr] * ... * c[ti2]
+            # 1/(nm_list[tj2])**2 = c[0] * c[1] * ... * c[tj2]
+            # 1/(nm_list[tr])**2  = c[0] * c[1] * ... * c[tj2] * ... * c[tr]
             # and therefore
-            # S_q[ti,tj] =  c[tr+1] * ... * c[ti2] / c[tj2+1] * ... * c[tr]
+            # S_q[ti,tj] =  sqrt(c[tj2+1] * ... * c[tr] / c[tr+1] * ... * c[ti2] )
 
             # Numerator
             Numerator = 1
-            for tk in range(tr+1, ti2+1):
+            for tk in range(tj2+1, tr+1):
                 Numerator *= cm_list[tk]
             # Denominator
             Denominator = 1
-            for tk in range(tj2+1, tr+1):
+            for tk in range(tr+1, ti2+1):
                 Denominator *= cm_list[tk]
-            S_q[ti, tj] = Numerator/Denominator
+            S_q[ti, tj] = np.sqrt(Numerator/Denominator)
+            #S_q[ti, tj] = np.random.rand()
             #prints(Numerator, Denominator)
 
             # Compute H element (based on Eq.57 in SI)
@@ -1035,8 +673,9 @@ def qlanczos(cm_list, energy, s2, t, H_q=None, S_q=None, S2_q=None):
             H_q[tj, ti] = H_q[ti, tj]
             S2_q[tj, ti] = S2_q[ti, tj]
     s = 0.999
-    scheme = 2
-    MaxLen = 5
+    scheme = 0
+    MaxLen = 5000
+    
     # Determine the imaginary time step used for QLanczos based on the regularization
     if scheme == 0:
         IList = [i for i in range(ndim)]
@@ -1221,7 +860,8 @@ def qlanczos(cm_list, energy, s2, t, H_q=None, S_q=None, S2_q=None):
     en = en[index]
     dvec  = dvec[:, index]
     cvec  = root_invS@dvec
-    printmat(dvec,name='dvec', eig=s)
+    #printmat(dvec,name='dvec', eig=s)
+    #printmat(cvec,name='cvec')
 
     # Check each eigenvector in dvec to see if it has an important component. 
     physical_index = []
@@ -1245,11 +885,12 @@ def qlanczos(cm_list, energy, s2, t, H_q=None, S_q=None, S2_q=None):
 
     q_en = [e for e in en[physical_index]]
     #q_en = en[index]
-    prints(en)
+    #prints(en)
 
     ### S**2
     S2dig = cvec.T@S2used@cvec
     q_s2 = [S2dig[i, i] for i in physical_index]
+    #q_s2 = [S2dig[i, i] for i in index]
 
     #### Debug:
     #if cf.debug:
@@ -1292,7 +933,7 @@ def Form_Smat(size, sigma_list, sigma_ij_index, sigma_ij_coef, psi):
     ipos, my_ndim = mpi.myrange(len_list)
     for iope in range(ipos, ipos+my_ndim):
         Sij_my_list[iope] = sigma_list[iope].get_expectation_value(psi)
-    mpi.comm.Allreduce(Sij_my_list, Sij_list, mpi.MPI.SUM)
+    Sij_list = mpi.allreduce(Sij_my_list, mpi.MPI.SUM)
 
     # Distribute Sij
     ij = 0
@@ -1309,7 +950,7 @@ def Form_Smat(size, sigma_list, sigma_ij_index, sigma_ij_coef, psi):
                 my_S[j, i] = my_S[i, j].conjugate()
 
             ij += 1
-    mpi.comm.Allreduce(my_S, S, mpi.MPI.SUM)
+    S = mpi.allreduce(my_S, mpi.MPI.SUM)
     for i in range(size):
         S[i, i] = 1
     return S
@@ -1405,12 +1046,14 @@ def msqlanczos(d_list, nstates, t, S_list, H_list, S2_list, S_q, H_q, S2_q):
         #printmat(S2_q.real, name="S2_q")
 
     MaxLen = 5
-    s = 0.999
+    s = 0.99
     last = max(-1, ndim-1-MaxLen)
     IList = [i for i in range(ndim-1, last, -1)]
     IList.sort()
     scheme = 2
-    if scheme == 2:
+    if scheme == 0:
+        IList = [i for i in range(ndim)]
+    elif scheme == 2:
     #########################################
     ### Backward regularization algorithm ###
     #########################################
@@ -1485,12 +1128,45 @@ def msqlanczos(d_list, nstates, t, S_list, H_list, S2_list, S_q, H_q, S2_q):
         printmat(Hused.real, name="Hused")
         printmat(Sused.real, name="Sused")
     # 方程式とく
+    Hused = Hused.real
+    Sused = Sused.real
     root_invS = root_inv(Sused, eps=1e-8)
     s = np.linalg.eigh(Sused)[0]
     s.sort()
     if s[0] < -1e-6 and mpi.main_rank:
         print(f'S is not positive semi-definite: smallest eigenvalue = ', s[0])
 
+    #H_ortho = root_invS.T@Hused@root_invS
+    #if np.isnan(H_ortho).any() or np.isinf(H_ortho).any():
+    #    print("contain nan or inf")
+    #    printmat(Sused, name="Sused")
+    #    error()
+    #else:
+    #    en, dvec = np.linalg.eigh(H_ortho)
+
+    #index = np.argsort(en)
+    #en = en[index]
+    #dvec = dvec[:, index]
+
+    #sq_list = []
+    #last = len(en)-1
+    #for i in range(len(en)):
+    #    vec = dvec[:, i]
+    #    sq = 0
+    #    for j in range(nstates):
+    #        sq = sq+vec[last-j]**2
+    #    sq_list.append(sq)
+    #sq_index = np.argsort(sq_list)[::-1]
+    #prints(en)
+    ##en = en[sq_index[0]:sq_index[-1]]
+    #en = en[sq_index]
+
+    s = np.sort(s)[::-1]
+    importance_index = []
+    for k, s_ in enumerate(s):
+        if s_ > 0.01:
+            importance_index.append(k)
+    root_invS = root_invS[:,::-1]
     H_ortho = root_invS.T@Hused@root_invS
     if np.isnan(H_ortho).any() or np.isinf(H_ortho).any():
         print("contain nan or inf")
@@ -1498,51 +1174,89 @@ def msqlanczos(d_list, nstates, t, S_list, H_list, S2_list, S_q, H_q, S2_q):
         error()
     else:
         en, dvec = np.linalg.eigh(H_ortho)
+    ### The ground state energy should be the one 
+    ### with the eigenvector that has the largest
+    ### overlaps with the used QITE states, e.g.,
+    ### that with the largest 0th component.
 
     index = np.argsort(en)
     en = en[index]
-    dvec = dvec[:, index]
+    dvec  = dvec[:, index]
+    cvec  = root_invS@dvec
+    printmat(dvec,name='dvec', eig=s)
+    #printmat(cvec,name='cvec')
 
-    sq_list = []
-    last = len(en)-1
-    for i in range(len(en)):
-        vec = dvec[:, i]
-        sq = 0
-        for j in range(nstates):
-            sq = sq+vec[last-j]**2
-        sq_list.append(sq)
-    sq_index = np.argsort(sq_list)[::-1]
-    prints(en)
-    #en = en[sq_index[0]:sq_index[-1]]
-    en = en[sq_index]
+    # Check each eigenvector in dvec to see if it has an important component. 
+    physical_index = []
+    for ind in importance_index:
+        for k in range(dvec.shape[1]): 
+            if (dvec[ind, k])**2 > 0.1 and k not in physical_index:
+                physical_index.append(k)
 
-    index_gs = np.argmax(abs(dvec[-1]))
-    """
-    ground_state_energy = en[index_gs]
-    q_en = [e for e in en[index_gs:]]
-    """
-    q_en = [en[i] for i in range(nstates)]
-    q_index = np.argsort(q_en)
-    q_en = np.sort(q_en)
-    cvec = root_invS@dvec
+    physical_index = np.sort(physical_index)
+    #index_gs = np.argmax(abs(dvec[-1]))
+    #ground_state_energy = en[index_gs] 
+    #index = []
+    #for i in range(len(en)):
+    #    prints(dvec[-1,i])
+    #    if abs(dvec[-1, i])  > 0.1:
+    #        index.append(i)
+    ### For excited states: Due to the variational
+    ### principle in QLanczos, those energies that 
+    ### are lower than ground state energy is 
+    ### unphysical and should be removed.
+
+    q_en = [e for e in en[physical_index]]
+    #q_en = en[index]
+    #prints(en)
+
+    ### S**2
     S2dig = cvec.T@S2used@cvec
-    q_s2 = [S2dig[i, i].real for i in sq_index]
-    q_s2=[q_s2[i] for i in range(nstates)]
-    q_s2 = [q_s2[i] for i in q_index]
-    # Debug:
-    if cf.debug:
-        Hdig = cvec.T@Hused@cvec
-        q_en_debug = [Hdig[i, i].real for i in sq_index]
-        q_en_debug = [q_en_debug[i] for i in range(nstates)]
-        q_en_debug = [q_en_debug[i] for i in q_index]
-        printmat(q_s2,name='q_s2')
-        printmat(q_en_debug,name='q_en_debug')
-        for i in range(len(q_en)):
-            if abs(q_en[i] - q_en_debug[i]) > 1e-6:
-                print('q_en = ', q_en)
-                print('Hdig = ', q_en_debug)
-                print('S2dig = ', q_s2)
-                print(" Something is wrong ")
+    q_s2 = [S2dig[i, i] for i in physical_index]
+    #q_s2 = [S2dig[i, i] for i in index]
+
+    #### Debug:
+    #if cf.debug:
+    #    Hdig = cvec.T@Hused@cvec
+    #    q_en_debug = [Hdig[i, i].real for i in range(index_gs, len(en))]
+    #    for i in range(len(q_en)):
+    #        if abs(q_en[i] - q_en_debug[i]) > 1e-6:
+    #            prints('q_en = ',q_en)
+    #            prints('Hdig = ',q_en_debug)
+    #            error(" Something is wrong ")
+
+    #prints('q_en = ',q_en[:2])
+    # Tikhonov regularization of Sused
+    #Sinv = tikhonov(S_q, eps=1e-7)
+    #prints('q_tik = ',np.sort(np.linalg.eig(Sinv @ H_q)[0])[:2])
+
+#    index_gs = np.argmax(abs(dvec[-1]))
+#    """
+#    ground_state_energy = en[index_gs]
+#    q_en = [e for e in en[index_gs:]]
+#    """
+#    q_en = [en[i] for i in range(nstates)]
+#    q_index = np.argsort(q_en)
+#    q_en = np.sort(q_en)
+#    cvec = root_invS@dvec
+#    S2dig = cvec.T@S2used@cvec
+#    q_s2 = [S2dig[i, i].real for i in sq_index]
+#    q_s2=[q_s2[i] for i in range(nstates)]
+#    q_s2 = [q_s2[i] for i in q_index]
+#    # Debug:
+#    if cf.debug:
+#        Hdig = cvec.T@Hused@cvec
+#        q_en_debug = [Hdig[i, i].real for i in sq_index]
+#        q_en_debug = [q_en_debug[i] for i in range(nstates)]
+#        q_en_debug = [q_en_debug[i] for i in q_index]
+#        printmat(q_s2,name='q_s2')
+#        printmat(q_en_debug,name='q_en_debug')
+#        for i in range(len(q_en)):
+#            if abs(q_en[i] - q_en_debug[i]) > 1e-6:
+#                print('q_en = ', q_en)
+#                print('Hdig = ', q_en_debug)
+#                print('S2dig = ', q_s2)
+#                print(" Something is wrong ")
 
     return S_q, H_q, q_en, S2_q, q_s2
 

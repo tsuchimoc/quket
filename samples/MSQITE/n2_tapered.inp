@@ -7,7 +7,7 @@ geometry
 N  0  0  0
 N  0  0  1.6
 method       = qite
-ansatz       = hamiltonian
+ansatz       = anti-hamiltonian
 msqite       = TRUE
 operator     = pauli
 s2shift = 0.5

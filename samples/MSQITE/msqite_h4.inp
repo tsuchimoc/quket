@@ -10,7 +10,7 @@ H  0  0  1.0
 H  1.  0.  0
 H  1.  0  1.0
 method       = qite
-ansatz       = hamiltonian 
+ansatz       = anti-hamiltonian 
 msqite        = TRUE
 nterm        = 1
 db           = .1

@@ -15,14 +15,18 @@ from quket.fileio import prints
 
 
 def get_ndims(Quket):
+    if Quket.model not in ("chemical", "hubbard"):
+        return 0, 0, 0
     ansatz = Quket.ansatz
     from_vir = Quket.from_vir
 
     ######################
     # Arrange parameters #
     ######################
-    if "ic_mrucc" in ansatz:
+    if ansatz in ("ic_mrucc", "ic_mrucc_spinfree"):
         arrange_params_ic_mrucc(Quket)
+    elif ansatz in (None, "user-defined"):
+        return 0, 0, 0
 
     nca = ncb = Quket.nc
     if not from_vir:
@@ -271,7 +275,7 @@ def get_ndims(Quket):
     return ndim1, ndim2, ndim
 
 def arrange_params_ic_mrucc(Quket):
-    states = Quket.multi.init_states_info[:][0][1]
+    states = Quket.multi.init_states_info[:]
     nstates = Quket.multi.nstates
     n_qubits = Quket.n_qubits
 
